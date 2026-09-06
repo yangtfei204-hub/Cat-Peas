@@ -3392,3 +3392,359 @@ body {
 .assist-draw-block.show {
     display: block;
 }
+
+/* ========================================
+   使用说明弹窗
+   ======================================== */
+.help-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9998;
+    background: rgba(62, 54, 64, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.help-modal.active {
+    display: flex;
+}
+
+.help-modal-inner {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 560px;
+    max-width: 94vw;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalIn 0.25s ease;
+}
+
+.help-modal-header {
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--iris-dark);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(219, 168, 173, 0.08), rgba(176, 160, 196, 0.08));
+    flex-shrink: 0;
+}
+
+.help-modal-header span {
+    flex: 1;
+}
+
+.help-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: var(--radius-xs);
+    transition: var(--transition);
+}
+
+.help-modal-close:hover {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+.help-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 导航标签 */
+.help-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 10px 16px 0;
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.help-tab {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: var(--font-base);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    transition: var(--transition);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.help-tab:hover {
+    color: var(--text-secondary);
+    background: var(--iris-lighter);
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}
+
+.help-tab.active {
+    color: var(--iris-dark);
+    border-bottom-color: var(--iris-dark);
+}
+
+.help-tab svg {
+    flex-shrink: 0;
+}
+
+/* 内容区域 */
+.help-content {
+    display: none;
+    padding: 16px 18px;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.help-content.active {
+    display: flex;
+}
+
+.help-block {
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+    transition: var(--transition);
+}
+
+.help-block:hover {
+    border-color: var(--iris-light);
+    box-shadow: var(--shadow-sm);
+}
+
+.help-block h4 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.help-block h4 svg {
+    color: var(--iris-dark);
+    flex-shrink: 0;
+}
+
+.help-block p {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 4px;
+}
+
+.help-block p:last-child {
+    margin-bottom: 0;
+}
+
+/* 快捷键列表 */
+.help-shortcut-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.help-shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+    font-size: 12px;
+}
+
+.help-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 24px;
+    padding: 0 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--iris-dark);
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
+}
+
+.help-key-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+/* 底部按钮 */
+.help-modal-footer {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(219, 168, 173, 0.04), rgba(176, 160, 196, 0.04));
+}
+
+/* 免责声明弹窗中的图标标题 */
+.disclaimer-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.disclaimer-section h4 svg {
+    color: var(--iris-dark);
+    flex-shrink: 0;
+}
+
+/* 免责声明中的强调文字 */
+.disclaimer-section strong {
+    color: var(--text);
+    font-weight: 700;
+}
+
+/* 滚动条 */
+.help-modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.help-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.help-modal-body::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.help-modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--iris-light);
+}
+
+.help-modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.help-tabs::-webkit-scrollbar {
+    height: 0;
+    display: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 960px) {
+    .help-modal-inner {
+        width: 96vw;
+        max-height: 90vh;
+    }
+
+    .help-tabs {
+        padding: 8px 12px 0;
+        gap: 0;
+    }
+
+    .help-tab {
+        padding: 7px 10px;
+        font-size: 10px;
+        gap: 3px;
+    }
+
+    .help-tab svg {
+        width: 10px;
+        height: 10px;
+    }
+
+    .help-content {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .help-block {
+        padding: 10px 12px;
+    }
+
+    .help-block h4 {
+        font-size: 11px;
+    }
+
+    .help-block p {
+        font-size: 10px;
+    }
+
+    .help-modal-footer {
+        padding: 10px 14px;
+    }
+
+    .help-shortcut-item {
+        padding: 6px 10px;
+    }
+
+    .help-key {
+        min-width: 24px;
+        height: 22px;
+        font-size: 10px;
+        padding: 0 6px;
+    }
+
+    .help-key-desc {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .help-modal-inner {
+        width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .help-tabs {
+        padding: 6px 8px 0;
+    }
+
+    .help-tab {
+        padding: 6px 8px;
+        font-size: 9px;
+    }
+
+    .help-modal-footer {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .help-modal-footer .btn {
+        width: 100%;
+    }
+}

@@ -28,6 +28,13 @@
             </div>
         </div>
         <div class="header-actions">
+            <button class="theme-toggle-btn" id="helpBtn" title="使用说明与免责声明">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M9.5 9.5a2.5 2.5 0 114 2c-.5.4-1 .9-1 1.5v.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12.5" cy="16.5" r="0.8" fill="currentColor"/>
+                </svg>
+            </button>
             <button class="theme-toggle-btn" id="projectLibBtn" title="项目库">
                 <svg viewBox="0 0 24 24" width="18" height="18">
                     <path d="M3 5a2 2 0 012-2h4l2 2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -795,37 +802,337 @@
                     <ellipse cx="20" cy="24" rx="1.5" ry="1" fill="#b07a80"/>
                     <path d="M18.5 25 Q20 27 21.5 25" stroke="#b07a80" stroke-width="0.8" fill="none"/>
                 </svg>
-                <span>Cat Peas · 使用须知</span>
+                <span>Cat Peas · 免责声明与使用须知</span>
             </div>
             <div class="disclaimer-body">
                 <div class="disclaimer-section">
-                    <h4>欢迎使用 Cat Peas 拼豆图纸生成编辑器</h4>
-                    <p>本工具为免费在线拼豆图纸设计工具，使用前请阅读以下内容：</p>
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 3v5M10 13h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                        关于本工具
+                    </h4>
+                    <p>Cat Peas 是一款免费的在线拼豆图纸设计工具，旨在帮助拼豆爱好者快速生成和编辑拼豆图纸。本工具完全在浏览器端运行，不会上传或存储任何用户数据到服务器。</p>
                 </div>
                 <div class="disclaimer-section">
-                    <h4>注意事项</h4>
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 6v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        色彩与色差说明
+                    </h4>
                     <ul>
-                        <li>色板颜色为屏幕近似色，实际拼豆颜色请以实物色卡为准</li>
-                        <li>不同显示器的色差可能导致颜色显示存在偏差</li>
-                        <li>图纸数据保存在浏览器本地，清除浏览器数据会丢失自定义颜色</li>
-                        <li>建议及时导出保存您的作品图纸</li>
-                        <li>大尺寸画布（超过78×78）可能在低配设备上出现卡顿</li>
+                        <li>本工具中的色板颜色为屏幕近似显示色，仅供参考，<strong>不代表实际拼豆颜色</strong></li>
+                        <li>不同品牌、批次的拼豆可能存在色差，实际颜色请以实物色卡和拼豆实物为准</li>
+                        <li>不同显示器、屏幕亮度、色温设置均会影响颜色的显示效果，同一颜色在不同设备上可能看起来不同</li>
+                        <li>图片转换功能使用算法自动匹配最接近的色板颜色，结果可能与预期存在偏差，建议转换后手动微调</li>
+                        <li>因色差问题导致的拼豆选购错误或成品与预期不符，本工具不承担相关责任</li>
                     </ul>
                 </div>
                 <div class="disclaimer-section">
-                    <h4>免责声明</h4>
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        数据存储须知
+                    </h4>
                     <ul>
-                        <li>本工具生成的图纸仅供个人学习和娱乐使用</li>
-                        <li>请勿使用本工具制作侵犯他人知识产权的内容</li>
-                        <li>用户上传的图片由用户自行负责，本工具不存储任何用户数据</li>
-                        <li>因使用本工具产生的任何直接或间接损失，开发者不承担责任</li>
-                        <li>本工具保留随时更新和修改的权利</li>
+                        <li>所有画布数据、自定义颜色、项目库数据均保存在<strong>浏览器本地存储</strong>（LocalStorage 和 IndexedDB）中</li>
+                        <li>清除浏览器缓存、清除网站数据、使用无痕/隐私模式浏览均会导致数据丢失</li>
+                        <li>更换浏览器或设备后数据不会自动同步</li>
+                        <li>浏览器本地存储空间有限，大量项目可能导致存储空间不足</li>
+                        <li><strong>强烈建议定期使用「导出项目 JSON」或「导出图纸 PNG」功能备份您的作品</strong></li>
+                        <li>因未及时备份导致的数据丢失，本工具不承担责任</li>
                     </ul>
+                </div>
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 1l2.5 5.5H18l-4.5 3.5 1.5 5.5L10 13l-5 2.5 1.5-5.5L2 6.5h5.5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        知识产权声明
+                    </h4>
+                    <ul>
+                        <li>用户上传的图片内容由用户自行负责，请确保您拥有相关图片的使用权</li>
+                        <li>请勿使用本工具制作侵犯他人著作权、商标权、肖像权等知识产权的内容</li>
+                        <li>使用他人作品（包括但不限于动漫角色、品牌标志、摄影作品等）制作拼豆图纸时，请遵守相关法律法规</li>
+                        <li>用户生成的拼豆图纸仅建议用于个人学习、欣赏和非商业用途</li>
+                        <li>因用户违规使用产生的法律纠纷，本工具及开发者不承担任何连带责任</li>
+                    </ul>
+                </div>
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M4 15l1-4L13.5 2.5a1.5 1.5 0 012 0l2 2a1.5 1.5 0 010 2L9 15l-4 1z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 4.5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        使用限制与免责
+                    </h4>
+                    <ul>
+                        <li>本工具按「现状」提供，不提供任何明示或暗示的保证</li>
+                        <li>大尺寸画布（超过 78 x 78）可能在低配设备上出现性能下降或卡顿</li>
+                        <li>本工具依赖现代浏览器特性，建议使用最新版 Chrome、Edge、Safari 或 Firefox</li>
+                        <li>因网络环境、浏览器兼容性、设备性能等原因导致的功能异常，本工具不承担责任</li>
+                        <li>因使用本工具产生的任何直接或间接损失（包括但不限于材料浪费、时间损失、数据丢失等），开发者均不承担赔偿责任</li>
+                        <li>本工具保留随时更新、修改或终止服务的权利，届时不另行通知</li>
+                    </ul>
+                </div>
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 17c-4 0-7-3-7-7s3-7 7-7 7 3 7 7-3 7-7 7z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 7v3l2 1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        更新与反馈
+                    </h4>
+                    <p>本工具持续改进中。如遇到问题或有功能建议，欢迎通过相关渠道反馈。使用本工具即表示您已阅读、理解并同意以上所有条款。</p>
                 </div>
             </div>
             <div class="disclaimer-footer">
                 <span class="disclaimer-countdown" id="disclaimerCountdown">请阅读以上内容（5秒）</span>
                 <button class="btn btn-apply disclaimer-btn" id="disclaimerConfirm" disabled>请等待 5 秒</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用说明弹窗 -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-modal-inner">
+            <div class="help-modal-header">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M9.5 9.5a2.5 2.5 0 114 2c-.5.4-1 .9-1 1.5v.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12.5" cy="16.5" r="0.8" fill="currentColor"/>
+                </svg>
+                <span>使用说明</span>
+                <button class="help-modal-close" id="helpModalClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="help-modal-body">
+                <!-- 导航标签 -->
+                <div class="help-tabs">
+                    <button class="help-tab active" data-tab="basic">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        基础操作
+                    </button>
+                    <button class="help-tab" data-tab="tools">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        绘图工具
+                    </button>
+                    <button class="help-tab" data-tab="image">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="5" cy="5" r="1.5" fill="currentColor" opacity="0.4"/><path d="M1 11l3-3 2 2 3-3 6 6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                        图片转换
+                    </button>
+                    <button class="help-tab" data-tab="export">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 10V2M5 6l3-4 3 4M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        导出与保存
+                    </button>
+                    <button class="help-tab" data-tab="shortcut">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="4" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M4 7h2M7 7h2M10 7h2M3 10h10" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/></svg>
+                        快捷键
+                    </button>
+                </div>
+
+                <!-- 基础操作 -->
+                <div class="help-content active" data-content="basic">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="9" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            设置画布尺寸
+                        </h4>
+                        <p>在左侧「功能控制」面板的「画布尺寸」区域，输入宽和高的格数（范围 4 ~ 200），点击「应用」按钮。也可以点击预设尺寸按钮快速切换。常规小板选 52 x 52，中板选 78 x 78，大板选 104 x 104。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="6" cy="6" r="2.5" fill="#e8b4b8"/><circle cx="11" cy="6" r="2.5" fill="#b8a9c9"/><circle cx="6" cy="11" r="2.5" fill="#a0c4dc"/><circle cx="11" cy="11" r="2.5" fill="#a0c9a0"/></svg>
+                            选择颜色
+                        </h4>
+                        <p>在右侧「色板与统计」面板中，点击色板上的颜色方块即可选中该颜色作为画笔色。色板按色系分组，点击分组标题可展开/折叠。当前选中的颜色会显示在面板顶部。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            绘制图案
+                        </h4>
+                        <p>选中颜色后，用画笔工具在画布上点击或拖动即可填色。使用橡皮工具可以擦除已填的颜色。支持撤销（Ctrl+Z）和重做（Ctrl+Y）操作。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 8h4M8 6v4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+                            缩放与平移
+                        </h4>
+                        <p>使用鼠标滚轮缩放画布；按住鼠标中键或使用抓手工具拖拽画布移动视角；点击「适应」按钮让画布自动适配屏幕。移动端支持双指捏合缩放和拖拽平移。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" opacity="0.3"/></svg>
+                            显示选项
+                        </h4>
+                        <p>可以在「显示选项」区域开关网格线、坐标标尺、色号数字、仿真豆子预览和分板线。仿真豆子预览可以模拟实际拼豆效果。</p>
+                    </div>
+                </div>
+
+                <!-- 绘图工具 -->
+                <div class="help-content" data-content="tools">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            画笔工具（快捷键 B）
+                        </h4>
+                        <p>选中画笔后，在画布上点击或拖动即可用当前选中颜色填充格子。这是最基础的绘图工具。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M13 14H6l-3-3a0.7 0.7 0 010-1l7-7a0.7 0.7 0 011 0l3 3a0.7 0.7 0 010 1L9 12" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            橡皮工具（快捷键 E）
+                        </h4>
+                        <p>选中橡皮后，点击或拖动画布上已填色的格子即可清除颜色，恢复为空白状态。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 14l-3-3 6-6 3 3L5 14zM12 5l-3-3 1.5-1.5 3 3L12 5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            吸色工具（快捷键 I）
+                        </h4>
+                        <p>点击画布上已填色的格子，自动将该颜色设为当前画笔色。方便快速切换到画布上已使用的颜色。吸色后自动切回画笔工具。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 14l-3-3 6-6 3 3L5 14z" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="12" cy="4" r="3" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            吸底工具
+                        </h4>
+                        <p>需要先上传参考底图。点击画布上某个位置，自动采样该位置底图的颜色，并匹配色板中最接近的颜色作为画笔色。适合对照底图逐格上色。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v12M2 8c0-2 3-4 6-4s6 2 6 4-3 4-6 4-6-2-6-4z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            换色工具（快捷键 G）
+                        </h4>
+                        <p>点击画布上某个颜色的格子，会将画布上<strong>所有</strong>该颜色的格子替换为当前选中的画笔色。适合批量替换颜色。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M13 8V5a1 1 0 00-2 0V8M11 8V3.5a1 1 0 00-2 0V8M9 8V4.5a1 1 0 00-2 0v5M7 9V7a1 1 0 00-2 0v3.5a5 5 0 0010 0V7a1 1 0 00-2 0" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+                            抓手工具（快捷键 H）
+                        </h4>
+                        <p>选中抓手后，拖拽画布可以平移视角，方便查看画布的不同区域。也可以按住鼠标中键临时使用抓手功能。</p>
+                    </div>
+                </div>
+
+                <!-- 图片转换 -->
+                <div class="help-content" data-content="image">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v8M5 6l3-4 3 4M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            上传参考底图
+                        </h4>
+                        <p>点击「上传参考底图」按钮选择一张图片，图片会显示在画布底层作为参考。可以调整底图透明度和色块透明度来方便对比。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M9 1L2 10h4l-1 5 7-9H8l1-5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            一键转换为拼豆图纸
+                        </h4>
+                        <p>上传底图后，设置好「最大用色数」（建议 16 ~ 24 色），点击「一键转换」按钮。系统会自动将图片按当前画布格数进行像素化采样，并匹配色板中最接近的颜色。</p>
+                        <p>转换效果取决于原图的复杂度和画布格数。简单图案效果较好，复杂照片建议适当增大画布和用色数。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="8" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="1" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="8" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                            识别色块图
+                        </h4>
+                        <p>如果上传的图片本身就是色块图纸（如其他软件生成的拼豆图纸），使用「识别色块图」功能可以自动检测格子大小并匹配颜色，保持原有的格数不变。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 2a6 6 0 11-6 6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M4 4l-2 4h4z" fill="currentColor" opacity="0.3"/></svg>
+                            屏蔽背景色
+                        </h4>
+                        <p>开启「屏蔽背景色」后，系统会自动检测图片四角的颜色作为背景色，转换时跳过与背景色相近的区域。容差值越大，屏蔽范围越广。纯色背景效果最佳。</p>
+                    </div>
+                </div>
+
+                <!-- 导出与保存 -->
+                <div class="help-content" data-content="export">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 11l2-3 1.5 1.5 2.5-3 3 4.5H2z" fill="currentColor" opacity="0.2"/></svg>
+                            导出色块图纸 PNG
+                        </h4>
+                        <p>导出带有色号标注、坐标标尺和用料清单的完整图纸。图纸中嵌入了画布数据，可以通过「导入图纸图片」功能还原编辑。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="1.5" fill="currentColor" opacity="0.3"/></svg>
+                            导出仿真豆子 PNG
+                        </h4>
+                        <p>以模拟拼豆实物效果的方式导出图纸，每个格子显示为圆形豆子，可以直观预览成品效果。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                            导出分板切割图纸
+                        </h4>
+                        <p>当画布尺寸大于一块板时，可以按指定板尺寸将图纸分割为多张子图纸导出，每张标注板号、行列范围和独立的用料清单。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 4a2 2 0 012-2h3l1.5 1.5H14a1 1 0 011 1V12a2 2 0 01-2 2H4a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            项目库
+                        </h4>
+                        <p>点击「保存到项目库」可将当前画布保存到浏览器本地的项目库中，方便日后继续编辑。项目库支持分类管理、搜索筛选和批量操作。也可以导出为 JSON 文件进行备份或在不同设备间传输。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v8M5 6l3-4 3 4M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            导入图纸图片
+                        </h4>
+                        <p>上传由 Cat Peas 导出的 PNG 图纸，系统会自动从图片中提取嵌入的画布数据并还原。注意：图片必须是原始导出的 PNG 文件，经过截图、压缩或微信传输会破坏嵌入数据。</p>
+                    </div>
+                </div>
+
+                <!-- 快捷键 -->
+                <div class="help-content" data-content="shortcut">
+                    <div class="help-shortcut-list">
+                        <div class="help-shortcut-item">
+                            <span class="help-key">B</span>
+                            <span class="help-key-desc">切换到画笔工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">E</span>
+                            <span class="help-key-desc">切换到橡皮工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">I</span>
+                            <span class="help-key-desc">切换到吸色工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">G</span>
+                            <span class="help-key-desc">切换到换色工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">H</span>
+                            <span class="help-key-desc">切换到抓手工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">1</span> ~ <span class="help-key">9</span>
+                            <span class="help-key-desc">快速选择前 9 个颜色</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Ctrl</span> + <span class="help-key">Z</span>
+                            <span class="help-key-desc">撤销</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Ctrl</span> + <span class="help-key">Y</span>
+                            <span class="help-key-desc">重做</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Ctrl</span> + <span class="help-key">S</span>
+                            <span class="help-key-desc">保存到项目库</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">鼠标滚轮</span>
+                            <span class="help-key-desc">缩放画布</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">鼠标中键拖拽</span>
+                            <span class="help-key-desc">平移画布</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="help-modal-footer">
+                <button class="btn btn-sm" id="helpShowDisclaimer">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4M8 11h.01" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                    查看免责声明
+                </button>
+                <button class="btn btn-apply" id="helpModalConfirm">我知道了</button>
             </div>
         </div>
     </div>

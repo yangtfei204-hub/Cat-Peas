@@ -338,20 +338,24 @@
     // ===========================
     function showDisclaimer() {
         try {
-            if (localStorage.getItem('catpeas_disclaimer_accepted') === '1') return;
+            if (localStorage.getItem('catpeas_disclaimer_accepted') === '1') {
+                // 已接受免责声明，检查是否需要显示使用说明
+                showHelpFirstTime();
+                return;
+            }
         } catch (e) { /* ignore */ }
 
-        const modal = $('disclaimerModal');
-        const btn = $('disclaimerConfirm');
-        const countdown = $('disclaimerCountdown');
+        var modal = $('disclaimerModal');
+        var btn = $('disclaimerConfirm');
+        var countdown = $('disclaimerCountdown');
         modal.classList.add('active');
 
-        let remaining = 5;
+        var remaining = 5;
         btn.disabled = true;
         btn.textContent = '请等待 ' + remaining + ' 秒';
         countdown.textContent = '请阅读以上内容（' + remaining + '秒）';
 
-        const timer = setInterval(function () {
+        var timer = setInterval(function () {
             remaining--;
             if (remaining > 0) {
                 btn.textContent = '请等待 ' + remaining + ' 秒';
@@ -359,7 +363,7 @@
             } else {
                 clearInterval(timer);
                 btn.disabled = false;
-                btn.textContent = '我已阅读，确认进入';
+                btn.textContent = '我已阅读并同意，进入工具';
                 countdown.textContent = '感谢阅读';
             }
         }, 1000);
@@ -370,6 +374,47 @@
             try {
                 localStorage.setItem('catpeas_disclaimer_accepted', '1');
             } catch (e) { /* ignore */ }
+            // 免责声明关闭后显示使用说明
+            showHelpFirstTime();
+        });
+    }
+
+    function showHelpFirstTime() {
+        try {
+            if (localStorage.getItem('catpeas_help_shown') === '1') return;
+        } catch (e) { return; }
+        // 延迟一点显示，让页面先渲染完
+        setTimeout(function () {
+            openHelpModal();
+            try {
+                localStorage.setItem('catpeas_help_shown', '1');
+            } catch (e) { /* ignore */ }
+        }, 300);
+    }
+
+    function openHelpModal() {
+        $('helpModal').classList.add('active');
+    }
+
+    function closeHelpModal() {
+        $('helpModal').classList.remove('active');
+    }
+
+    function openDisclaimerFromHelp() {
+        closeHelpModal();
+        var modal = $('disclaimerModal');
+        var btn = $('disclaimerConfirm');
+        var countdown = $('disclaimerCountdown');
+        modal.classList.add('active');
+        // 从帮助页面打开时不需要倒计时
+        btn.disabled = false;
+        btn.textContent = '我已阅读，关闭';
+        countdown.textContent = '';
+        // 移除旧的事件监听，添加新的
+        var newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener('click', function () {
+            modal.classList.remove('active');
         });
     }
 
@@ -2251,6 +2296,42 @@
         $('resetTheme').addEventListener('click', function () {
             applyTheme('default');
             document.querySelectorAll('.theme-preset-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === 'default'));
+        });
+
+        // 帮助弹窗
+        $('helpBtn').addEventListener('click', function () {
+            openHelpModal();
+        });
+
+        $('helpModalClose').addEventListener('click', function () {
+            closeHelpModal();
+        });
+
+        $('helpModalConfirm').addEventListener('click', function () {
+            closeHelpModal();
+        });
+
+        $('helpModal').addEventListener('click', function (e) {
+            if (e.target === this) closeHelpModal();
+        });
+
+        $('helpShowDisclaimer').addEventListener('click', function () {
+            openDisclaimerFromHelp();
+        });
+
+        // 帮助弹窗标签切换
+        document.querySelectorAll('.help-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                var targetTab = this.dataset.tab;
+                // 切换标签激活状态
+                document.querySelectorAll('.help-tab').forEach(function (t) {
+                    t.classList.toggle('active', t.dataset.tab === targetTab);
+                });
+                // 切换内容显示
+                document.querySelectorAll('.help-content').forEach(function (c) {
+                    c.classList.toggle('active', c.dataset.content === targetTab);
+                });
+            });
         });
 
         // Load saved theme
