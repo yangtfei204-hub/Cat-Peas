@@ -2398,43 +2398,55 @@ body {
 }
 
 /* ========================================
-   Mobile Palette Quick Panel
+   Mobile Bottom Palette Drawer
    ======================================== */
-.mobile-palette-panel {
+.mobile-palette-drawer {
     display: none;
     flex-direction: column;
     background: var(--bg-panel);
     border-top: 1px solid var(--border);
     flex-shrink: 0;
     z-index: 10;
+    position: relative;
 }
 
 @media (max-width: 960px) {
-    .mobile-palette-panel {
+    .mobile-palette-drawer {
         display: flex;
     }
 }
 
-.mobile-palette-header {
+/* 拖拽把手区域 */
+.mobile-drawer-handle {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border-bottom: 1px solid var(--border-light);
-    min-height: 40px;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.mobile-palette-current {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    min-width: 0;
+.mobile-drawer-handle:active {
+    background: var(--border-light);
 }
 
-.mobile-palette-preview {
-    width: 28px;
-    height: 28px;
+.drawer-handle-bar {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+}
+
+.drawer-current-color {
+    width: 26px;
+    height: 26px;
     border-radius: 6px;
     border: 2px solid var(--iris);
     flex-shrink: 0;
@@ -2442,212 +2454,443 @@ body {
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.mobile-palette-info {
+.drawer-current-text {
     font-size: 12px;
     font-weight: 700;
     color: var(--iris-dark);
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
 }
 
-.mobile-palette-tabs {
-    display: flex;
-    gap: 2px;
-    background: var(--border-light);
-    border-radius: var(--radius-sm);
-    padding: 2px;
+.drawer-handle-hint {
+    font-size: 10px;
+    color: var(--text-muted);
     flex-shrink: 0;
 }
 
-.mob-palette-tab {
-    padding: 4px 12px;
-    border: none;
-    border-radius: var(--radius-xs);
-    background: transparent;
-    font-family: var(--font-base);
-    font-size: 11px;
-    font-weight: 600;
+.drawer-arrow {
     color: var(--text-muted);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.mob-palette-tab.active {
-    background: var(--bg-card);
-    color: var(--iris-dark);
-    box-shadow: var(--shadow-sm);
-}
-
-.mobile-palette-toggle {
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-card);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    transition: var(--transition);
     flex-shrink: 0;
+    transition: transform 0.25s ease;
 }
 
-.mobile-palette-toggle:hover {
-    border-color: var(--iris);
-    color: var(--iris-dark);
-}
-
-.mobile-palette-panel.expanded .mobile-palette-toggle svg {
+.mobile-palette-drawer.expanded .drawer-arrow {
     transform: rotate(180deg);
 }
 
-.mobile-palette-body {
+/* 抽屉主体 */
+.mobile-drawer-body {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.mobile-palette-panel.expanded .mobile-palette-body {
-    max-height: 240px;
-}
-
-.mobile-palette-content {
-    display: none;
-    padding: 6px 10px 10px;
-}
-
-.mobile-palette-content.active {
-    display: block;
-}
-
-.mobile-palette-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
-    gap: 4px;
-    max-height: 210px;
+.mobile-palette-drawer.expanded .mobile-drawer-body {
+    max-height: 55vh;
     overflow-y: auto;
-    padding: 2px;
 }
 
-.mobile-palette-grid::-webkit-scrollbar {
+.mobile-drawer-body::-webkit-scrollbar {
     width: 3px;
 }
 
-.mobile-palette-grid::-webkit-scrollbar-thumb {
+.mobile-drawer-body::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 3px;
 }
 
-.mob-color-cell {
-    aspect-ratio: 1;
-    border-radius: 4px;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 32px;
+.mobile-drawer-body::-webkit-scrollbar-thumb:hover {
+    background: var(--iris-light);
 }
 
-.mob-color-cell:active {
-    transform: scale(0.9);
+/* 抽屉内的面板内容样式微调 */
+.mobile-drawer-body .panel-section {
+    padding: 10px 12px;
 }
 
-.mob-color-cell.active {
-    border-color: var(--iris-dark);
-    box-shadow: 0 0 0 2px var(--iris-light);
-    transform: scale(1.05);
-    z-index: 2;
+.mobile-drawer-body .palette-grid {
+    max-height: none;
 }
 
-.mob-color-cell .mob-color-id {
-    font-size: 7px;
-    font-weight: 800;
-    line-height: 1;
-    pointer-events: none;
+.mobile-drawer-body .palette-group-colors {
+    grid-template-columns: repeat(8, 1fr);
 }
 
-/* 移动端统计 */
-.mobile-usage-summary {
-    padding: 8px 10px;
-    background: linear-gradient(135deg, var(--pink-lighter), var(--iris-lighter));
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    font-size: 12px;
-    text-align: center;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    color: var(--text-secondary);
+.mobile-drawer-body .palette-color {
+    min-height: 28px;
 }
 
-.mobile-usage-summary strong {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--iris-dark);
+.mobile-drawer-body .palette-color .color-id {
+    font-size: 6px;
 }
 
-.mobile-usage-list {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    max-height: 170px;
-    overflow-y: auto;
+.mobile-drawer-body .usage-list {
+    max-height: 180px;
 }
 
-.mobile-usage-list::-webkit-scrollbar {
-    width: 3px;
+.mobile-drawer-body .custom-color-list {
+    max-height: 120px;
 }
 
-.mobile-usage-list::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
+/* 抽屉展开时给画布留出空间的视觉反馈 */
+.mobile-palette-drawer.expanded .mobile-drawer-handle {
+    border-bottom: 1px solid var(--border-light);
 }
 
-.mob-usage-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 8px;
-    background: var(--bg-card);
-    border-radius: var(--radius-xs);
-    font-size: 11px;
-    border: 1px solid var(--border-light);
-}
-
-.mob-usage-swatch {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid var(--border);
-    flex-shrink: 0;
-}
-
-.mob-usage-name {
-    flex: 1;
-    font-weight: 600;
-    color: var(--text);
-    font-size: 11px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mob-usage-count {
-    font-weight: 800;
-    color: var(--iris-dark);
-    font-size: 11px;
-    flex-shrink: 0;
-}
-
+/* 移动端隐藏右侧面板的"色板"按钮（因为已有底部抽屉） */
 @media (max-width: 960px) {
     #mobPanelRight {
         display: none;
+    }
+}
+
+/* ========================================
+   移动端色板与统计优化
+   ======================================== */
+@media (max-width: 960px) {
+    /* 当前画笔色 - 横向紧凑布局 */
+    .mobile-drawer-body .current-color {
+        padding: 8px 10px;
+        gap: 10px;
+    }
+
+    .mobile-drawer-body .color-preview {
+        width: 34px;
+        height: 34px;
+    }
+
+    .mobile-drawer-body .color-info {
+        flex: 1;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mobile-drawer-body .color-id-big {
+        font-size: 14px;
+    }
+
+    .mobile-drawer-body .color-name-text {
+        font-size: 11px;
+    }
+
+    /* 用料统计 - 横向双列 */
+    .mobile-drawer-body .usage-summary {
+        padding: 8px 10px;
+        margin-bottom: 6px;
+    }
+
+    .mobile-drawer-body .usage-summary strong {
+        font-size: 16px;
+    }
+
+    .mobile-drawer-body .usage-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3px;
+        max-height: 200px;
+    }
+
+    .mobile-drawer-body .usage-item {
+        padding: 4px 6px;
+        gap: 5px;
+        font-size: 10px;
+    }
+
+    .mobile-drawer-body .usage-swatch {
+        width: 12px;
+        height: 12px;
+    }
+
+    .mobile-drawer-body .usage-name {
+        font-size: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mobile-drawer-body .usage-count {
+        font-size: 10px;
+        flex-shrink: 0;
+    }
+
+    /* 自定义颜色表单 - 移动端优化 */
+    .mobile-drawer-body .custom-color-form {
+        flex-wrap: nowrap;
+        gap: 3px;
+    }
+
+    .mobile-drawer-body .custom-input {
+        font-size: 11px;
+        padding: 6px 6px;
+        min-width: 0;
+    }
+
+    .mobile-drawer-body .custom-color-picker {
+        width: 34px;
+        height: 34px;
+    }
+
+    .mobile-drawer-body .custom-group-form {
+        gap: 3px;
+    }
+
+    .mobile-drawer-body .custom-group-select {
+        gap: 4px;
+    }
+
+    /* 色板预设区域 */
+    .mobile-drawer-body .toggle-item {
+        padding: 4px 0;
+    }
+
+    /* section 标题紧凑化 */
+    .mobile-drawer-body .section-title {
+        font-size: 11px;
+        margin-bottom: 8px;
+    }
+
+    /* 色板分组在抽屉内的优化 */
+    .mobile-drawer-body .palette-group-header {
+        padding: 6px 4px 4px;
+    }
+
+    .mobile-drawer-body .palette-group-title {
+        font-size: 10px;
+    }
+
+    .mobile-drawer-body .palette-group-count {
+        font-size: 8px;
+    }
+}
+
+/* ========================================
+   移动端项目库页面优化
+   ======================================== */
+@media (max-width: 960px) {
+    /* 项目库页头优化 */
+    .project-page-header {
+        padding: 10px 12px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .project-page-title {
+        font-size: 14px;
+        gap: 6px;
+        order: -1;
+        width: 100%;
+    }
+
+    .project-page-title svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .project-back-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .project-back-btn span {
+        display: inline !important;
+    }
+
+    .project-page-actions {
+        margin-left: auto;
+    }
+
+    .project-page-actions .btn {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+
+    .project-page-actions .btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* 工具栏优化 */
+    .project-page-toolbar {
+        padding: 8px 12px;
+        gap: 6px;
+    }
+
+    .project-search-box {
+        min-width: 0;
+        max-width: none;
+        flex: 1 1 100%;
+        order: -1;
+    }
+
+    .project-filter-group {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .project-filter-group label {
+        font-size: 10px;
+    }
+
+    .project-filter-select {
+        min-width: 70px !important;
+        font-size: 10px !important;
+        padding: 4px 6px !important;
+    }
+
+    /* 卡片网格 */
+    .project-page-body {
+        padding: 10px 12px;
+    }
+
+    .project-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+    }
+
+    .project-card-body .project-card-name {
+        font-size: 12px;
+    }
+
+    .project-card-body .project-card-meta {
+        font-size: 9px;
+        gap: 4px;
+    }
+
+    .project-card-footer {
+        padding: 4px 8px 8px;
+    }
+
+    .project-card-footer .project-card-category {
+        font-size: 8px;
+        padding: 1px 6px;
+    }
+
+    .project-card-btn {
+        width: 26px;
+        height: 26px;
+    }
+
+    .project-card-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* 空状态 */
+    .project-grid .project-empty {
+        padding: 40px 16px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .project-page-header {
+        padding: 8px 10px;
+    }
+
+    .project-page-title {
+        font-size: 13px;
+    }
+
+    .project-page-count {
+        font-size: 10px;
+        padding: 1px 8px;
+    }
+
+    .project-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .project-card-preview-wrap img {
+        padding: 8px;
+    }
+
+    .project-card-body {
+        padding: 6px 8px;
+    }
+
+    .project-card-footer {
+        padding: 3px 8px 6px;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+}
+
+/* ========================================
+   移动端底部工具栏优化
+   ======================================== */
+@media (max-width: 480px) {
+    .mobile-toolbar {
+        padding: 4px 6px;
+        gap: 3px;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .mobile-toolbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .mobile-toolbar::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 20px;
+        background: linear-gradient(to right, transparent, var(--bg-panel));
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .mobile-toolbar {
+        position: relative;
+        padding-right: 20px;
+    }
+}
+
+/* ========================================
+   移动端抽屉把手交互优化
+   ======================================== */
+@media (max-width: 960px) {
+    .mobile-drawer-handle {
+        padding: 10px 12px;
+        transition: background 0.15s ease;
+    }
+
+    .drawer-handle-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .drawer-current-color {
+        width: 24px;
+        height: 24px;
+        border-radius: 5px;
+    }
+
+    .drawer-current-text {
+        font-size: 11px;
+    }
+
+    .drawer-handle-hint {
+        font-size: 9px;
+        padding: 2px 8px;
+        background: var(--iris-lighter);
+        border-radius: 8px;
+        color: var(--iris-dark);
+        font-weight: 600;
+    }
+
+    .mobile-palette-drawer.expanded .drawer-handle-hint {
+        background: var(--pink-lighter);
+        color: var(--pink-dark);
     }
 }
