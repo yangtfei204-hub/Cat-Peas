@@ -116,7 +116,7 @@ body {
 }
 
 .mobile-menu-btn {
-    display: none;
+    display: none !important;
     background: none;
     border: none;
     cursor: pointer;
@@ -1049,7 +1049,6 @@ body {
    Mobile Responsive
    ======================================== */
 @media (max-width: 960px) {
-    .mobile-menu-btn { display: flex; }
     .mobile-only { display: flex; }
 
     .panel {
