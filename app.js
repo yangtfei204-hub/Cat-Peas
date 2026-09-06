@@ -824,7 +824,7 @@
         tCtx.fillStyle = '#f6f1ee';
         tCtx.fillRect(0, 0, tw, rs);
 
-        tCtx.textAlign = 'center';
+        tCtx.textAlign = 'left';
         tCtx.textBaseline = 'bottom';
 
         var showDetail = S.zoom >= 1.5;
@@ -838,14 +838,14 @@
             tCtx.lineTo(c * cs, rs);
             tCtx.stroke();
 
-            if (major && c < S.gridW) {
+            if (major) {
                 tCtx.fillStyle = '#8d7baa';
                 tCtx.font = 'bold 9px -apple-system, sans-serif';
-                tCtx.fillText(String(c), c * cs + cs / 2, rs - 4);
-            } else if (minor && c < S.gridW) {
+                tCtx.fillText(String(c), c * cs + 2, rs - 4);
+            } else if (minor) {
                 tCtx.fillStyle = '#b8aec4';
                 tCtx.font = '7px -apple-system, sans-serif';
-                tCtx.fillText(String(c), c * cs + cs / 2, rs - 4);
+                tCtx.fillText(String(c), c * cs + 2, rs - 4);
             }
         }
 
@@ -858,7 +858,7 @@
         lCtx.fillRect(0, 0, rs, lh);
 
         lCtx.textAlign = 'right';
-        lCtx.textBaseline = 'middle';
+        lCtx.textBaseline = 'alphabetic';
 
         for (let r = 0; r <= S.gridH; r++) {
             var major = r % 5 === 0;
@@ -870,14 +870,14 @@
             lCtx.lineTo(rs, r * cs);
             lCtx.stroke();
 
-            if (major && r < S.gridH) {
+            if (major) {
                 lCtx.fillStyle = '#8d7baa';
                 lCtx.font = 'bold 9px -apple-system, sans-serif';
-                lCtx.fillText(String(r), rs - 4, r * cs + cs / 2);
-            } else if (minor && r < S.gridH) {
+                lCtx.fillText(String(r), rs - 4, r * cs - 2);
+            } else if (minor) {
                 lCtx.fillStyle = '#b8aec4';
                 lCtx.font = '7px -apple-system, sans-serif';
-                lCtx.fillText(String(r), rs - 4, r * cs + cs / 2);
+                lCtx.fillText(String(r), rs - 4, r * cs - 2);
             }
         }
     }
@@ -2753,7 +2753,7 @@
             ec.fillRect(0, 0, rs, rs + S.gridH * cs);
             ec.fillRect(0, 0, rs + S.gridW * cs, rs);
 
-            ec.textAlign = 'center';
+            ec.textAlign = 'left';
             ec.textBaseline = 'bottom';
             for (let c = 0; c <= S.gridW; c++) {
                 var major = c % 5 === 0;
@@ -2763,19 +2763,19 @@
                 ec.moveTo(rs + c * cs, major ? rs * 0.35 : rs * 0.65);
                 ec.lineTo(rs + c * cs, rs);
                 ec.stroke();
-                if (major && c < S.gridW) {
+                if (major) {
                     ec.fillStyle = '#8d7baa';
                     ec.font = 'bold 9px -apple-system, sans-serif';
-                    ec.fillText(String(c), rs + c * cs + cs / 2, rs - 4);
-                } else if (c < S.gridW) {
+                    ec.fillText(String(c), rs + c * cs + 2, rs - 4);
+                } else {
                     ec.fillStyle = '#b8aec4';
                     ec.font = '7px -apple-system, sans-serif';
-                    ec.fillText(String(c), rs + c * cs + cs / 2, rs - 4);
+                    ec.fillText(String(c), rs + c * cs + 2, rs - 4);
                 }
             }
 
             ec.textAlign = 'right';
-            ec.textBaseline = 'middle';
+            ec.textBaseline = 'alphabetic';
             for (let r = 0; r <= S.gridH; r++) {
                 var major = r % 5 === 0;
                 ec.strokeStyle = major ? '#8d7baa' : '#cdc4d6';
@@ -2784,14 +2784,14 @@
                 ec.moveTo(major ? rs * 0.35 : rs * 0.65, rs + r * cs);
                 ec.lineTo(rs, rs + r * cs);
                 ec.stroke();
-                if (major && r < S.gridH) {
+                if (major) {
                     ec.fillStyle = '#8d7baa';
                     ec.font = 'bold 9px -apple-system, sans-serif';
-                    ec.fillText(String(r), rs - 4, rs + r * cs + cs / 2);
-                } else if (r < S.gridH) {
+                    ec.fillText(String(r), rs - 4, rs + r * cs - 2);
+                } else {
                     ec.fillStyle = '#b8aec4';
                     ec.font = '7px -apple-system, sans-serif';
-                    ec.fillText(String(r), rs - 4, rs + r * cs + cs / 2);
+                    ec.fillText(String(r), rs - 4, rs + r * cs - 2);
                 }
             }
         }
@@ -3113,7 +3113,7 @@
                     ec.fillRect(0, 0, rs, rs + bh * cs);
                     ec.fillRect(0, 0, rs + bw * cs, rs);
 
-                    ec.textAlign = 'center';
+                    ec.textAlign = 'left';
                     ec.textBaseline = 'bottom';
                     for (var rc = 0; rc <= bw; rc++) {
                         var rm = (startC + rc) % 5 === 0;
@@ -3123,18 +3123,18 @@
                         ec.moveTo(rs + rc * cs, rm ? rs * 0.35 : rs * 0.65);
                         ec.lineTo(rs + rc * cs, rs);
                         ec.stroke();
-                        if (rm && rc < bw) {
+                        if (rm) {
                             ec.fillStyle = '#8d7baa';
                             ec.font = 'bold 9px -apple-system, sans-serif';
-                            ec.fillText(String(startC + rc), rs + rc * cs + cs / 2, rs - 4);
-                        } else if (rc < bw) {
+                            ec.fillText(String(startC + rc), rs + rc * cs + 2, rs - 4);
+                        } else {
                             ec.fillStyle = '#b8aec4';
                             ec.font = '7px -apple-system, sans-serif';
-                            ec.fillText(String(startC + rc), rs + rc * cs + cs / 2, rs - 4);
+                            ec.fillText(String(startC + rc), rs + rc * cs + 2, rs - 4);
                         }
                     }
                     ec.textAlign = 'right';
-                    ec.textBaseline = 'middle';
+                    ec.textBaseline = 'alphabetic';
                     for (var rr = 0; rr <= bh; rr++) {
                         var rm2 = (startR + rr) % 5 === 0;
                         ec.strokeStyle = rm2 ? '#8d7baa' : '#cdc4d6';
@@ -3143,14 +3143,14 @@
                         ec.moveTo(rm2 ? rs * 0.35 : rs * 0.65, rs + rr * cs);
                         ec.lineTo(rs, rs + rr * cs);
                         ec.stroke();
-                        if (rm2 && rr < bh) {
+                        if (rm2) {
                             ec.fillStyle = '#8d7baa';
                             ec.font = 'bold 9px -apple-system, sans-serif';
-                            ec.fillText(String(startR + rr), rs - 4, rs + rr * cs + cs / 2);
-                        } else if (rr < bh) {
+                            ec.fillText(String(startR + rr), rs - 4, rs + rr * cs - 2);
+                        } else {
                             ec.fillStyle = '#b8aec4';
                             ec.font = '7px -apple-system, sans-serif';
-                            ec.fillText(String(startR + rr), rs - 4, rs + rr * cs + cs / 2);
+                            ec.fillText(String(startR + rr), rs - 4, rs + rr * cs - 2);
                         }
                     }
                 }
