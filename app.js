@@ -179,6 +179,8 @@
     // ===========================
     var _drawRAFPending = false;
     var _pinchActive = false;
+    var _pinchMoved = false;
+    var _pinchJustEnded = false;
     const S = {
         gridW: 52,
         gridH: 52,
@@ -1556,7 +1558,13 @@
         document.querySelectorAll('.mob-tool[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
         $('fillHint').style.display = t === 'fill' ? 'block' : 'none';
         canvasWrapper.classList.toggle('hand-mode', t === 'hand');
-        mainCanvas.style.pointerEvents = t === 'hand' ? 'none' : 'auto';
+        // 移动端不禁用 pointerEvents，否则触摸事件无法触发
+        var isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isMobile) {
+            mainCanvas.style.pointerEvents = 'auto';
+        } else {
+            mainCanvas.style.pointerEvents = t === 'hand' ? 'none' : 'auto';
+        }
     }
 
     // ===========================
@@ -1621,6 +1629,33 @@
             if (S.isPanning) { S.isPanning = false; canvasWrapper.style.cursor = ''; }
         });
 
+        // 移动端单指拖拽画布（在画布空白区域或 canvasScroller 上触发）
+        canvasWrapper.addEventListener('touchstart', function (evt) {
+            if (evt.touches.length === 1 && S.tool === 'hand' && !_pinchActive) {
+                var touch = evt.target;
+                // 检查是否触摸到了 canvasWrapper 或 canvasScroller（非 mainCanvas 已由自己的事件处理）
+                if (evt.target === canvasWrapper || evt.target === canvasScroller) {
+                    evt.preventDefault();
+                    S.isPanning = true;
+                    S.panStart = { x: evt.touches[0].clientX - S.panX, y: evt.touches[0].clientY - S.panY };
+                }
+            }
+        }, { passive: false });
+        canvasWrapper.addEventListener('touchmove', function (evt) {
+            if (S.isPanning && S.tool === 'hand' && evt.touches.length === 1 && !_pinchActive) {
+                evt.preventDefault();
+                S.panX = evt.touches[0].clientX - S.panStart.x;
+                S.panY = evt.touches[0].clientY - S.panStart.y;
+                canvasScroller.style.transform = 'translate(' + S.panX + 'px,' + S.panY + 'px) scale(' + S.zoom + ')';
+                $('zoomValue').textContent = Math.round(S.zoom * 100) + '%';
+            }
+        }, { passive: false });
+        canvasWrapper.addEventListener('touchend', function (evt) {
+            if (S.isPanning && S.tool === 'hand' && evt.touches.length === 0) {
+                S.isPanning = false;
+            }
+        });
+
         // Two-finger pan/zoom for mobile (optimized)
         let pinchStartDist = 0, pinchStartZoom = 1;
         let panTouchStart = null;
@@ -1632,8 +1667,10 @@
                 // 取消正在进行的绘图
                 if (S.isDrawing) {
                     S.isDrawing = false;
+                    S.lastDrawCell = null;
                 }
                 _pinchActive = true;
+                _pinchMoved = false;
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 pinchStartDist = Math.sqrt(dx * dx + dy * dy);
@@ -1647,29 +1684,38 @@
             if (e.touches.length === 2 && _pinchActive) {
                 e.preventDefault();
                 e.stopPropagation();
-                if (_pinchRAFPending) return;
-                _pinchRAFPending = true;
+                _pinchMoved = true;
                 var t0x = e.touches[0].clientX, t0y = e.touches[0].clientY;
                 var t1x = e.touches[1].clientX, t1y = e.touches[1].clientY;
-                requestAnimationFrame(function () {
-                    _pinchRAFPending = false;
-                    var dx = t0x - t1x;
-                    var dy = t0y - t1y;
-                    var dist = Math.sqrt(dx * dx + dy * dy);
-                    S.zoom = Math.min(Math.max(pinchStartZoom * (dist / pinchStartDist), 0.05), 6);
-                    if (panTouchStart) {
-                        var mx = (t0x + t1x) / 2;
-                        var my = (t0y + t1y) / 2;
-                        S.panX = mx - panTouchStart.x;
-                        S.panY = my - panTouchStart.y;
-                    }
-                    applyTransform();
-                });
+                var dx = t0x - t1x;
+                var dy = t0y - t1y;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                S.zoom = Math.min(Math.max(pinchStartZoom * (dist / pinchStartDist), 0.05), 6);
+                if (panTouchStart) {
+                    var mx = (t0x + t1x) / 2;
+                    var my = (t0y + t1y) / 2;
+                    S.panX = mx - panTouchStart.x;
+                    S.panY = my - panTouchStart.y;
+                }
+                canvasScroller.style.transform = 'translate(' + S.panX + 'px,' + S.panY + 'px) scale(' + S.zoom + ')';
+                $('zoomValue').textContent = Math.round(S.zoom * 100) + '%';
             }
         }, { passive: false });
         canvasWrapper.addEventListener('touchend', e => {
-            if (e.touches.length < 2) {
+            if (_pinchActive && e.touches.length < 2) {
                 _pinchActive = false;
+                // 双指结束后更新分辨率（延迟执行避免卡顿）
+                if (_pinchMoved) {
+                    _pinchMoved = false;
+                    setTimeout(function () {
+                        updateCanvasResolution();
+                    }, 200);
+                }
+                // 防止双指结束后误触发单指绘图
+                _pinchJustEnded = true;
+                setTimeout(function () {
+                    _pinchJustEnded = false;
+                }, 300);
             }
         }, { passive: false });
 
@@ -2174,6 +2220,7 @@
     function onTouchStart(e) {
         if (e.touches.length !== 1) return;
         if (_pinchActive) return;
+        if (_pinchJustEnded) return;
         if (S.assistMode) { showAssistDrawBlock(); return; }
         e.preventDefault();
         if (S.tool === 'hand') {
