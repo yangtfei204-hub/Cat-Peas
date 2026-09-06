@@ -250,9 +250,10 @@
         try { localStorage.setItem('catpeas_theme', name); } catch (e) { }
         // 更新暗色模式图标
         updateThemeIcon(name);
+        setTimeout(function() { render(); }, 50);
     }
 
-    function applyCustomThemeColors(primary, secondary, bg) {
+    function applyCustomThemeColors(primary, secondary, bg, boardCell1, boardCell2, rulerBg, rulerText) {
         document.documentElement.removeAttribute('data-theme');
         const pl = hexToRgb(primary);
         const sl = hexToRgb(secondary);
@@ -277,11 +278,29 @@
         r.style.setProperty('--border', isDark ? lightenHex(bg, 30) : darkenHex(bg, 20));
         r.style.setProperty('--border-light', isDark ? lightenHex(bg, 18) : darkenHex(bg, 10));
 
+        // 画板棋盘格配色
+        if (boardCell1) r.style.setProperty('--board-cell1', boardCell1);
+        if (boardCell2) r.style.setProperty('--board-cell2', boardCell2);
+        // 标尺配色
+        if (rulerBg) r.style.setProperty('--ruler-bg', rulerBg);
+        if (rulerText) {
+            r.style.setProperty('--ruler-text', rulerText);
+            // 自动生成次要文字色和刻度线色
+            var rt = hexToRgb(rulerText);
+            var bl2 = hexToRgb(bg);
+            var isDark2 = (bl2.r + bl2.g + bl2.b) / 3 < 128;
+            r.style.setProperty('--ruler-text-minor', isDark2 ? darkenHex(rulerText, 30) : lightenHex(rulerText, 40));
+            r.style.setProperty('--ruler-line', isDark2 ? darkenHex(rulerText, 50) : lightenHex(rulerText, 70));
+        }
+
         try {
             localStorage.setItem('catpeas_theme', 'custom');
-            localStorage.setItem('catpeas_custom_theme', JSON.stringify({ primary, secondary, bg }));
+            localStorage.setItem('catpeas_custom_theme', JSON.stringify({ primary, secondary, bg, boardCell1: boardCell1 || '', boardCell2: boardCell2 || '', rulerBg: rulerBg || '', rulerText: rulerText || '' }));
         } catch (e) { }
+
+        setTimeout(function() { render(); }, 50);
     }
+
 
     function loadSavedTheme() {
         try {
@@ -289,7 +308,7 @@
             if (theme && theme !== 'default') {
                 if (theme === 'custom') {
                     const data = JSON.parse(localStorage.getItem('catpeas_custom_theme') || '{}');
-                    if (data.primary) applyCustomThemeColors(data.primary, data.secondary, data.bg);
+                    if (data.primary) applyCustomThemeColors(data.primary, data.secondary, data.bg, data.boardCell1, data.boardCell2, data.rulerBg, data.rulerText);
                 } else {
                     applyTheme(theme);
                 }
@@ -519,10 +538,15 @@
         const h = S.gridH * cs;
         bgCtx.clearRect(0, 0, w, h);
 
+        // 读取主题棋盘格颜色
+        var rootStyle = getComputedStyle(document.documentElement);
+        var cell1 = rootStyle.getPropertyValue('--board-cell1').trim() || '#fdfdfd';
+        var cell2 = rootStyle.getPropertyValue('--board-cell2').trim() || '#f5f2f0';
+
         // Checkerboard
         for (let r = 0; r < S.gridH; r++) {
             for (let c = 0; c < S.gridW; c++) {
-                bgCtx.fillStyle = (r + c) % 2 === 0 ? '#fdfdfd' : '#f5f2f0';
+                bgCtx.fillStyle = (r + c) % 2 === 0 ? cell1 : cell2;
                 bgCtx.fillRect(c * cs, r * cs, cs, cs);
             }
         }
@@ -814,6 +838,13 @@
 
         if (!show) return;
 
+        // 读取主题标尺颜色
+        var rootStyle = getComputedStyle(document.documentElement);
+        var rulerBg = rootStyle.getPropertyValue('--ruler-bg').trim() || '#f6f1ee';
+        var rulerText = rootStyle.getPropertyValue('--ruler-text').trim() || '#8d7baa';
+        var rulerTextMinor = rootStyle.getPropertyValue('--ruler-text-minor').trim() || '#b8aec4';
+        var rulerLine = rootStyle.getPropertyValue('--ruler-line').trim() || '#cdc4d6';
+
         const cs = S.cellSize;
         const rs = 30;
 
@@ -822,7 +853,7 @@
         tCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
         const tw = S.gridW * cs;
         tCtx.clearRect(0, 0, tw, rs);
-        tCtx.fillStyle = '#f6f1ee';
+        tCtx.fillStyle = rulerBg;
         tCtx.fillRect(0, 0, tw, rs);
 
         tCtx.textAlign = 'right';
@@ -832,7 +863,7 @@
         for (let c = 0; c <= S.gridW; c++) {
             var major = c % 5 === 0;
             var minor = !major && showDetail;
-            tCtx.strokeStyle = major ? '#8d7baa' : '#cdc4d6';
+            tCtx.strokeStyle = major ? rulerText : rulerLine;
             tCtx.lineWidth = major ? 1.5 : 0.6;
             tCtx.beginPath();
             tCtx.moveTo(c * cs, major ? rs * 0.35 : rs * 0.65);
@@ -840,11 +871,11 @@
             tCtx.stroke();
 
             if (major) {
-                tCtx.fillStyle = '#8d7baa';
+                tCtx.fillStyle = rulerText;
                 tCtx.font = 'bold 9px -apple-system, sans-serif';
                 tCtx.fillText(String(c), c * cs - 2, rs - 4);
             } else if (minor) {
-                tCtx.fillStyle = '#b8aec4';
+                tCtx.fillStyle = rulerTextMinor;
                 tCtx.font = '7px -apple-system, sans-serif';
                 tCtx.fillText(String(c), c * cs - 2, rs - 4);
             }
@@ -855,7 +886,7 @@
         lCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
         const lh = S.gridH * cs;
         lCtx.clearRect(0, 0, rs, lh);
-        lCtx.fillStyle = '#f6f1ee';
+        lCtx.fillStyle = rulerBg;
         lCtx.fillRect(0, 0, rs, lh);
 
         lCtx.textAlign = 'right';
@@ -864,7 +895,7 @@
         for (let r = 0; r <= S.gridH; r++) {
             var major = r % 5 === 0;
             var minor = !major && showDetail;
-            lCtx.strokeStyle = major ? '#8d7baa' : '#cdc4d6';
+            lCtx.strokeStyle = major ? rulerText : rulerLine;
             lCtx.lineWidth = major ? 1.5 : 0.6;
             lCtx.beginPath();
             lCtx.moveTo(major ? rs * 0.35 : rs * 0.65, r * cs);
@@ -872,16 +903,17 @@
             lCtx.stroke();
 
             if (major) {
-                lCtx.fillStyle = '#8d7baa';
+                lCtx.fillStyle = rulerText;
                 lCtx.font = 'bold 9px -apple-system, sans-serif';
                 lCtx.fillText(String(r), rs - 4, r * cs - 2);
             } else if (minor) {
-                lCtx.fillStyle = '#b8aec4';
+                lCtx.fillStyle = rulerTextMinor;
                 lCtx.font = '7px -apple-system, sans-serif';
                 lCtx.fillText(String(r), rs - 4, r * cs - 2);
             }
         }
     }
+
 
     // ===========================
     //  Palette
@@ -2053,7 +2085,11 @@
             const primary = $('themeColorPrimary').value;
             const secondary = $('themeColorSecondary').value;
             const bg = $('themeColorBg').value;
-            applyCustomThemeColors(primary, secondary, bg);
+            const boardCell1 = $('themeColorBoardCell1').value;
+            const boardCell2 = $('themeColorBoardCell2').value;
+            const rulerBg = $('themeColorRulerBg').value;
+            const rulerText = $('themeColorRulerText').value;
+            applyCustomThemeColors(primary, secondary, bg, boardCell1, boardCell2, rulerBg, rulerText);
         });
 
         $('resetTheme').addEventListener('click', function () {
@@ -2852,24 +2888,98 @@
         ec.fill();
 
         ec.globalAlpha = 1;
+
+        // 猫头轮廓
+        var catX = logoX + 16;
+        var catY = logoY + logoAreaH / 2;
+        var catS = 0.52;
+
+        ec.save();
+        ec.translate(catX, catY);
+        ec.scale(catS, catS);
+
+        // 头部形状
         ec.fillStyle = '#d4979c';
         ec.beginPath();
-        ec.moveTo(logoX + 4, logoAreaH + logoY - 8);
-        ec.quadraticCurveTo(logoX + 2, logoY + 6, logoX + 6, logoY + 2);
-        ec.lineTo(logoX + 10, logoY - 3);
-        ec.quadraticCurveTo(logoX + 11, logoY - 4, logoX + 12, logoY - 2);
-        ec.lineTo(logoX + 13, logoY + 2);
-        ec.lineTo(logoX + 19, logoY + 2);
-        ec.lineTo(logoX + 20, logoY - 2);
-        ec.quadraticCurveTo(logoX + 21, logoY - 4, logoX + 22, logoY - 3);
-        ec.lineTo(logoX + 26, logoY + 2);
-        ec.quadraticCurveTo(logoX + 30, logoY + 6, logoX + 28, logoAreaH + logoY - 8);
+        ec.moveTo(-12, 12);
+        ec.quadraticCurveTo(-14, -6, -10, -12);
+        ec.lineTo(-6, -20);
+        ec.quadraticCurveTo(-5, -22, -4, -19);
+        ec.lineTo(-3, -12);
+        ec.lineTo(3, -12);
+        ec.lineTo(4, -19);
+        ec.quadraticCurveTo(5, -22, 6, -20);
+        ec.lineTo(10, -12);
+        ec.quadraticCurveTo(14, -6, 12, 12);
         ec.closePath();
         ec.fill();
         ec.strokeStyle = '#b07a80';
-        ec.lineWidth = 0.5;
+        ec.lineWidth = 0.8;
         ec.stroke();
 
+        // 左眼
+        ec.fillStyle = '#4a4148';
+        ec.beginPath();
+        ec.arc(-5, -2, 2.2, 0, Math.PI * 2);
+        ec.fill();
+
+        // 左眼高光
+        ec.fillStyle = '#ffffff';
+        ec.beginPath();
+        ec.arc(-5.7, -3, 0.7, 0, Math.PI * 2);
+        ec.fill();
+
+        // 右眼
+        ec.fillStyle = '#4a4148';
+        ec.beginPath();
+        ec.arc(5, -2, 2.2, 0, Math.PI * 2);
+        ec.fill();
+
+        // 右眼高光
+        ec.fillStyle = '#ffffff';
+        ec.beginPath();
+        ec.arc(4.3, -3, 0.7, 0, Math.PI * 2);
+        ec.fill();
+
+        // 鼻子
+        ec.fillStyle = '#b07a80';
+        ec.beginPath();
+        ec.ellipse(0, 2, 1.3, 0.9, 0, 0, Math.PI * 2);
+        ec.fill();
+
+        // 嘴巴
+        ec.strokeStyle = '#b07a80';
+        ec.lineWidth = 0.7;
+        ec.beginPath();
+        ec.moveTo(-1.5, 3.5);
+        ec.quadraticCurveTo(0, 5.5, 1.5, 3.5);
+        ec.stroke();
+
+        // 左胡须
+        ec.strokeStyle = '#c9a0a4';
+        ec.lineWidth = 0.5;
+        ec.beginPath();
+        ec.moveTo(-8, 0);
+        ec.lineTo(-15, -1.5);
+        ec.stroke();
+        ec.beginPath();
+        ec.moveTo(-8, 2);
+        ec.lineTo(-15, 3);
+        ec.stroke();
+
+        // 右胡须
+        ec.beginPath();
+        ec.moveTo(8, 0);
+        ec.lineTo(15, -1.5);
+        ec.stroke();
+        ec.beginPath();
+        ec.moveTo(8, 2);
+        ec.lineTo(15, 3);
+        ec.stroke();
+
+        ec.restore();
+
+        // 文字
         ec.fillStyle = '#8d7baa';
         ec.font = 'bold 13px -apple-system, sans-serif';
         ec.textAlign = 'left';
@@ -2883,7 +2993,7 @@
 
         // === 25% 透明水印 ===
         ec.save();
-        ec.globalAlpha = 0.04;
+        ec.globalAlpha = 0.06;
         ec.fillStyle = '#8d7baa';
         ec.font = 'bold 28px -apple-system, sans-serif';
         ec.textAlign = 'center';

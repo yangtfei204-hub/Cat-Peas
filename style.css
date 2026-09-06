@@ -33,6 +33,12 @@
     --radius: 10px;
     --radius-sm: 6px;
     --radius-xs: 4px;
+    --board-cell1: #fdfdfd;
+    --board-cell2: #f5f2f0;
+    --ruler-bg: #f6f1ee;
+    --ruler-text: #8d7baa;
+    --ruler-text-minor: #b8aec4;
+    --ruler-line: #cdc4d6;
     --cell: 16px;
     --ruler-size: 30px;
     --transition: 0.2s ease;
@@ -608,7 +614,7 @@ body {
 .ruler-corner {
     grid-column: 1;
     grid-row: 1;
-    background: var(--bg-panel);
+    background: var(--ruler-bg, var(--bg-panel));
     border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
 }
@@ -1413,6 +1419,12 @@ body {
     --accent-light: #b5d4a0;
     --danger: #bf616a;
     --danger-light: #4a3538;
+    --board-cell1: #3b4252;
+    --board-cell2: #353040;
+    --ruler-bg: #3b4252;
+    --ruler-text: #a0d4e4;
+    --ruler-text-minor: #6b8fa0;
+    --ruler-line: #4c566a;
     --success: #a3be8c;
 }
 
@@ -1437,6 +1449,12 @@ body {
     --accent-light: #b0e2f0;
     --danger: #e57373;
     --danger-light: #fde0e0;
+    --board-cell1: #f0f6fb;
+    --board-cell2: #e2eef6;
+    --ruler-bg: #eaf2f8;
+    --ruler-text: #4a9e8f;
+    --ruler-text-minor: #90b8ae;
+    --ruler-line: #b8d4d0;
 }
 
 [data-theme="forest"] {
@@ -1460,6 +1478,12 @@ body {
     --accent-light: #c8e0b8;
     --danger: #c47a6e;
     --danger-light: #f5dfd8;
+    --board-cell1: #f4f8f0;
+    --board-cell2: #e8f0e0;
+    --ruler-bg: #eef2e8;
+    --ruler-text: #5c8a50;
+    --ruler-text-minor: #98a88c;
+    --ruler-line: #c0d0b0;
 }
 
 [data-theme="sunset"] {
@@ -1483,6 +1507,12 @@ body {
     --accent-light: #f0d0a8;
     --danger: #d07060;
     --danger-light: #f5ddd8;
+    --board-cell1: #fdf6f0;
+    --board-cell2: #f5ebe2;
+    --ruler-bg: #faf0e8;
+    --ruler-text: #b85880;
+    --ruler-text-minor: #c89898;
+    --ruler-line: #e0c8c0;
 }
 
 [data-theme="sakura"] {
@@ -1506,6 +1536,12 @@ body {
     --accent-light: #f0d0d8;
     --danger: #d08080;
     --danger-light: #f8e0e0;
+    --board-cell1: #fef4f2;
+    --board-cell2: #f8e8e6;
+    --ruler-bg: #fef2f0;
+    --ruler-text: #c08888;
+    --ruler-text-minor: #d4a8a8;
+    --ruler-line: #f0d0d0;
 }
 
 /* ========================================
