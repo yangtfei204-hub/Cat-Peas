@@ -448,6 +448,7 @@
         renderRulers();
         updateUsage();
         updateLegend();
+        updateMobilePaletteSelection();
     }
 
     function renderBg() {
@@ -792,111 +793,85 @@
         buildMobilePalette();
     }
 
-
     function buildMobilePalette() {
-        var grid = $('mobPaletteGrid');
+        var grid = $('mobilePaletteGrid');
         if (!grid) return;
         grid.innerHTML = '';
 
-        var groupNames = {
-            'A': 'A·黄橙', 'B': 'B·绿色', 'C': 'C·蓝青',
-            'D': 'D·蓝紫', 'E': 'E·粉玫', 'F': 'F·红色',
-            'G': 'G·棕肤', 'H': 'H·黑白灰', 'M': 'M·大地'
-        };
+        PALETTE.forEach(function (color, idx) {
+            var div = document.createElement('div');
+            div.className = 'mob-color-cell' + (idx === S.currentColorIdx ? ' active' : '');
+            div.style.background = color.hex;
+            div.dataset.idx = idx;
+            div.title = color.id + ' ' + color.name;
 
-        if (SHOW_DEFAULT_PALETTE) {
-            var groups = {};
-            MARD_PALETTE.forEach(function (c, i) {
-                var prefix = c.id.charAt(0);
-                if (!groups[prefix]) groups[prefix] = [];
-                groups[prefix].push({ color: c, index: i });
+            var lum = luminance(color.hex);
+            var span = document.createElement('span');
+            span.className = 'mob-color-id';
+            span.textContent = color.id;
+            span.style.color = lum > 0.55 ? 'rgba(50,40,45,0.6)' : 'rgba(255,255,255,0.8)';
+            div.appendChild(span);
+
+            div.addEventListener('click', function () {
+                selectColor(idx);
             });
+            grid.appendChild(div);
+        });
+    }
 
-            Object.keys(groups).sort().forEach(function (prefix) {
-                var header = document.createElement('div');
-                header.className = 'mob-palette-group-header collapsed';
-                header.innerHTML = '<span style="flex:1;">' + (groupNames[prefix] || prefix) + ' (' + groups[prefix].length + ')</span>' +
-                    '<svg class="mob-group-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-                header.addEventListener('click', function () {
-                    var wrapper = this.nextElementSibling;
-                    var isCollapsed = wrapper.classList.toggle('collapsed');
-                    this.classList.toggle('collapsed', isCollapsed);
-                });
-                grid.appendChild(header);
+    function updateMobileUsage() {
+        var totalEl = $('mobTotalBeads');
+        var listEl = $('mobUsageList');
+        if (!totalEl || !listEl) return;
 
-                var wrapper = document.createElement('div');
-                wrapper.className = 'mob-palette-group-colors collapsed';
-
-                groups[prefix].forEach(function (item) {
-                    var div = document.createElement('div');
-                    div.className = 'mob-palette-color' + (item.index === S.currentColorIdx ? ' active' : '');
-                    div.style.background = item.color.hex;
-                    div.dataset.idx = item.index;
-                    div.title = item.color.id + ' ' + item.color.name;
-
-                    var lum = luminance(item.color.hex);
-                    var span = document.createElement('span');
-                    span.className = 'mob-color-label';
-                    span.textContent = item.color.id;
-                    span.style.color = lum > 0.55 ? 'rgba(50,40,45,0.5)' : 'rgba(255,255,255,0.7)';
-                    div.appendChild(span);
-
-                    div.addEventListener('click', function () { selectColor(item.index); });
-                    wrapper.appendChild(div);
-                });
-
-                grid.appendChild(wrapper);
-            });
+        var counts = {};
+        var total = 0;
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                var ci = S.grid[r][c];
+                if (ci !== null) {
+                    counts[ci] = (counts[ci] || 0) + 1;
+                    total++;
+                }
+            }
         }
+        totalEl.textContent = total;
 
-        // 自定义颜色
-        if (CUSTOM_COLORS.length > 0) {
-            var baseIdx = SHOW_DEFAULT_PALETTE ? MARD_PALETTE.length : 0;
-
-            CUSTOM_GROUPS.forEach(function (group) {
-                var groupColors = [];
-                CUSTOM_COLORS.forEach(function (c, ci) {
-                    if ((c.group || 'default') === group.id) {
-                        groupColors.push({ color: c, customIdx: ci });
-                    }
-                });
-                if (groupColors.length === 0) return;
-
-                var header = document.createElement('div');
-                header.className = 'mob-palette-group-header collapsed';
-                header.innerHTML = '<span style="flex:1;">' + group.name + ' (' + groupColors.length + ')</span>' +
-                    '<svg class="mob-group-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-                header.addEventListener('click', function () {
-                    var wrapper = this.nextElementSibling;
-                    var isCollapsed = wrapper.classList.toggle('collapsed');
-                    this.classList.toggle('collapsed', isCollapsed);
-                });
-                grid.appendChild(header);
-
-                var wrapper = document.createElement('div');
-                wrapper.className = 'mob-palette-group-colors collapsed';
-
-                groupColors.forEach(function (item) {
-                    var idx = baseIdx + item.customIdx;
-                    var div = document.createElement('div');
-                    div.className = 'mob-palette-color custom' + (idx === S.currentColorIdx ? ' active' : '');
-                    div.style.background = item.color.hex;
-                    div.dataset.idx = idx;
-                    div.title = item.color.id + ' ' + item.color.name;
-
-                    var lum = luminance(item.color.hex);
-                    var span = document.createElement('span');
-                    span.className = 'mob-color-label';
-                    span.textContent = item.color.id;
-                    span.style.color = lum > 0.55 ? 'rgba(50,40,45,0.5)' : 'rgba(255,255,255,0.7)';
-                    div.appendChild(span);
-
-                    div.addEventListener('click', function () { selectColor(idx); });
-                    wrapper.appendChild(div);
-                });
-
-                grid.appendChild(wrapper);
+        listEl.innerHTML = '';
+        Object.entries(counts)
+            .sort(function (a, b) { return b[1] - a[1]; })
+            .forEach(function (entry) {
+                var ci = entry[0];
+                var count = entry[1];
+                var color = PALETTE[ci];
+                if (!color) return;
+                var div = document.createElement('div');
+                div.className = 'mob-usage-item';
+                div.innerHTML =
+                    '<div class="mob-usage-swatch" style="background:' + color.hex + '"></div>' +
+                    '<span class="mob-usage-name">' + color.id + ' ' + color.name + '</span>' +
+                    '<span class="mob-usage-count">' + count + '</span>';
+                listEl.appendChild(div);
             });
+    }
+
+    function updateMobilePaletteSelection() {
+        var grid = $('mobilePaletteGrid');
+        if (!grid) return;
+        grid.querySelectorAll('.mob-color-cell').forEach(function (el) {
+            el.classList.toggle('active', parseInt(el.dataset.idx) === S.currentColorIdx);
+        });
+        var preview = $('mobPalettePreview');
+        var info = $('mobPaletteInfo');
+        if (preview && info) {
+            if (S.noColor) {
+                preview.style.background = 'repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 50% / 12px 12px';
+                info.textContent = '未选择';
+            } else if (PALETTE[S.currentColorIdx]) {
+                var c = PALETTE[S.currentColorIdx];
+                preview.style.background = c.hex;
+                info.textContent = c.id + ' ' + c.name;
+            }
         }
     }
 
@@ -911,22 +886,10 @@
         if ($('mobCurrentColor')) $('mobCurrentColor').style.opacity = '1';
         $('currentColorId').textContent = c.id;
         $('currentColorName').textContent = c.name;
-        // 同步移动端色板
-        if ($('mobColorPreview2')) {
-            $('mobColorPreview2').style.background = c.hex;
-            $('mobColorId2').textContent = c.id;
-            $('mobColorName2').textContent = c.name;
-        }
 
         $('paletteGrid').querySelectorAll('.palette-color').forEach(el => {
             el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
         });
-        // 同步移动端色板高亮
-        if ($('mobPaletteGrid')) {
-            $('mobPaletteGrid').querySelectorAll('.mob-palette-color').forEach(function (el) {
-                el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
-            });
-        }
 
         // 自动展开选中颜色所在的分组
         const activeEl = $('paletteGrid').querySelector('.palette-color.active');
@@ -938,6 +901,8 @@
                 if (header) header.classList.remove('collapsed');
             }
         }
+
+        updateMobilePaletteSelection();
     }
 
     function deselectCurrentColor() {
@@ -950,18 +915,8 @@
         $('currentColorId').textContent = '--';
         $('currentColorName').textContent = '未选择';
         $('paletteGrid').querySelectorAll('.palette-color').forEach(el => el.classList.remove('active'));
-        // 同步移动端
-        if ($('mobColorPreview2')) {
-            $('mobColorPreview2').style.background = 'repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 50% / 12px 12px';
-            $('mobColorId2').textContent = '--';
-            $('mobColorName2').textContent = '未选择';
-        }
-        if ($('mobPaletteGrid')) {
-            $('mobPaletteGrid').querySelectorAll('.mob-palette-color').forEach(function (el) {
-                el.classList.remove('active');
-            });
-        }
         setTool('hand');
+        updateMobilePaletteSelection();
     }
 
 
@@ -1036,27 +991,7 @@
                 list.appendChild(div);
             });
 
-        // 同步移动端统计
-        if ($('mobTotalBeads')) $('mobTotalBeads').textContent = total;
-        var mobList = $('mobUsageList');
-        if (mobList) {
-            mobList.innerHTML = '';
-            Object.entries(counts)
-                .sort(function (a, b) { return b[1] - a[1]; })
-                .forEach(function (entry) {
-                    var ci = entry[0];
-                    var count = entry[1];
-                    var color = PALETTE[ci];
-                    var div = document.createElement('div');
-                    div.className = 'usage-item';
-                    div.innerHTML =
-                        '<div class="usage-swatch" style="background:' + color.hex + '"></div>' +
-                        '<span class="usage-name">' + color.id + ' ' + color.name + '</span>' +
-                        '<span class="usage-count">' + count + '</span>';
-                    mobList.appendChild(div);
-                });
-        }
-
+        updateMobileUsage();
     }
 
     function updateLegend() {
@@ -1551,22 +1486,6 @@
         // Deselect color
         $('deselectColor').addEventListener('click', deselectCurrentColor);
 
-        // 移动端色板 Tab 切换
-        document.querySelectorAll('.mob-palette-tab').forEach(function (tab) {
-            tab.addEventListener('click', function () {
-                document.querySelectorAll('.mob-palette-tab').forEach(function (t) { t.classList.remove('active'); });
-                document.querySelectorAll('.mob-tab-panel').forEach(function (p) { p.classList.remove('active'); });
-                tab.classList.add('active');
-                var targetId = tab.dataset.tab === 'palette' ? 'mobTabPalette' : 'mobTabStats';
-                $(targetId).classList.add('active');
-            });
-        });
-
-        // 移动端取消选色
-        if ($('mobDeselectColor2')) {
-            $('mobDeselectColor2').addEventListener('click', deselectCurrentColor);
-        }
-
         // Custom colors
         $('addCustomColor').addEventListener('click', addCustomColor);
         $('customColorId').addEventListener('keydown', e => { if (e.key === 'Enter') addCustomColor(); });
@@ -1787,6 +1706,31 @@
 
         // Load saved theme
         loadSavedTheme();
+        // Load saved theme
+        loadSavedTheme();
+
+        // 移动端色板面板事件
+        var mobToggle = $('mobPaletteToggle');
+        var mobPanel = $('mobilePalettePanel');
+        if (mobToggle && mobPanel) {
+            mobToggle.addEventListener('click', function () {
+                mobPanel.classList.toggle('expanded');
+            });
+        }
+
+        // 移动端色板 Tab 切换
+        document.querySelectorAll('.mob-palette-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.mob-palette-tab').forEach(function (t) {
+                    t.classList.remove('active');
+                });
+                tab.classList.add('active');
+                var target = tab.dataset.tab;
+                document.querySelectorAll('.mobile-palette-content').forEach(function (c) {
+                    c.classList.toggle('active', c.dataset.content === target);
+                });
+            });
+        });
 
     }
 

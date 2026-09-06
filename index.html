@@ -346,6 +346,35 @@
                 </div>
             </div>
             <div class="color-legend" id="colorLegend"></div>
+            <!-- 移动端色板快捷面板 -->
+            <div class="mobile-palette-panel" id="mobilePalettePanel">
+                <div class="mobile-palette-header">
+                    <div class="mobile-palette-current">
+                        <div class="mobile-palette-preview" id="mobPalettePreview"></div>
+                        <span class="mobile-palette-info" id="mobPaletteInfo">M01 奶油黄</span>
+                    </div>
+                    <div class="mobile-palette-tabs">
+                        <button class="mob-palette-tab active" data-tab="palette">色板</button>
+                        <button class="mob-palette-tab" data-tab="usage">统计</button>
+                    </div>
+                    <button class="mobile-palette-toggle" id="mobPaletteToggle" title="展开/收起色板">
+                        <svg viewBox="0 0 20 20" width="16" height="16"><path d="M5 12l5-5 5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+                <div class="mobile-palette-body" id="mobilePaletteBody">
+                    <div class="mobile-palette-content active" data-content="palette">
+                        <div class="mobile-palette-grid" id="mobilePaletteGrid"></div>
+                    </div>
+                    <div class="mobile-palette-content" data-content="usage">
+                        <div class="mobile-usage-summary">
+                            <span>总计</span>
+                            <strong id="mobTotalBeads">0</strong>
+                            <span>颗</span>
+                        </div>
+                        <div class="mobile-usage-list" id="mobUsageList"></div>
+                    </div>
+                </div>
+            </div>
             <!-- 移动端底部工具栏 -->
             <div class="mobile-toolbar" id="mobileToolbar">
                 <div class="mob-current-color" id="mobCurrentColor" title="当前画笔色"></div>
@@ -385,36 +414,6 @@
                 </button>
             </div>
         </div>
-            <!-- 移动端内嵌色板区域 -->
-            <div class="mobile-palette-area" id="mobilePaletteArea">
-                <div class="mobile-palette-tabs">
-                    <button class="mob-palette-tab active" data-tab="palette">色板</button>
-                    <button class="mob-palette-tab" data-tab="stats">统计</button>
-                </div>
-                <div class="mobile-palette-content">
-                    <div class="mob-tab-panel active" id="mobTabPalette">
-                        <div class="mob-current-color-bar">
-                            <div class="mob-color-preview" id="mobColorPreview2"></div>
-                            <div class="mob-color-info">
-                                <span class="mob-color-id" id="mobColorId2">M01</span>
-                                <span class="mob-color-name" id="mobColorName2">白色</span>
-                            </div>
-                            <button class="mob-color-deselect" id="mobDeselectColor2" title="取消选色">
-                                <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
-                            </button>
-                        </div>
-                        <div class="mob-palette-grid" id="mobPaletteGrid"></div>
-                    </div>
-                    <div class="mob-tab-panel" id="mobTabStats">
-                        <div class="mob-usage-summary">
-                            <span>总计</span>
-                            <strong id="mobTotalBeads">0</strong>
-                            <span>颗</span>
-                        </div>
-                        <div class="mob-usage-list" id="mobUsageList"></div>
-                    </div>
-                </div>
-            </div>
 
         <!-- ===== 右侧色板面板 ===== -->
         <aside class="panel panel-right" id="panelRight">
