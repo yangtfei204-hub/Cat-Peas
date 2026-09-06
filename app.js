@@ -798,6 +798,8 @@
         const c = PALETTE[idx];
         $('currentColorPreview').style.background = c.hex;
         $('currentColorPreview').style.opacity = '1';
+        if ($('mobCurrentColor')) $('mobCurrentColor').style.background = c.hex;
+        if ($('mobCurrentColor')) $('mobCurrentColor').style.opacity = '1';
         $('currentColorId').textContent = c.id;
         $('currentColorName').textContent = c.name;
 
@@ -822,6 +824,8 @@
         S.currentColorIdx = -1;
         $('currentColorPreview').style.background = 'repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 50% / 12px 12px';
         $('currentColorPreview').style.opacity = '0.6';
+        if ($('mobCurrentColor')) $('mobCurrentColor').style.background = 'repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 50% / 12px 12px';
+        if ($('mobCurrentColor')) $('mobCurrentColor').style.opacity = '0.6';
         $('currentColorId').textContent = '--';
         $('currentColorName').textContent = '未选择';
         $('paletteGrid').querySelectorAll('.palette-color').forEach(el => el.classList.remove('active'));
