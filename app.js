@@ -177,6 +177,7 @@
     // ===========================
     //  State
     // ===========================
+    var _drawRAFPending = false;
     const S = {
         gridW: 52,
         gridH: 52,
@@ -193,7 +194,7 @@
         showBead: false,
         history: [],
         historyIdx: -1,
-        maxHistory: 50,
+        maxHistory: 30,
         isPanning: false,
         panStart: null,
         isDrawing: false,
@@ -354,12 +355,57 @@
         loadCustomColors();
         buildPalette();
         selectColor(0);
+        loadAutoSave();
         pushHistory();
         setupCanvas();
         render();
         bindAllEvents();
         initMobileDrawer();
-        openDB();  // 预热 IndexedDB 连接
+        openDB();
+        startAutoSave();
+    }
+
+    function startAutoSave() {
+        setInterval(function () {
+            try {
+                var data = {
+                    gridW: S.gridW,
+                    gridH: S.gridH,
+                    grid: S.grid,
+                    currentColorIdx: S.currentColorIdx,
+                    savedAt: Date.now()
+                };
+                localStorage.setItem('catpeas_autosave', JSON.stringify(data));
+            } catch (e) { /* ignore */ }
+        }, 15000);
+    }
+
+    function loadAutoSave() {
+        try {
+            var saved = localStorage.getItem('catpeas_autosave');
+            if (!saved) return;
+            var data = JSON.parse(saved);
+            if (!data.grid || !data.gridW || !data.gridH) return;
+            var age = Date.now() - (data.savedAt || 0);
+            if (age > 7 * 24 * 3600 * 1000) return;
+            var hasContent = false;
+            for (var r = 0; r < data.gridH && !hasContent; r++) {
+                for (var c = 0; c < data.gridW && !hasContent; c++) {
+                    if (data.grid[r][c] !== null) hasContent = true;
+                }
+            }
+            if (!hasContent) return;
+            if (confirm('检测到上次未保存的画布数据（' + data.gridW + '×' + data.gridH + '），是否恢复？')) {
+                S.gridW = data.gridW;
+                S.gridH = data.gridH;
+                S.grid = data.grid.map(function (row) { return Array.from(row); });
+                $('canvasWidth').value = S.gridW;
+                $('canvasHeight').value = S.gridH;
+                if (data.currentColorIdx >= 0 && data.currentColorIdx < PALETTE.length) {
+                    S.currentColorIdx = data.currentColorIdx;
+                }
+            }
+        } catch (e) { /* ignore */ }
     }
 
     function initGrid() {
@@ -779,10 +825,12 @@
         tCtx.fillRect(0, 0, tw, rs);
 
         tCtx.textAlign = 'center';
-        tCtx.textBaseline = 'top';
+        tCtx.textBaseline = 'bottom';
 
+        var showDetail = S.zoom >= 1.5;
         for (let c = 0; c <= S.gridW; c++) {
-            const major = c % 5 === 0;
+            var major = c % 5 === 0;
+            var minor = !major && showDetail;
             tCtx.strokeStyle = major ? '#8d7baa' : '#cdc4d6';
             tCtx.lineWidth = major ? 1.5 : 0.6;
             tCtx.beginPath();
@@ -792,8 +840,12 @@
 
             if (major && c < S.gridW) {
                 tCtx.fillStyle = '#8d7baa';
-                tCtx.font = `bold 9px -apple-system, sans-serif`;
-                tCtx.fillText(String(c), c * cs + cs * 2.5, 3);
+                tCtx.font = 'bold 9px -apple-system, sans-serif';
+                tCtx.fillText(String(c), c * cs + cs / 2, rs - 4);
+            } else if (minor && c < S.gridW) {
+                tCtx.fillStyle = '#b8aec4';
+                tCtx.font = '7px -apple-system, sans-serif';
+                tCtx.fillText(String(c), c * cs + cs / 2, rs - 4);
             }
         }
 
@@ -809,7 +861,8 @@
         lCtx.textBaseline = 'middle';
 
         for (let r = 0; r <= S.gridH; r++) {
-            const major = r % 5 === 0;
+            var major = r % 5 === 0;
+            var minor = !major && showDetail;
             lCtx.strokeStyle = major ? '#8d7baa' : '#cdc4d6';
             lCtx.lineWidth = major ? 1.5 : 0.6;
             lCtx.beginPath();
@@ -819,7 +872,11 @@
 
             if (major && r < S.gridH) {
                 lCtx.fillStyle = '#8d7baa';
-                lCtx.font = `bold 9px -apple-system, sans-serif`;
+                lCtx.font = 'bold 9px -apple-system, sans-serif';
+                lCtx.fillText(String(r), rs - 4, r * cs + cs / 2);
+            } else if (minor && r < S.gridH) {
+                lCtx.fillStyle = '#b8aec4';
+                lCtx.font = '7px -apple-system, sans-serif';
                 lCtx.fillText(String(r), rs - 4, r * cs + cs / 2);
             }
         }
@@ -2008,19 +2065,24 @@
 
     function onMouseMove(e) {
         if (!S.isDrawing) return;
-        const cell = cellFromMouse(e);
-        if (!cell) return;
-        const key = cell.row + ',' + cell.col;
-        if (key !== S.lastDrawCell) {
-            // Bresenham 线段插值，防止快速拖动跳格
-            if (S.lastDrawCell) {
-                const parts = S.lastDrawCell.split(',');
-                const r0 = parseInt(parts[0]), c0 = parseInt(parts[1]);
-                interpolateLine(r0, c0, cell.row, cell.col);
+        if (_drawRAFPending) return;
+        _drawRAFPending = true;
+        var evt = { clientX: e.clientX, clientY: e.clientY };
+        requestAnimationFrame(function () {
+            _drawRAFPending = false;
+            var cell = cellFromMouse(evt);
+            if (!cell) return;
+            var key = cell.row + ',' + cell.col;
+            if (key !== S.lastDrawCell) {
+                if (S.lastDrawCell) {
+                    var parts = S.lastDrawCell.split(',');
+                    var r0 = parseInt(parts[0]), c0 = parseInt(parts[1]);
+                    interpolateLine(r0, c0, cell.row, cell.col);
+                }
+                S.lastDrawCell = key;
+                paintCell(cell.row, cell.col);
             }
-            S.lastDrawCell = key;
-            paintCell(cell.row, cell.col);
-        }
+        });
     }
 
 
@@ -2072,20 +2134,26 @@
     function onTouchMove(e) {
         if (!S.isDrawing || e.touches.length !== 1) return;
         e.preventDefault();
-        const cell = cellFromTouch(e);
-        if (!cell) return;
-        const key = cell.row + ',' + cell.col;
-        if (key !== S.lastDrawCell) {
-            if (S.lastDrawCell) {
-                const parts = S.lastDrawCell.split(',');
-                const r0 = parseInt(parts[0]), c0 = parseInt(parts[1]);
-                interpolateLine(r0, c0, cell.row, cell.col);
+        if (_drawRAFPending) return;
+        _drawRAFPending = true;
+        var touch = e.touches[0];
+        var evt = { clientX: touch.clientX, clientY: touch.clientY };
+        requestAnimationFrame(function () {
+            _drawRAFPending = false;
+            var cell = cellFromMouse(evt);
+            if (!cell) return;
+            var key = cell.row + ',' + cell.col;
+            if (key !== S.lastDrawCell) {
+                if (S.lastDrawCell) {
+                    var parts = S.lastDrawCell.split(',');
+                    var r0 = parseInt(parts[0]), c0 = parseInt(parts[1]);
+                    interpolateLine(r0, c0, cell.row, cell.col);
+                }
+                S.lastDrawCell = key;
+                paintCell(cell.row, cell.col);
             }
-            S.lastDrawCell = key;
-            paintCell(cell.row, cell.col);
-        }
+        });
     }
-
 
     function onTouchEnd() {
         if (S.isDrawing) {
@@ -2686,10 +2754,9 @@
             ec.fillRect(0, 0, rs + S.gridW * cs, rs);
 
             ec.textAlign = 'center';
-            ec.textBaseline = 'top';
-            ec.font = 'bold 9px -apple-system, sans-serif';
+            ec.textBaseline = 'bottom';
             for (let c = 0; c <= S.gridW; c++) {
-                const major = c % 5 === 0;
+                var major = c % 5 === 0;
                 ec.strokeStyle = major ? '#8d7baa' : '#cdc4d6';
                 ec.lineWidth = major ? 1.5 : 0.6;
                 ec.beginPath();
@@ -2698,14 +2765,19 @@
                 ec.stroke();
                 if (major && c < S.gridW) {
                     ec.fillStyle = '#8d7baa';
-                    ec.fillText(String(c), rs + c * cs + cs / 2, 3);
+                    ec.font = 'bold 9px -apple-system, sans-serif';
+                    ec.fillText(String(c), rs + c * cs + cs / 2, rs - 4);
+                } else if (c < S.gridW) {
+                    ec.fillStyle = '#b8aec4';
+                    ec.font = '7px -apple-system, sans-serif';
+                    ec.fillText(String(c), rs + c * cs + cs / 2, rs - 4);
                 }
             }
 
             ec.textAlign = 'right';
             ec.textBaseline = 'middle';
             for (let r = 0; r <= S.gridH; r++) {
-                const major = r % 5 === 0;
+                var major = r % 5 === 0;
                 ec.strokeStyle = major ? '#8d7baa' : '#cdc4d6';
                 ec.lineWidth = major ? 1.5 : 0.6;
                 ec.beginPath();
@@ -2714,6 +2786,11 @@
                 ec.stroke();
                 if (major && r < S.gridH) {
                     ec.fillStyle = '#8d7baa';
+                    ec.font = 'bold 9px -apple-system, sans-serif';
+                    ec.fillText(String(r), rs - 4, rs + r * cs + cs / 2);
+                } else if (r < S.gridH) {
+                    ec.fillStyle = '#b8aec4';
+                    ec.font = '7px -apple-system, sans-serif';
                     ec.fillText(String(r), rs - 4, rs + r * cs + cs / 2);
                 }
             }
@@ -3036,9 +3113,8 @@
                     ec.fillRect(0, 0, rs, rs + bh * cs);
                     ec.fillRect(0, 0, rs + bw * cs, rs);
 
-                    ec.font = 'bold 9px -apple-system, sans-serif';
                     ec.textAlign = 'center';
-                    ec.textBaseline = 'top';
+                    ec.textBaseline = 'bottom';
                     for (var rc = 0; rc <= bw; rc++) {
                         var rm = (startC + rc) % 5 === 0;
                         ec.strokeStyle = rm ? '#8d7baa' : '#cdc4d6';
@@ -3049,7 +3125,12 @@
                         ec.stroke();
                         if (rm && rc < bw) {
                             ec.fillStyle = '#8d7baa';
-                            ec.fillText(String(startC + rc), rs + rc * cs + cs / 2, 3);
+                            ec.font = 'bold 9px -apple-system, sans-serif';
+                            ec.fillText(String(startC + rc), rs + rc * cs + cs / 2, rs - 4);
+                        } else if (rc < bw) {
+                            ec.fillStyle = '#b8aec4';
+                            ec.font = '7px -apple-system, sans-serif';
+                            ec.fillText(String(startC + rc), rs + rc * cs + cs / 2, rs - 4);
                         }
                     }
                     ec.textAlign = 'right';
@@ -3064,6 +3145,11 @@
                         ec.stroke();
                         if (rm2 && rr < bh) {
                             ec.fillStyle = '#8d7baa';
+                            ec.font = 'bold 9px -apple-system, sans-serif';
+                            ec.fillText(String(startR + rr), rs - 4, rs + rr * cs + cs / 2);
+                        } else if (rr < bh) {
+                            ec.fillStyle = '#b8aec4';
+                            ec.font = '7px -apple-system, sans-serif';
                             ec.fillText(String(startR + rr), rs - 4, rs + rr * cs + cs / 2);
                         }
                     }
