@@ -197,7 +197,7 @@
         showBead: false,
         history: [],
         historyIdx: -1,
-        maxHistory: 20,
+        maxHistory: 15,
         isPanning: false,
         panStart: null,
         isDrawing: false,
@@ -218,6 +218,8 @@
         assistMiniMode: false,
         showSplitLine: false,
         splitSize: 52,
+        currentProjectId: null,
+        currentProjectName: '',
     };
 
     // ===========================
@@ -570,13 +572,18 @@
     // ===========================
     //  Render
     // ===========================
+    var _usageUpdateTimer = null;
     function render() {
         renderBg();
         renderMain();
         renderRulers();
-        updateUsage();
-        updateLegend();
-        if (S.assistMode) buildAssistColorGrid();
+        // 用料统计延迟更新，避免频繁重绘时卡顿
+        clearTimeout(_usageUpdateTimer);
+        _usageUpdateTimer = setTimeout(function () {
+            updateUsage();
+            updateLegend();
+            if (S.assistMode) buildAssistColorGrid();
+        }, 100);
     }
 
     function renderBg() {
@@ -1201,13 +1208,13 @@
             });
         }
 
-        // 增量链太长时，每隔 5 步强制存一个全量快照
-        if (S.history.length > 5) {
+        // 增量链太长时，每隔 3 步强制存一个全量快照
+        if (S.history.length > 3) {
             var lastFull = -1;
             for (var i = S.history.length - 1; i >= 0; i--) {
                 if (S.history[i].grid) { lastFull = i; break; }
             }
-            if (S.history.length - 1 - lastFull >= 5) {
+            if (S.history.length - 1 - lastFull >= 3) {
                 var lastEntry = S.history[S.history.length - 1];
                 if (!lastEntry.grid) {
                     lastEntry.grid = compactGrid(S.grid, S.gridW, S.gridH);
@@ -1240,9 +1247,11 @@
         // 先收集需要回溯的增量链
         var chain = [];
         var cur = idx;
-        while (cur >= 0 && S.history[cur] && !S.history[cur].grid) {
+        var maxChain = 10; // 限制回溯深度，防止卡顿
+        while (cur >= 0 && S.history[cur] && !S.history[cur].grid && maxChain > 0) {
             chain.push(cur);
             cur = S.history[cur]._baseIdx;
+            maxChain--;
         }
         // cur 现在指向一个全量快照
         var baseGrid;
@@ -1275,12 +1284,15 @@
         for (var i = chain.length - 1; i >= 0; i--) {
             var diffSnap = S.history[chain[i]];
             var diffs = diffSnap._diffs;
+            if (!diffs) continue;
             for (var d = 0; d < diffs.length; d += 2) {
                 var pos = diffs[d];
                 var val = diffs[d + 1];
                 var row = Math.floor(pos / diffSnap.w);
                 var col = pos % diffSnap.w;
-                baseGrid[row][col] = val < 0 ? null : val;
+                if (row < baseGrid.length && col < baseGrid[0].length) {
+                    baseGrid[row][col] = val < 0 ? null : val;
+                }
             }
         }
         return baseGrid;
@@ -1833,6 +1845,8 @@
             for (let r = 0; r < S.gridH; r++)
                 for (let c = 0; c < S.gridW; c++)
                     S.grid[r][c] = null;
+            S.currentProjectId = null;
+            S.currentProjectName = '';
             pushHistory();
             render();
         });
@@ -2306,9 +2320,12 @@
     function onMouseUp() {
         if (S.isDrawing) {
             S.isDrawing = false;
-            pushHistory();
-            updateUsage();
-            updateLegend();
+            // 延迟执行重操作，避免绘图结束瞬间卡顿
+            setTimeout(function () {
+                pushHistory();
+                updateUsage();
+                updateLegend();
+            }, 50);
         }
     }
 
@@ -2379,9 +2396,11 @@
         }
         if (S.isDrawing) {
             S.isDrawing = false;
-            pushHistory();
-            updateUsage();
-            updateLegend();
+            setTimeout(function () {
+                pushHistory();
+                updateUsage();
+                updateLegend();
+            }, 50);
         }
     }
 
@@ -2410,6 +2429,8 @@
                 }
             }
         }
+        S.currentProjectId = null;
+        S.currentProjectName = '';
         pushHistory();
         setupCanvas();
         render();
@@ -3573,7 +3594,6 @@
         }
 
         var thumbnail = generateThumbnail(S.grid, S.gridW, S.gridH);
-        console.log('缩略图长度:', thumbnail ? thumbnail.length : 0);
 
         // 用紧凑格式存储 grid，减小 IndexedDB 存储体积
         var gridData = [];
@@ -3581,8 +3601,46 @@
             gridData[r2] = Array.from(S.grid[r2]);
         }
 
+        // 判断是覆盖保存还是新建
+        var isOverwrite = false;
+        var projectId;
+        var createdAt = now;
+
+        if (S.currentProjectId) {
+            // 当前是从项目库加载的，询问用户
+            var choice = confirm(
+                '当前画布来自项目"' + S.currentProjectName + '"。\n\n' +
+                '点击「确定」→ 覆盖保存到原项目\n' +
+                '点击「取消」→ 另存为新项目'
+            );
+            if (choice) {
+                isOverwrite = true;
+                projectId = S.currentProjectId;
+            }
+        }
+
+        if (!isOverwrite) {
+            projectId = generateProjectId();
+        }
+
+        if (isOverwrite) {
+            // 覆盖模式：先获取原项目的 createdAt
+            dbGet(STORE_PROJECTS, projectId).then(function (oldProj) {
+                if (oldProj) {
+                    createdAt = oldProj.createdAt || now;
+                }
+                doSave(projectId, name, category, gridData, thumbnail, total, createdAt, now, isOverwrite);
+            }).catch(function () {
+                doSave(projectId, name, category, gridData, thumbnail, total, now, now, isOverwrite);
+            });
+        } else {
+            doSave(projectId, name, category, gridData, thumbnail, total, now, now, false);
+        }
+    }
+
+    function doSave(projectId, name, category, gridData, thumbnail, total, createdAt, now, isOverwrite) {
         var projectData = {
-            id: generateProjectId(),
+            id: projectId,
             name: name,
             category: category,
             gridW: S.gridW,
@@ -3590,7 +3648,7 @@
             grid: gridData,
             thumbnail: thumbnail,
             totalBeads: total,
-            createdAt: now,
+            createdAt: createdAt,
             updatedAt: now,
             paletteSnapshot: PALETTE.map(function (c) {
                 return { id: c.id, name: c.name, hex: c.hex };
@@ -3598,8 +3656,16 @@
         };
 
         dbPut(STORE_PROJECTS, projectData).then(function () {
-            alert('保存成功！项目"' + name + '"已存入项目库。');
-            $('projectName').value = '';
+            // 更新当前项目引用
+            S.currentProjectId = projectId;
+            S.currentProjectName = name;
+
+            if (isOverwrite) {
+                alert('已覆盖保存到项目"' + name + '"！');
+            } else {
+                alert('已另存为新项目"' + name + '"！');
+            }
+            $('projectName').value = name;
             if ($('projectPage').classList.contains('active')) {
                 triggerProjectRefresh();
             }
@@ -3607,6 +3673,7 @@
             alert('保存失败：' + err.message);
         });
     }
+
 
     function loadProject(projectId) {
         dbGet(STORE_PROJECTS, projectId).then(function (proj) {
@@ -3618,6 +3685,14 @@
             S.grid = proj.grid.map(function (row) { return Array.from(row); });
             $('canvasWidth').value = S.gridW;
             $('canvasHeight').value = S.gridH;
+
+            // 记住当前项目的 ID 和名称，方便覆盖保存
+            S.currentProjectId = proj.id;
+            S.currentProjectName = proj.name;
+            $('projectName').value = proj.name;
+            if ($('projectCategory')) {
+                $('projectCategory').value = proj.category || 'default';
+            }
 
             // 如果项目保存了色板快照且当前色板长度不同，提示用户
             if (proj.paletteSnapshot && proj.paletteSnapshot.length !== PALETTE.length) {
