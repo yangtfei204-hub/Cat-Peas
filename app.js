@@ -197,7 +197,7 @@
         showBead: false,
         history: [],
         historyIdx: -1,
-        maxHistory: 30,
+        maxHistory: 20,
         isPanning: false,
         panStart: null,
         isDrawing: false,
@@ -390,16 +390,35 @@
     function startAutoSave() {
         setInterval(function () {
             try {
+                // 用 RLE 压缩减少存储体积
+                var flat = [];
+                for (var r = 0; r < S.gridH; r++) {
+                    for (var c = 0; c < S.gridW; c++) {
+                        var v = S.grid[r][c];
+                        flat.push(v === null ? -1 : v);
+                    }
+                }
+                var rle = [];
+                var i = 0;
+                while (i < flat.length) {
+                    var val = flat[i];
+                    var count = 1;
+                    while (i + count < flat.length && flat[i + count] === val && count < 255) {
+                        count++;
+                    }
+                    rle.push(count, val);
+                    i += count;
+                }
                 var data = {
                     gridW: S.gridW,
                     gridH: S.gridH,
-                    grid: S.grid,
+                    rle: rle,
                     currentColorIdx: S.currentColorIdx,
                     savedAt: Date.now()
                 };
                 localStorage.setItem('catpeas_autosave', JSON.stringify(data));
             } catch (e) { /* ignore */ }
-        }, 15000);
+        }, 30000);
     }
 
     function loadAutoSave() {
@@ -407,20 +426,46 @@
             var saved = localStorage.getItem('catpeas_autosave');
             if (!saved) return;
             var data = JSON.parse(saved);
-            if (!data.grid || !data.gridW || !data.gridH) return;
+            if (!data.gridW || !data.gridH) return;
+            if (!data.grid && !data.rle) return;
             var age = Date.now() - (data.savedAt || 0);
             if (age > 7 * 24 * 3600 * 1000) return;
+
+            // 还原 grid
+            var grid;
+            if (data.rle) {
+                // 从 RLE 还原
+                var flat = [];
+                for (var i = 0; i < data.rle.length; i += 2) {
+                    var count = data.rle[i];
+                    var val = data.rle[i + 1];
+                    for (var j = 0; j < count; j++) {
+                        flat.push(val < 0 ? null : val);
+                    }
+                }
+                grid = [];
+                for (var r = 0; r < data.gridH; r++) {
+                    grid[r] = [];
+                    for (var c = 0; c < data.gridW; c++) {
+                        var idx = r * data.gridW + c;
+                        grid[r][c] = idx < flat.length ? flat[idx] : null;
+                    }
+                }
+            } else {
+                grid = data.grid;
+            }
+
             var hasContent = false;
-            for (var r = 0; r < data.gridH && !hasContent; r++) {
-                for (var c = 0; c < data.gridW && !hasContent; c++) {
-                    if (data.grid[r][c] !== null) hasContent = true;
+            for (var r2 = 0; r2 < data.gridH && !hasContent; r2++) {
+                for (var c2 = 0; c2 < data.gridW && !hasContent; c2++) {
+                    if (grid[r2][c2] !== null) hasContent = true;
                 }
             }
             if (!hasContent) return;
             if (confirm('检测到上次未保存的画布数据（' + data.gridW + '×' + data.gridH + '），是否恢复？')) {
                 S.gridW = data.gridW;
                 S.gridH = data.gridH;
-                S.grid = data.grid.map(function (row) { return Array.from(row); });
+                S.grid = grid.map(function (row) { return Array.from(row); });
                 $('canvasWidth').value = S.gridW;
                 $('canvasHeight').value = S.gridH;
                 if (data.currentColorIdx >= 0 && data.currentColorIdx < PALETTE.length) {
@@ -1106,7 +1151,7 @@
             if (prev.w === S.gridW && prev.h === S.gridH) {
                 // 尺寸没变，计算差异
                 var diffs = [];
-                var prevGrid = prev._fullGrid || reconstructGrid(S.historyIdx);
+                var prevGrid = reconstructGrid(S.historyIdx);
                 for (var r = 0; r < S.gridH; r++) {
                     for (var c = 0; c < S.gridW; c++) {
                         if (S.grid[r][c] !== prevGrid[r][c]) {
@@ -1115,8 +1160,13 @@
                         }
                     }
                 }
+                // 如果没有实际变化，不记录
+                if (diffs.length === 0) {
+                    updateHistoryUI();
+                    return;
+                }
                 // 如果差异不大（少于总格子数 30%），使用增量
-                if (diffs.length > 0 && diffs.length / 2 < S.gridW * S.gridH * 0.3) {
+                if (diffs.length / 2 < S.gridW * S.gridH * 0.3) {
                     S.history.push({
                         w: S.gridW,
                         h: S.gridH,
@@ -1124,33 +1174,65 @@
                         _baseIdx: S.historyIdx
                     });
                 } else {
-                    // 差异太大或没有差异，存全量
+                    // 差异太大，存全量但用紧凑格式
                     S.history.push({
-                        grid: S.grid.map(function (r) { return r.slice(); }),
+                        grid: compactGrid(S.grid, S.gridW, S.gridH),
                         w: S.gridW,
-                        h: S.gridH
+                        h: S.gridH,
+                        _compact: true
                     });
                 }
             } else {
                 // 尺寸变了，存全量
                 S.history.push({
-                    grid: S.grid.map(function (r) { return r.slice(); }),
+                    grid: compactGrid(S.grid, S.gridW, S.gridH),
                     w: S.gridW,
-                    h: S.gridH
+                    h: S.gridH,
+                    _compact: true
                 });
             }
         } else {
             // 第一条，存全量
             S.history.push({
-                grid: S.grid.map(function (r) { return r.slice(); }),
+                grid: compactGrid(S.grid, S.gridW, S.gridH),
                 w: S.gridW,
-                h: S.gridH
+                h: S.gridH,
+                _compact: true
             });
+        }
+
+        // 增量链太长时，每隔 5 步强制存一个全量快照
+        if (S.history.length > 5) {
+            var lastFull = -1;
+            for (var i = S.history.length - 1; i >= 0; i--) {
+                if (S.history[i].grid) { lastFull = i; break; }
+            }
+            if (S.history.length - 1 - lastFull >= 5) {
+                var lastEntry = S.history[S.history.length - 1];
+                if (!lastEntry.grid) {
+                    lastEntry.grid = compactGrid(S.grid, S.gridW, S.gridH);
+                    lastEntry._compact = true;
+                    delete lastEntry._diffs;
+                    delete lastEntry._baseIdx;
+                }
+            }
         }
 
         if (S.history.length > S.maxHistory + 1) S.history.shift();
         S.historyIdx = S.history.length - 1;
         updateHistoryUI();
+    }
+
+    // 紧凑格式：用 Int16Array 存储，比普通数组省内存
+    function compactGrid(grid, w, h) {
+        var arr = new Int16Array(w * h);
+        for (var r = 0; r < h; r++) {
+            for (var c = 0; c < w; c++) {
+                var v = grid[r][c];
+                arr[r * w + c] = v === null ? -1 : v;
+            }
+        }
+        return arr;
     }
 
     function reconstructGrid(idx) {
@@ -1165,25 +1247,39 @@
         // cur 现在指向一个全量快照
         var baseGrid;
         if (cur >= 0 && S.history[cur] && S.history[cur].grid) {
-            baseGrid = S.history[cur].grid.map(function (r) { return r.slice(); });
+            var snap = S.history[cur];
+            if (snap._compact) {
+                // 从紧凑格式还原
+                baseGrid = [];
+                var arr = snap.grid;
+                for (var rr = 0; rr < snap.h; rr++) {
+                    baseGrid[rr] = [];
+                    for (var cc = 0; cc < snap.w; cc++) {
+                        var v = arr[rr * snap.w + cc];
+                        baseGrid[rr][cc] = v < 0 ? null : v;
+                    }
+                }
+            } else {
+                baseGrid = snap.grid.map(function (r) { return r.slice(); });
+            }
         } else {
             // 兜底：创建空 grid
             baseGrid = [];
             var w = S.history[idx].w;
             var h = S.history[idx].h;
-            for (var rr = 0; rr < h; rr++) {
-                baseGrid[rr] = new Array(w).fill(null);
+            for (var rr2 = 0; rr2 < h; rr2++) {
+                baseGrid[rr2] = new Array(w).fill(null);
             }
         }
         // 从最早的增量开始依次应用
         for (var i = chain.length - 1; i >= 0; i--) {
-            var snap = S.history[chain[i]];
-            var diffs = snap._diffs;
+            var diffSnap = S.history[chain[i]];
+            var diffs = diffSnap._diffs;
             for (var d = 0; d < diffs.length; d += 2) {
                 var pos = diffs[d];
                 var val = diffs[d + 1];
-                var row = Math.floor(pos / snap.w);
-                var col = pos % snap.w;
+                var row = Math.floor(pos / diffSnap.w);
+                var col = pos % diffSnap.w;
                 baseGrid[row][col] = val < 0 ? null : val;
             }
         }
@@ -3425,25 +3521,33 @@
     }
 
     function generateThumbnail(grid, gridW, gridH) {
-        var size = 128;
-        var tmp = document.createElement('canvas');
-        tmp.width = size;
-        tmp.height = size;
-        var tc = tmp.getContext('2d');
-        tc.fillStyle = '#fff';
-        tc.fillRect(0, 0, size, size);
-        var cellW = size / gridW;
-        var cellH = size / gridH;
-        for (var r = 0; r < gridH; r++) {
-            for (var c = 0; c < gridW; c++) {
-                var ci = grid[r][c];
-                if (ci !== null && PALETTE[ci]) {
-                    tc.fillStyle = PALETTE[ci].hex;
-                    tc.fillRect(c * cellW, r * cellH, Math.ceil(cellW), Math.ceil(cellH));
+        try {
+            var size = 128;
+            var tmp = document.createElement('canvas');
+            tmp.width = size;
+            tmp.height = size;
+            var tc = tmp.getContext('2d');
+            if (!tc) return '';
+            tc.fillStyle = '#fff';
+            tc.fillRect(0, 0, size, size);
+            var cellW = size / gridW;
+            var cellH = size / gridH;
+            for (var r = 0; r < gridH; r++) {
+                for (var c = 0; c < gridW; c++) {
+                    var ci = grid[r][c];
+                    if (ci !== null && PALETTE[ci]) {
+                        tc.fillStyle = PALETTE[ci].hex;
+                        tc.fillRect(c * cellW, r * cellH, Math.ceil(cellW), Math.ceil(cellH));
+                    }
                 }
             }
+            var dataUrl = tmp.toDataURL('image/jpeg', 0.6);
+            // 检查是否生成成功（某些浏览器失败时返回很短的字符串）
+            if (!dataUrl || dataUrl.length < 50) return '';
+            return dataUrl;
+        } catch (e) {
+            return '';
         }
-        return tmp.toDataURL('image/png');
     }
 
     function saveProject() {
@@ -3454,7 +3558,6 @@
         }
         var category = $('projectCategory').value || 'default';
         var now = Date.now();
-        var thumbnail = generateThumbnail(S.grid, S.gridW, S.gridH);
 
         // 统计用色
         var total = 0;
@@ -3464,13 +3567,27 @@
             }
         }
 
+        if (total === 0) {
+            alert('画布为空，请先绘制内容再保存');
+            return;
+        }
+
+        var thumbnail = generateThumbnail(S.grid, S.gridW, S.gridH);
+        console.log('缩略图长度:', thumbnail ? thumbnail.length : 0);
+
+        // 用紧凑格式存储 grid，减小 IndexedDB 存储体积
+        var gridData = [];
+        for (var r2 = 0; r2 < S.gridH; r2++) {
+            gridData[r2] = Array.from(S.grid[r2]);
+        }
+
         var projectData = {
             id: generateProjectId(),
             name: name,
             category: category,
             gridW: S.gridW,
             gridH: S.gridH,
-            grid: S.grid.map(function (row) { return Array.from(row); }),
+            grid: gridData,
             thumbnail: thumbnail,
             totalBeads: total,
             createdAt: now,
@@ -3483,7 +3600,6 @@
         dbPut(STORE_PROJECTS, projectData).then(function () {
             alert('保存成功！项目"' + name + '"已存入项目库。');
             $('projectName').value = '';
-            // 如果项目库页面正在显示，刷新列表
             if ($('projectPage').classList.contains('active')) {
                 triggerProjectRefresh();
             }
@@ -3635,10 +3751,17 @@
                     minute: '2-digit'
                 });
 
+                var thumbHtml;
+                if (proj.thumbnail && proj.thumbnail.length > 50) {
+                    thumbHtml = '<img src="' + proj.thumbnail + '" alt="预览" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
+                        '<div class="preview-placeholder" style="display:none;">加载失败</div>';
+                } else {
+                    thumbHtml = '<div class="preview-placeholder">无预览</div>';
+                }
                 card.innerHTML =
                     '<div class="project-card-preview-wrap">' +
                         '<div class="project-card-check"></div>' +
-                        '<img src="' + (proj.thumbnail || '') + '" alt="预览">' +
+                        thumbHtml +
                     '</div>' +
                     '<div class="project-card-body">' +
                         '<div class="project-card-name" title="' + escapeHtml(proj.name) + '">' + escapeHtml(proj.name) + '</div>' +
@@ -3701,8 +3824,11 @@
         loadProjectCategories().then(function () {
             _selectedProjectIds.clear();
             updateProjectPageFilters();
-            triggerProjectRefresh();
             $('projectPage').classList.add('active');
+            // 确保页面显示后再加载卡片，否则缩略图可能因容器宽度为0而不显示
+            setTimeout(function () {
+                triggerProjectRefresh();
+            }, 50);
         });
     }
 
