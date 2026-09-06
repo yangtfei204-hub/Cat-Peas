@@ -34,6 +34,16 @@
                     <path d="M9 13h6M12 10v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 </svg>
             </button>
+            <button class="theme-toggle-btn" id="assistModeBtn" title="辅助拼豆模式">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="6.5" cy="6.5" r="2" fill="currentColor" opacity="0.4"/>
+                    <path d="M17.5 5v4M15.5 7h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
             <button class="theme-toggle-btn" id="themeToggleBtn" title="切换主题">
                 <svg viewBox="0 0 24 24" width="18" height="18">
                     <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/>
@@ -175,6 +185,11 @@
                             <span class="toggle-slider"></span>
                             <span>仿真豆子预览</span>
                         </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="toggleSplitLine">
+                            <span class="toggle-slider"></span>
+                            <span>分板线（52格）</span>
+                        </label>
                     </div>
                 </section>
 
@@ -252,7 +267,7 @@
                         </div>
                         <div class="max-colors-row">
                             <label>最大用色数：</label>
-                            <input type="number" id="maxColors" value="16" min="2" max="32">
+                            <input type="number" id="maxColors" value="24" min="2" max="64">
                         </div>
                         <button class="btn btn-full btn-accent" id="convertBtn">
                             <svg viewBox="0 0 20 20" width="14" height="14"><path d="M13 2L3 14h5l-1 6 10-12h-5l1-6z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -296,6 +311,23 @@
                     <button class="btn btn-full btn-export" id="exportBeadPNG">
                         <svg viewBox="0 0 20 20" width="14" height="14"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="10" cy="10" r="2" fill="currentColor" opacity="0.3"/></svg>
                         导出仿真豆子 PNG
+                    </button>
+                    <button class="btn btn-full btn-export" id="exportSplitPNG">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M2 2h7v7H2zM11 2h7v7h-7zM2 11h7v7H2zM11 11h7v7h-7z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M10 1v18M1 10h18" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/></svg>
+                        导出分板切割图纸
+                    </button>
+                </section>
+                <!-- 导入图纸图片 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3v10M6 7l4-4 4 4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        导入图纸图片
+                    </h3>
+                    <p class="size-note">上传由 Cat Peas 导出的 PNG 图纸，自动还原画布数据。</p>
+                    <input type="file" id="importSheetInput" accept="image/png" style="display:none">
+                    <button class="btn btn-full btn-accent" id="importSheetBtn">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3v10M6 7l4-4 4 4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        选择图纸图片还原数据
                     </button>
                 </section>
                 <!-- 保存到项目库 -->
@@ -558,6 +590,102 @@
                 </div>
             </div>
         </div>
+
+    <!-- 辅助拼豆浮动面板 -->
+    <div class="assist-panel" id="assistPanel">
+        <div class="assist-panel-header">
+            <svg viewBox="0 0 24 24" width="14" height="14">
+                <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            </svg>
+            <span>辅助拼豆模式</span>
+            <button class="assist-panel-minimize" id="assistPanelMinimize" title="缩小为悬浮窗">
+                <svg viewBox="0 0 20 20" width="12" height="12"><path d="M3 10h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <button class="assist-panel-close" id="assistPanelClose">
+                <svg viewBox="0 0 20 20" width="12" height="12"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+            </button>
+        </div>
+        <div class="assist-panel-body">
+            <!-- 计时器 -->
+            <div class="assist-timer">
+                <div class="assist-timer-display" id="assistTimerDisplay">00:00:00</div>
+                <div class="assist-timer-controls">
+                    <button class="btn btn-sm btn-apply" id="assistTimerStart">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M6 4l10 6-10 6V4z" fill="currentColor"/></svg>
+                        开始
+                    </button>
+                    <button class="btn btn-sm" id="assistTimerPause" disabled>
+                        <svg viewBox="0 0 20 20" width="12" height="12"><rect x="5" y="4" width="3" height="12" rx="0.5" fill="currentColor"/><rect x="12" y="4" width="3" height="12" rx="0.5" fill="currentColor"/></svg>
+                        暂停
+                    </button>
+                    <button class="btn btn-sm" id="assistTimerReset">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 12a8 8 0 0114-5.3V3M18 6.7V3h-3.3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M16 8a6 6 0 11-10 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                        重置
+                    </button>
+                </div>
+            </div>
+            <!-- 计数方向 -->
+            <div class="assist-direction">
+                <label class="assist-direction-label">连续计数方向：</label>
+                <div class="assist-direction-btns">
+                    <button class="btn btn-sm assist-dir-btn active" id="assistDirV" data-dir="vertical">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2v12M5 11l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        纵向
+                    </button>
+                    <button class="btn btn-sm assist-dir-btn" id="assistDirH" data-dir="horizontal">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 8h12M11 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        横向
+                    </button>
+                </div>
+            </div>
+            <!-- 高亮颜色选择 -->
+            <div class="assist-color-section">
+                <label class="assist-color-label">选择要拼的颜色（点击高亮）：</label>
+                <div class="assist-color-grid" id="assistColorGrid">
+                    <!-- JS 动态生成 -->
+                </div>
+                <button class="btn btn-sm btn-full" id="assistClearHighlight" style="margin-top:6px;">
+                    <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    取消高亮（显示全部）
+                </button>
+            </div>
+            <!-- 进度 -->
+            <div class="assist-progress">
+                <div class="assist-progress-bar-wrap">
+                    <div class="assist-progress-bar" id="assistProgressBar" style="width:0%"></div>
+                </div>
+                <div class="assist-progress-text" id="assistProgressText">选择颜色查看拼豆进度</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 辅助拼豆悬浮小窗 -->
+    <div class="assist-mini" id="assistMini">
+        <div class="assist-mini-header" id="assistMiniHeader">
+            <div class="assist-mini-timer" id="assistMiniTimer">00:00:00</div>
+            <button class="assist-mini-expand" id="assistMiniExpand" title="展开面板">
+                <svg viewBox="0 0 20 20" width="12" height="12"><path d="M3 7h14M3 13h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <div class="assist-mini-body">
+            <div class="assist-mini-color" id="assistMiniColor"></div>
+            <div class="assist-mini-info">
+                <span class="assist-mini-id" id="assistMiniId">--</span>
+                <span class="assist-mini-count" id="assistMiniCount"></span>
+            </div>
+            <div class="assist-mini-nav">
+                <button class="assist-mini-nav-btn" id="assistMiniPrev" title="上一个颜色">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="assist-mini-nav-btn" id="assistMiniNext" title="下一个颜色">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- 主题自定义弹窗 -->
     <div class="theme-modal" id="themeModal">
