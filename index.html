@@ -385,6 +385,36 @@
                 </button>
             </div>
         </div>
+            <!-- 移动端内嵌色板区域 -->
+            <div class="mobile-palette-area" id="mobilePaletteArea">
+                <div class="mobile-palette-tabs">
+                    <button class="mob-palette-tab active" data-tab="palette">色板</button>
+                    <button class="mob-palette-tab" data-tab="stats">统计</button>
+                </div>
+                <div class="mobile-palette-content">
+                    <div class="mob-tab-panel active" id="mobTabPalette">
+                        <div class="mob-current-color-bar">
+                            <div class="mob-color-preview" id="mobColorPreview2"></div>
+                            <div class="mob-color-info">
+                                <span class="mob-color-id" id="mobColorId2">M01</span>
+                                <span class="mob-color-name" id="mobColorName2">白色</span>
+                            </div>
+                            <button class="mob-color-deselect" id="mobDeselectColor2" title="取消选色">
+                                <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+                            </button>
+                        </div>
+                        <div class="mob-palette-grid" id="mobPaletteGrid"></div>
+                    </div>
+                    <div class="mob-tab-panel" id="mobTabStats">
+                        <div class="mob-usage-summary">
+                            <span>总计</span>
+                            <strong id="mobTotalBeads">0</strong>
+                            <span>颗</span>
+                        </div>
+                        <div class="mob-usage-list" id="mobUsageList"></div>
+                    </div>
+                </div>
+            </div>
 
         <!-- ===== 右侧色板面板 ===== -->
         <aside class="panel panel-right" id="panelRight">

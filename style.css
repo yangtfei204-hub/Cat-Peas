@@ -1084,9 +1084,9 @@ body {
     .logo-text { font-size: 16px; }
     .logo-cat { width: 26px; height: 26px; }
     .panel { width: 100vw; }
-    .mob-tool { width: 36px; height: 36px; }
+    .mob-tool { width: 40px; height: 40px; }
     .mob-tool svg { width: 18px; height: 18px; }
-    .mob-tool-label { width: auto; min-width: 40px; height: 36px; padding: 3px 6px; }
+    .mob-tool-label { width: auto; min-width: 44px; height: 40px; padding: 3px 6px; }
     .mob-tool-label svg { width: 14px; height: 14px; }
 }
 
@@ -2393,6 +2393,316 @@ body {
     }
 
     .project-view-toggle {
+        display: none;
+    }
+}
+
+/* ========================================
+   Mobile Inline Palette Area
+   ======================================== */
+.mobile-palette-area {
+    display: none;
+    flex-direction: column;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    max-height: 45vh;
+    overflow: hidden;
+}
+
+@media (max-width: 960px) {
+    .mobile-palette-area {
+        display: flex;
+    }
+}
+
+.mobile-palette-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+
+.mob-palette-tab {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--font-base);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    transition: var(--transition);
+}
+
+.mob-palette-tab:hover {
+    color: var(--text-secondary);
+    background: var(--iris-lighter);
+}
+
+.mob-palette-tab.active {
+    color: var(--iris-dark);
+    border-bottom-color: var(--iris-dark);
+    background: transparent;
+}
+
+.mobile-palette-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.mob-tab-panel {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+    padding: 8px 10px;
+}
+
+.mob-tab-panel.active {
+    display: flex;
+}
+
+/* 移动端当前颜色条 */
+.mob-current-color-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.mob-color-preview {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-xs);
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    background: #fff;
+}
+
+.mob-color-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.mob-color-id {
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--iris-dark);
+}
+
+.mob-color-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mob-color-deselect {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    background: var(--bg-card);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.mob-color-deselect:hover {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+/* 移动端色板网格 */
+.mob-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 3px;
+    padding-bottom: 10px;
+}
+
+.mob-palette-grid .mob-palette-group-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 4px 3px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.mob-palette-grid .mob-palette-group-header:hover {
+    background: var(--iris-lighter);
+}
+
+.mob-palette-grid .mob-palette-group-header .mob-group-arrow {
+    transition: transform 0.2s ease;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.mob-palette-grid .mob-palette-group-header.collapsed .mob-group-arrow {
+    transform: rotate(-90deg);
+}
+
+.mob-palette-grid .mob-palette-group-colors {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 3px;
+    padding: 3px 0 4px;
+    transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.2s ease;
+    max-height: 600px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.mob-palette-grid .mob-palette-group-colors.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+}
+
+.mob-palette-color {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 26px;
+}
+
+.mob-palette-color:hover {
+    transform: scale(1.12);
+    z-index: 3;
+    box-shadow: var(--shadow);
+}
+
+.mob-palette-color.active {
+    border-color: var(--iris-dark);
+    box-shadow: 0 0 0 2px var(--iris-light);
+    transform: scale(1.08);
+    z-index: 3;
+}
+
+.mob-palette-color .mob-color-label {
+    font-size: 6px;
+    font-weight: 800;
+    pointer-events: none;
+    line-height: 1;
+}
+
+.mob-palette-color.custom {
+    border: 2px dashed var(--border);
+}
+
+.mob-palette-color.custom.active {
+    border-color: var(--iris-dark);
+    border-style: solid;
+}
+
+/* 移动端统计 */
+.mob-usage-summary {
+    padding: 8px;
+    background: linear-gradient(135deg, var(--pink-lighter), var(--iris-lighter));
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    text-align: center;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.mob-usage-summary strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--iris-dark);
+}
+
+.mob-usage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-bottom: 10px;
+}
+
+.mob-usage-list .usage-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    background: var(--bg-card);
+    border-radius: var(--radius-xs);
+    font-size: 11px;
+    border: 1px solid var(--border-light);
+}
+
+/* 移动端色板面板滚动条 */
+.mob-tab-panel::-webkit-scrollbar {
+    width: 3px;
+}
+
+.mob-tab-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.mob-tab-panel::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+.mob-tab-panel {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+/* 移动端隐藏原来的色板按钮（因为色板已内嵌显示） */
+@media (max-width: 960px) {
+    #mobPanelRight {
+        display: none;
+    }
+}
+
+@media (max-width: 960px) {
+    .canvas-wrapper {
+        min-height: 35vh;
+    }
+}
+
+@media (max-width: 960px) {
+    .color-legend {
         display: none;
     }
 }
