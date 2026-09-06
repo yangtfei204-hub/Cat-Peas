@@ -178,6 +178,7 @@
     //  State
     // ===========================
     var _drawRAFPending = false;
+    var _pinchActive = false;
     const S = {
         gridW: 52,
         gridH: 52,
@@ -824,10 +825,10 @@
         tCtx.fillStyle = '#f6f1ee';
         tCtx.fillRect(0, 0, tw, rs);
 
-        tCtx.textAlign = 'left';
+        tCtx.textAlign = 'right';
         tCtx.textBaseline = 'bottom';
 
-        var showDetail = S.zoom >= 1.5;
+        var showDetail = S.zoom >= 0.6;
         for (let c = 0; c <= S.gridW; c++) {
             var major = c % 5 === 0;
             var minor = !major && showDetail;
@@ -841,11 +842,11 @@
             if (major) {
                 tCtx.fillStyle = '#8d7baa';
                 tCtx.font = 'bold 9px -apple-system, sans-serif';
-                tCtx.fillText(String(c), c * cs + 2, rs - 4);
+                tCtx.fillText(String(c), c * cs - 2, rs - 4);
             } else if (minor) {
                 tCtx.fillStyle = '#b8aec4';
                 tCtx.font = '7px -apple-system, sans-serif';
-                tCtx.fillText(String(c), c * cs + 2, rs - 4);
+                tCtx.fillText(String(c), c * cs - 2, rs - 4);
             }
         }
 
@@ -1588,12 +1589,19 @@
             if (S.isPanning) { S.isPanning = false; canvasWrapper.style.cursor = ''; }
         });
 
-        // Two-finger pan for mobile
+        // Two-finger pan/zoom for mobile (optimized)
         let pinchStartDist = 0, pinchStartZoom = 1;
         let panTouchStart = null;
+        var _pinchRAFPending = false;
         canvasWrapper.addEventListener('touchstart', e => {
             if (e.touches.length === 2) {
                 e.preventDefault();
+                e.stopPropagation();
+                // 取消正在进行的绘图
+                if (S.isDrawing) {
+                    S.isDrawing = false;
+                }
+                _pinchActive = true;
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 pinchStartDist = Math.sqrt(dx * dx + dy * dy);
@@ -1604,19 +1612,32 @@
             }
         }, { passive: false });
         canvasWrapper.addEventListener('touchmove', e => {
-            if (e.touches.length === 2) {
+            if (e.touches.length === 2 && _pinchActive) {
                 e.preventDefault();
-                const dx = e.touches[0].clientX - e.touches[1].clientX;
-                const dy = e.touches[0].clientY - e.touches[1].clientY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                S.zoom = Math.min(Math.max(pinchStartZoom * (dist / pinchStartDist), 0.05), 6);
-                if (panTouchStart) {
-                    const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                    const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                    S.panX = mx - panTouchStart.x;
-                    S.panY = my - panTouchStart.y;
-                }
-                applyTransform();
+                e.stopPropagation();
+                if (_pinchRAFPending) return;
+                _pinchRAFPending = true;
+                var t0x = e.touches[0].clientX, t0y = e.touches[0].clientY;
+                var t1x = e.touches[1].clientX, t1y = e.touches[1].clientY;
+                requestAnimationFrame(function () {
+                    _pinchRAFPending = false;
+                    var dx = t0x - t1x;
+                    var dy = t0y - t1y;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    S.zoom = Math.min(Math.max(pinchStartZoom * (dist / pinchStartDist), 0.05), 6);
+                    if (panTouchStart) {
+                        var mx = (t0x + t1x) / 2;
+                        var my = (t0y + t1y) / 2;
+                        S.panX = mx - panTouchStart.x;
+                        S.panY = my - panTouchStart.y;
+                    }
+                    applyTransform();
+                });
+            }
+        }, { passive: false });
+        canvasWrapper.addEventListener('touchend', e => {
+            if (e.touches.length < 2) {
+                _pinchActive = false;
             }
         }, { passive: false });
 
@@ -2116,9 +2137,16 @@
     // Touch drawing
     function onTouchStart(e) {
         if (e.touches.length !== 1) return;
+        if (_pinchActive) return;
         if (S.assistMode) { showAssistDrawBlock(); return; }
         e.preventDefault();
-        if (S.tool === 'hand') return;
+        if (S.tool === 'hand') {
+            // 抓手模式：单指拖拽画布
+            S.isPanning = true;
+            var touch = e.touches[0];
+            S.panStart = { x: touch.clientX - S.panX, y: touch.clientY - S.panY };
+            return;
+        }
         const cell = cellFromTouch(e);
         if (!cell) return;
 
@@ -2132,7 +2160,17 @@
     }
 
     function onTouchMove(e) {
-        if (!S.isDrawing || e.touches.length !== 1) return;
+        if (e.touches.length !== 1) return;
+        // 抓手模式：单指拖拽
+        if (S.isPanning && S.tool === 'hand') {
+            e.preventDefault();
+            var touch = e.touches[0];
+            S.panX = touch.clientX - S.panStart.x;
+            S.panY = touch.clientY - S.panStart.y;
+            applyTransform();
+            return;
+        }
+        if (!S.isDrawing) return;
         e.preventDefault();
         if (_drawRAFPending) return;
         _drawRAFPending = true;
@@ -2156,6 +2194,10 @@
     }
 
     function onTouchEnd() {
+        if (S.isPanning && S.tool === 'hand') {
+            S.isPanning = false;
+            return;
+        }
         if (S.isDrawing) {
             S.isDrawing = false;
             pushHistory();
@@ -2753,7 +2795,7 @@
             ec.fillRect(0, 0, rs, rs + S.gridH * cs);
             ec.fillRect(0, 0, rs + S.gridW * cs, rs);
 
-            ec.textAlign = 'left';
+            ec.textAlign = 'right';
             ec.textBaseline = 'bottom';
             for (let c = 0; c <= S.gridW; c++) {
                 var major = c % 5 === 0;
@@ -2766,11 +2808,11 @@
                 if (major) {
                     ec.fillStyle = '#8d7baa';
                     ec.font = 'bold 9px -apple-system, sans-serif';
-                    ec.fillText(String(c), rs + c * cs + 2, rs - 4);
+                    ec.fillText(String(c), rs + c * cs - 2, rs - 4);
                 } else {
                     ec.fillStyle = '#b8aec4';
                     ec.font = '7px -apple-system, sans-serif';
-                    ec.fillText(String(c), rs + c * cs + 2, rs - 4);
+                    ec.fillText(String(c), rs + c * cs - 2, rs - 4);
                 }
             }
 
@@ -3113,7 +3155,7 @@
                     ec.fillRect(0, 0, rs, rs + bh * cs);
                     ec.fillRect(0, 0, rs + bw * cs, rs);
 
-                    ec.textAlign = 'left';
+                    ec.textAlign = 'right';
                     ec.textBaseline = 'bottom';
                     for (var rc = 0; rc <= bw; rc++) {
                         var rm = (startC + rc) % 5 === 0;
@@ -3126,11 +3168,11 @@
                         if (rm) {
                             ec.fillStyle = '#8d7baa';
                             ec.font = 'bold 9px -apple-system, sans-serif';
-                            ec.fillText(String(startC + rc), rs + rc * cs + 2, rs - 4);
+                            ec.fillText(String(startC + rc), rs + rc * cs - 2, rs - 4);
                         } else {
                             ec.fillStyle = '#b8aec4';
                             ec.font = '7px -apple-system, sans-serif';
-                            ec.fillText(String(startC + rc), rs + rc * cs + 2, rs - 4);
+                            ec.fillText(String(startC + rc), rs + rc * cs - 2, rs - 4);
                         }
                     }
                     ec.textAlign = 'right';
