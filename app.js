@@ -815,6 +815,19 @@
         const h = S.gridH * cs;
         const hi = S.assistHighlightIdx;
 
+        // 读取当前主题颜色，让遮罩跟随主题变化
+        var rootStyle = getComputedStyle(document.documentElement);
+        var bgColor = rootStyle.getPropertyValue('--bg').trim() || '#f9f6f4';
+        var irisColor = rootStyle.getPropertyValue('--iris-dark').trim() || '#8d7baa';
+
+        // 将主题背景色转为 rgba 半透明
+        var bgRgb = hexToRgb(bgColor);
+        var overlayColor = 'rgba(' + bgRgb.r + ',' + bgRgb.g + ',' + bgRgb.b + ',0.75)';
+
+        // 将主题强调色转为边框色
+        var irisRgb = hexToRgb(irisColor);
+        var borderColor = 'rgba(' + irisRgb.r + ',' + irisRgb.g + ',' + irisRgb.b + ',0.8)';
+
         // 半透明遮罩覆盖非高亮区域
         for (let r = 0; r < S.gridH; r++) {
             for (let c = 0; c < S.gridW; c++) {
@@ -822,7 +835,7 @@
                 if (ci === hi) continue; // 高亮颜色不遮罩
                 const x = c * cs;
                 const y = r * cs;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                ctx.fillStyle = overlayColor;
                 ctx.fillRect(x, y, cs, cs);
             }
         }
@@ -833,7 +846,7 @@
                 if (S.grid[r][c] !== hi) continue;
                 const x = c * cs;
                 const y = r * cs;
-                ctx.strokeStyle = 'rgba(141, 123, 170, 0.8)';
+                ctx.strokeStyle = borderColor;
                 ctx.lineWidth = 1.5;
                 ctx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
             }
@@ -882,10 +895,15 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
+        // 读取主题强调色用于数字背景
+        var rootStyle = getComputedStyle(document.documentElement);
+        var irisColor = rootStyle.getPropertyValue('--iris-dark').trim() || '#8d7baa';
+        var irisRgb = hexToRgb(irisColor);
+
         // 数字背景圆
         var textW = ctx.measureText(String(num)).width;
         var bgR = Math.max(textW / 2 + 3, fontSize / 2 + 2);
-        ctx.fillStyle = 'rgba(141, 123, 170, 0.9)';
+        ctx.fillStyle = 'rgba(' + irisRgb.r + ',' + irisRgb.g + ',' + irisRgb.b + ',0.9)';
         ctx.beginPath();
         ctx.arc(x, y, bgR, 0, Math.PI * 2);
         ctx.fill();
@@ -3731,6 +3749,8 @@
 
     function generateThumbnail(grid, gridW, gridH, paletteSnapshot) {
         try {
+            if (!grid || !gridW || !gridH) return '';
+
             var maxSize = 200;
             var ratio = gridW / gridH;
             var tw, th;
@@ -3743,44 +3763,69 @@
             }
             if (tw < 10) tw = 10;
             if (th < 10) th = 10;
+
             var tmp = document.createElement('canvas');
             tmp.width = tw;
             tmp.height = th;
             var tc = tmp.getContext('2d');
             if (!tc) return '';
+
+            // 白色背景
             tc.fillStyle = '#ffffff';
             tc.fillRect(0, 0, tw, th);
+
             var cellW = tw / gridW;
             var cellH = th / gridH;
 
-            // 优先使用传入的色板快照，否则用当前全局色板
-            var pal = PALETTE;
+            // 构建色板查找表：优先用传入的快照，否则用全局
+            var pal = null;
             if (paletteSnapshot && paletteSnapshot.length > 0) {
                 pal = paletteSnapshot;
+            } else {
+                pal = PALETTE;
             }
+
+            var hasContent = false;
 
             for (var r = 0; r < gridH; r++) {
                 if (!grid[r]) continue;
                 for (var c = 0; c < gridW; c++) {
                     var ci = grid[r][c];
+                    // 兼容 null、undefined、-1 等空值
                     if (ci === null || ci === undefined || ci < 0) continue;
-                    if (ci < pal.length && pal[ci]) {
-                        tc.fillStyle = pal[ci].hex;
-                    } else if (ci < PALETTE.length && PALETTE[ci]) {
-                        tc.fillStyle = PALETTE[ci].hex;
-                    } else {
-                        tc.fillStyle = '#cccccc';
+
+                    var hex = null;
+
+                    // 先从传入的色板快照中查找
+                    if (pal && ci < pal.length && pal[ci] && pal[ci].hex) {
+                        hex = pal[ci].hex;
                     }
+                    // 回退到全局色板
+                    else if (PALETTE && ci < PALETTE.length && PALETTE[ci] && PALETTE[ci].hex) {
+                        hex = PALETTE[ci].hex;
+                    }
+
+                    if (!hex) continue;
+
+                    tc.fillStyle = hex;
                     tc.fillRect(
                         Math.floor(c * cellW),
                         Math.floor(r * cellH),
                         Math.ceil(cellW + 0.5),
                         Math.ceil(cellH + 0.5)
                     );
+                    hasContent = true;
                 }
             }
+
+            // 如果画布上没有任何内容，返回空
+            if (!hasContent) return '';
+
             var dataUrl = tmp.toDataURL('image/png');
-            if (!dataUrl || dataUrl.length < 100) return '';
+
+            // 验证生成的 dataURL 是否有效
+            if (!dataUrl || dataUrl.length < 100 || dataUrl === 'data:,') return '';
+
             return dataUrl;
         } catch (e) {
             console.warn('生成缩略图失败:', e);
@@ -3856,6 +3901,19 @@
     }
 
     function doSave(projectId, name, category, gridData, thumbnail, total, createdAt, now, isOverwrite) {
+        // 如果缩略图为空，尝试重新生成
+        if (!thumbnail || thumbnail.length < 100) {
+            thumbnail = generateThumbnail(gridData, S.gridW, S.gridH, null);
+        }
+
+        // 保存色板快照，只保存必要字段，减小体积
+        var palSnap = [];
+        for (var i = 0; i < PALETTE.length; i++) {
+            if (PALETTE[i]) {
+                palSnap.push({ id: PALETTE[i].id, name: PALETTE[i].name, hex: PALETTE[i].hex });
+            }
+        }
+
         var projectData = {
             id: projectId,
             name: name,
@@ -3867,9 +3925,7 @@
             totalBeads: total,
             createdAt: createdAt,
             updatedAt: now,
-            paletteSnapshot: PALETTE.map(function (c) {
-                return { id: c.id, name: c.name, hex: c.hex };
-            })
+            paletteSnapshot: palSnap
         };
 
         dbPut(STORE_PROJECTS, projectData).then(function () {
@@ -4044,7 +4100,21 @@
                 });
 
                 var thumbHtml;
-                if (proj.thumbnail && proj.thumbnail.length > 100 && proj.thumbnail.indexOf('data:image') === 0) {
+                var hasThumb = proj.thumbnail && proj.thumbnail.length > 100 && proj.thumbnail.indexOf('data:') === 0;
+                if (!hasThumb) {
+                    // 尝试即时生成缩略图
+                    try {
+                        var pal = proj.paletteSnapshot || PALETTE;
+                        var freshThumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, pal);
+                        if (freshThumb && freshThumb.length > 100) {
+                            proj.thumbnail = freshThumb;
+                            hasThumb = true;
+                            // 异步保存回数据库，不阻塞渲染
+                            dbPut(STORE_PROJECTS, proj).catch(function () {});
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+                if (hasThumb) {
                     thumbHtml = '<img src="' + proj.thumbnail + '" alt="预览" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
                         '<div class="preview-placeholder" style="display:none;">加载失败</div>';
                 } else {
@@ -4132,9 +4202,14 @@
             var promises = [];
             projects.forEach(function (proj) {
                 try {
-                    var thumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, proj.paletteSnapshot);
-                    if (thumb && thumb.length > 100) {
-                        if (proj.thumbnail !== thumb) {
+                    // 检查缩略图是否缺失或无效
+                    var needFix = !proj.thumbnail || proj.thumbnail.length < 100 || proj.thumbnail === 'data:,';
+
+                    if (needFix) {
+                        // 使用项目自带的色板快照来生成缩略图
+                        var pal = proj.paletteSnapshot || PALETTE;
+                        var thumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, pal);
+                        if (thumb && thumb.length > 100) {
                             proj.thumbnail = thumb;
                             promises.push(dbPut(STORE_PROJECTS, proj));
                         }
