@@ -3,6 +3,9 @@
 (function () {
     'use strict';
 
+    // 版本号 —— 每次功能更新后递增此值，将触发用户重新确认免责声明和查看使用说明
+    var APP_VERSION = '1.1.0';
+
     // ===========================
     //  IndexedDB 项目库管理
     // ===========================
@@ -189,6 +192,10 @@
         panX: 0,
         panY: 0,
         tool: 'pen',
+        brushSize: 1,
+        showCenterLine: false,
+        symmetryMode: 'none',
+        fillPreviewIdx: -1,
         currentColorIdx: 0,
         grid: [],
         showGrid: true,
@@ -197,7 +204,7 @@
         showBead: false,
         history: [],
         historyIdx: -1,
-        maxHistory: 15,
+        maxHistory: 80,
         isPanning: false,
         panStart: null,
         isDrawing: false,
@@ -218,8 +225,21 @@
         assistMiniMode: false,
         showSplitLine: false,
         splitSize: 52,
+        // 选区状态
+        selection: null,
+        selectionClipboard: null,
+        selectionDragging: false,
+        selectionDragStart: null,
+        selectionStartCell: null,
+        selectionDrawing: false,
         currentProjectId: null,
         currentProjectName: '',
+        // 图层
+        activeLayer: 0,
+        layers: [
+            { name: '轮廓层', visible: true, grid: null },
+            { name: '填色层', visible: true, grid: null }
+        ],
     };
 
     // ===========================
@@ -338,11 +358,20 @@
     // ===========================
     function showDisclaimer() {
         try {
-            if (localStorage.getItem('catpeas_disclaimer_accepted') === '1') {
-                // 已接受免责声明，检查是否需要显示使用说明
-                showHelpFirstTime();
+            var acceptedVersion = localStorage.getItem('catpeas_disclaimer_version');
+            if (acceptedVersion === APP_VERSION) {
+                // 当前版本已确认过，跳过
                 return;
             }
+            // 版本号不一致或从未确认过，需要重新弹出
+            // 如果是老用户升级（之前用旧的 key 确认过），也会走到这里
+        } catch (e) { /* ignore */ }
+
+        // 判断是否为首次使用（从未确认过任何版本）
+        var isFirstTime = false;
+        try {
+            isFirstTime = !localStorage.getItem('catpeas_disclaimer_version') &&
+                           !localStorage.getItem('catpeas_disclaimer_accepted');
         } catch (e) { /* ignore */ }
 
         var modal = $('disclaimerModal');
@@ -350,50 +379,88 @@
         var countdown = $('disclaimerCountdown');
         modal.classList.add('active');
 
-        var remaining = 5;
+        // 显示版本号
+        if ($('disclaimerVersion')) $('disclaimerVersion').textContent = 'v' + APP_VERSION;
+
+        // 首次使用需要等待 5 秒，版本更新只需等待 3 秒
+        var waitTime = isFirstTime ? 5 : 3;
+        var remaining = waitTime;
         btn.disabled = true;
         btn.textContent = '请等待 ' + remaining + ' 秒';
-        countdown.textContent = '请阅读以上内容（' + remaining + '秒）';
+
+        if (isFirstTime) {
+            countdown.textContent = '首次使用，请阅读以上内容（' + remaining + '秒）';
+        } else {
+            countdown.textContent = '工具已更新至 v' + APP_VERSION + '，请重新确认（' + remaining + '秒）';
+        }
 
         var timer = setInterval(function () {
             remaining--;
             if (remaining > 0) {
                 btn.textContent = '请等待 ' + remaining + ' 秒';
-                countdown.textContent = '请阅读以上内容（' + remaining + '秒）';
+                if (isFirstTime) {
+                    countdown.textContent = '首次使用，请阅读以上内容（' + remaining + '秒）';
+                } else {
+                    countdown.textContent = '工具已更新至 v' + APP_VERSION + '，请重新确认（' + remaining + '秒）';
+                }
             } else {
                 clearInterval(timer);
                 btn.disabled = false;
                 btn.textContent = '我已阅读并同意，进入工具';
-                countdown.textContent = '感谢阅读';
+                if (isFirstTime) {
+                    countdown.textContent = '感谢阅读';
+                } else {
+                    countdown.textContent = '已更新至 v' + APP_VERSION;
+                }
             }
         }, 1000);
+
+        // 用克隆替换的方式避免重复绑定事件
+        var newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        btn = newBtn;
 
         btn.addEventListener('click', function () {
             if (btn.disabled) return;
             modal.classList.remove('active');
             try {
+                localStorage.setItem('catpeas_disclaimer_version', APP_VERSION);
+                // 兼容旧 key，也标记一下
                 localStorage.setItem('catpeas_disclaimer_accepted', '1');
             } catch (e) { /* ignore */ }
             // 免责声明关闭后显示使用说明
-            showHelpFirstTime();
+            showHelpAfterDisclaimer();
         });
     }
 
     function showHelpFirstTime() {
+        // 保留此函数用于兼容，但不再被直接调用
+        // 新逻辑由 showHelpAfterDisclaimer 处理
+    }
+
+    function showHelpAfterDisclaimer() {
         try {
-            if (localStorage.getItem('catpeas_help_shown') === '1') return;
+            var helpShownVersion = localStorage.getItem('catpeas_help_shown_version');
+            if (helpShownVersion === APP_VERSION) {
+                // 当前版本的使用说明已经看过了
+                return;
+            }
         } catch (e) { return; }
-        // 延迟一点显示，让页面先渲染完
+
+        // 延迟一点显示，让免责声明弹窗的关闭动画先完成
         setTimeout(function () {
             openHelpModal();
             try {
+                localStorage.setItem('catpeas_help_shown_version', APP_VERSION);
+                // 兼容旧 key
                 localStorage.setItem('catpeas_help_shown', '1');
             } catch (e) { /* ignore */ }
-        }, 300);
+        }, 400);
     }
 
     function openHelpModal() {
         $('helpModal').classList.add('active');
+        if ($('helpVersion')) $('helpVersion').textContent = 'v' + APP_VERSION;
     }
 
     function closeHelpModal() {
@@ -419,6 +486,8 @@
     }
 
     function init() {
+        // 显示版本号
+        if ($('logoVersion')) $('logoVersion').textContent = 'v' + APP_VERSION;
         showDisclaimer();
         initGrid();
         loadCustomColors();
@@ -433,6 +502,7 @@
         openDB();
         startAutoSave();
         loadCustomCSS();
+        initMinimapInteraction();
     }
 
     function startAutoSave() {
@@ -526,6 +596,13 @@
                 S.gridW = data.gridW;
                 S.gridH = data.gridH;
                 S.grid = grid.map(function (row) { return Array.from(row); });
+                // 同步到填色层
+                initLayers();
+                for (var lr = 0; lr < S.gridH; lr++) {
+                    for (var lc = 0; lc < S.gridW; lc++) {
+                        S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+                    }
+                }
                 $('canvasWidth').value = S.gridW;
                 $('canvasHeight').value = S.gridH;
                 if (data.currentColorIdx >= 0 && data.currentColorIdx < PALETTE.length) {
@@ -537,9 +614,79 @@
 
     function initGrid() {
         S.grid = [];
-        for (let r = 0; r < S.gridH; r++) {
+        for (var r = 0; r < S.gridH; r++) {
             S.grid[r] = new Array(S.gridW).fill(null);
         }
+        // 初始化图层
+        initLayers();
+    }
+
+    function initLayers() {
+        S.layers[0].grid = [];
+        S.layers[1].grid = [];
+        for (var r = 0; r < S.gridH; r++) {
+            S.layers[0].grid[r] = new Array(S.gridW).fill(null);
+            S.layers[1].grid[r] = new Array(S.gridW).fill(null);
+        }
+        S.activeLayer = 1; // 默认编辑填色层
+    }
+
+    function syncGridFromLayers(row, col) {
+        // 从下到上合成：轮廓层(0)在底，填色层(1)在上
+        // 上层有颜色则显示上层，否则显示下层
+        if (row !== undefined && col !== undefined) {
+            // 单格同步
+            var val = null;
+            for (var i = 0; i < S.layers.length; i++) {
+                if (!S.layers[i].visible) continue;
+                var lg = S.layers[i].grid;
+                if (lg && lg[row] && lg[row][col] !== null) {
+                    val = lg[row][col];
+                }
+            }
+            S.grid[row][col] = val;
+        } else {
+            // 全量同步
+            for (var r = 0; r < S.gridH; r++) {
+                for (var c = 0; c < S.gridW; c++) {
+                    var v = null;
+                    for (var li = 0; li < S.layers.length; li++) {
+                        if (!S.layers[li].visible) continue;
+                        var lg2 = S.layers[li].grid;
+                        if (lg2 && lg2[r] && lg2[r][c] !== null) {
+                            v = lg2[r][c];
+                        }
+                    }
+                    S.grid[r][c] = v;
+                }
+            }
+        }
+    }
+
+    function mergeLayersToGrid() {
+        // 将所有图层合并到 grid 和 填色层，清空轮廓层
+        syncGridFromLayers();
+        // 把合并结果写到填色层
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                S.layers[1].grid[r][c] = S.grid[r][c];
+                S.layers[0].grid[r][c] = null;
+            }
+        }
+        S.activeLayer = 1;
+        updateLayerUI();
+        pushHistory('合并图层');
+        render();
+    }
+
+    function updateLayerUI() {
+        var items = document.querySelectorAll('#layerList .layer-item');
+        items.forEach(function (item) {
+            var idx = parseInt(item.dataset.layer);
+            item.classList.toggle('active', idx === S.activeLayer);
+            var visBtn = item.querySelector('.layer-vis-btn');
+            visBtn.classList.toggle('hidden', !S.layers[idx].visible);
+        });
     }
 
     // ===========================
@@ -632,6 +779,7 @@
     //  Render
     // ===========================
     var _usageUpdateTimer = null;
+    var _renderRAFPending = false;
     function render() {
         renderBg();
         renderMain();
@@ -799,8 +947,57 @@
             ctx.restore();
         }
 
+        // 换色预览高亮
+        if (S.tool === 'fill' && S.fillPreviewIdx >= 0 && S.fillPreviewIdx !== S.currentColorIdx) {
+            var previewColor = PALETTE[S.currentColorIdx];
+            for (var pr = 0; pr < S.gridH; pr++) {
+                for (var pc = 0; pc < S.gridW; pc++) {
+                    if (S.grid[pr][pc] === S.fillPreviewIdx) {
+                        var px = pc * cs;
+                        var py = pr * cs;
+                        // 绘制将替换成的颜色半透明预览
+                        if (previewColor) {
+                            ctx.fillStyle = previewColor.hex;
+                            ctx.globalAlpha = 0.5;
+                            ctx.fillRect(px, py, cs, cs);
+                            ctx.globalAlpha = 1;
+                        }
+                        // 闪烁边框
+                        ctx.strokeStyle = 'rgba(220, 80, 80, 0.7)';
+                        ctx.lineWidth = 1.5;
+                        ctx.strokeRect(px + 0.5, py + 0.5, cs - 1, cs - 1);
+                    }
+                }
+            }
+        }
+
+        // 中心参考线
+        if (S.showCenterLine) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(220, 80, 80, 0.45)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([8, 4]);
+            // 水平中心线
+            var cy = Math.floor(S.gridH / 2) * cs;
+            ctx.beginPath();
+            ctx.moveTo(0, cy);
+            ctx.lineTo(w, cy);
+            ctx.stroke();
+            // 垂直中心线
+            var cx = Math.floor(S.gridW / 2) * cs;
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, h);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
         // 辅助拼豆模式覆盖层
         renderAssistOverlay();
+
+        // 选区覆盖层
+        renderSelectionOverlay();
     }
 
 
@@ -1046,6 +1243,37 @@
         }
     }
 
+    // 色板分组数据缓存
+    var _paletteGroupsCache = {};
+
+    function fillPaletteGroupItems(wrapper, items) {
+        wrapper.innerHTML = '';
+        items.forEach(function (item) {
+            var div = document.createElement('div');
+            div.className = 'palette-color' + (item.index === S.currentColorIdx ? ' active' : '');
+            div.style.background = item.color.hex;
+            div.dataset.idx = item.index;
+            div.title = item.color.id + ' ' + item.color.name;
+
+            var lum = luminance(item.color.hex);
+            var span = document.createElement('span');
+            span.className = 'color-id';
+            span.textContent = item.color.id;
+            span.style.color = lum > 0.55 ? 'rgba(50,40,45,0.6)' : 'rgba(255,255,255,0.8)';
+            div.appendChild(span);
+
+            div.addEventListener('click', function () { selectColor(item.index); });
+            wrapper.appendChild(div);
+        });
+        wrapper.dataset.loaded = '1';
+    }
+
+    function lazyFillPaletteGroup(wrapper, prefix) {
+        if (wrapper.dataset.loaded === '1') return;
+        var items = _paletteGroupsCache[prefix];
+        if (!items) return;
+        fillPaletteGroupItems(wrapper, items);
+    }
 
     // ===========================
     //  Palette
@@ -1081,6 +1309,7 @@
 
         // 逐组渲染
         Object.keys(groups).sort().forEach(prefix => {
+            _paletteGroupsCache[prefix] = groups[prefix];
             // 分组标题
             const header = document.createElement('div');
             header.className = 'palette-group-header';
@@ -1089,10 +1318,15 @@
                 '<span class="palette-group-count">' + groups[prefix].length + '色</span>' +
                 '<svg class="palette-group-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             header.addEventListener('click', function () {
-                const wrapper = this.nextElementSibling;
-                const isCollapsed = wrapper.classList.toggle('collapsed');
+                var wrapper = this.nextElementSibling;
+                var isCollapsed = wrapper.classList.toggle('collapsed');
                 this.classList.toggle('collapsed', isCollapsed);
+                // 懒加载：首次展开时才填充色块
+                if (!isCollapsed && !wrapper.dataset.loaded) {
+                    lazyFillPaletteGroup(wrapper, this.dataset.prefix);
+                }
             });
+            header.dataset.prefix = prefix;
             // 默认折叠状态
             header.classList.add('collapsed');
             grid.appendChild(header);
@@ -1101,23 +1335,16 @@
             const wrapper = document.createElement('div');
             wrapper.className = 'palette-group-colors collapsed';
 
-            groups[prefix].forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'palette-color' + (item.index === S.currentColorIdx ? ' active' : '');
-                div.style.background = item.color.hex;
-                div.dataset.idx = item.index;
-                div.title = item.color.id + ' ' + item.color.name;
-
-                const lum = luminance(item.color.hex);
-                const span = document.createElement('span');
-                span.className = 'color-id';
-                span.textContent = item.color.id;
-                span.style.color = lum > 0.55 ? 'rgba(50,40,45,0.6)' : 'rgba(255,255,255,0.8)';
-                div.appendChild(span);
-
-                div.addEventListener('click', () => selectColor(item.index));
-                wrapper.appendChild(div);
-            });
+            // 只预先渲染当前选中颜色所在的分组，其他懒加载
+            var shouldPreload = groups[prefix].some(function (item) { return item.index === S.currentColorIdx; });
+            if (shouldPreload) {
+                fillPaletteGroupItems(wrapper, groups[prefix]);
+                wrapper.dataset.loaded = '1';
+                // 当前选中色的分组默认展开
+                wrapper.classList.remove('collapsed');
+                header.classList.remove('collapsed');
+            }
+            wrapper.dataset.groupPrefix = prefix;
 
             grid.appendChild(wrapper);
         });
@@ -1227,7 +1454,7 @@
     // ===========================
     //  History
     // ===========================
-    function pushHistory() {
+    function pushHistory(actionLabel) {
         S.history = S.history.slice(0, S.historyIdx + 1);
 
         // 增量记录：只记录变化的格子
@@ -1256,7 +1483,8 @@
                         w: S.gridW,
                         h: S.gridH,
                         _diffs: diffs,
-                        _baseIdx: S.historyIdx
+                        _baseIdx: S.historyIdx,
+                        _label: actionLabel || ('编辑 x' + (diffs.length / 2) + '格')
                     });
                 } else {
                     // 差异太大，存全量但用紧凑格式
@@ -1264,7 +1492,8 @@
                         grid: compactGrid(S.grid, S.gridW, S.gridH),
                         w: S.gridW,
                         h: S.gridH,
-                        _compact: true
+                        _compact: true,
+                        _label: actionLabel || '编辑'
                     });
                 }
             } else {
@@ -1273,7 +1502,8 @@
                     grid: compactGrid(S.grid, S.gridW, S.gridH),
                     w: S.gridW,
                     h: S.gridH,
-                    _compact: true
+                    _compact: true,
+                    _label: actionLabel || '调整尺寸'
                 });
             }
         } else {
@@ -1282,7 +1512,8 @@
                 grid: compactGrid(S.grid, S.gridW, S.gridH),
                 w: S.gridW,
                 h: S.gridH,
-                _compact: true
+                _compact: true,
+                _label: actionLabel || '初始状态'
             });
         }
 
@@ -1390,6 +1621,14 @@
         S.gridW = snap.w;
         S.gridH = snap.h;
         S.grid = reconstructGrid(S.historyIdx);
+        // 同步到填色层
+        initLayers();
+        for (var lr = 0; lr < S.gridH; lr++) {
+            for (var lc = 0; lc < S.gridW; lc++) {
+                if (S.grid[lr] && S.grid[lr][lc] !== undefined)
+                    S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+            }
+        }
         $('canvasWidth').value = S.gridW;
         $('canvasHeight').value = S.gridH;
         if (sizeChanged) {
@@ -1416,7 +1655,11 @@
     }
 
     function updateHistoryUI() {
-        $('historyInfo').textContent = S.historyIdx + ' / ' + (S.history.length - 1);
+        var label = '';
+        if (S.history[S.historyIdx] && S.history[S.historyIdx]._label) {
+            label = ' · ' + S.history[S.historyIdx]._label;
+        }
+        $('historyInfo').textContent = S.historyIdx + ' / ' + (S.history.length - 1) + label;
     }
 
     // ===========================
@@ -1602,17 +1845,66 @@
     }
 
     function paintCell(row, col) {
-        const cs = S.cellSize;
-        if (S.tool === 'pen') {
-            if (S.noColor) return;
-            if (S.grid[row][col] !== S.currentColorIdx) {
-                S.grid[row][col] = S.currentColorIdx;
-                renderCellFast(row, col, cs);
+        var cs = S.cellSize;
+        var size = S.brushSize;
+        var half = Math.floor(size / 2);
+
+        // 收集所有要绘制的坐标（考虑对称）
+        var points = [{ r: row, c: col }];
+
+        if (S.symmetryMode === 'h' || S.symmetryMode === 'hv') {
+            // 水平对称：以垂直中心线为轴
+            var mirrorC = S.gridW - 1 - col;
+            points.push({ r: row, c: mirrorC });
+        }
+        if (S.symmetryMode === 'v' || S.symmetryMode === 'hv') {
+            // 垂直对称：以水平中心线为轴
+            var mirrorR = S.gridH - 1 - row;
+            points.push({ r: mirrorR, c: col });
+        }
+        if (S.symmetryMode === 'hv') {
+            // 对角对称
+            points.push({ r: S.gridH - 1 - row, c: S.gridW - 1 - col });
+        }
+
+        // 去重
+        var seen = {};
+        var uniquePoints = [];
+        for (var p = 0; p < points.length; p++) {
+            var key = points[p].r + ',' + points[p].c;
+            if (!seen[key]) {
+                seen[key] = true;
+                uniquePoints.push(points[p]);
             }
-        } else if (S.tool === 'eraser') {
-            if (S.grid[row][col] !== null) {
-                S.grid[row][col] = null;
-                renderCellFast(row, col, cs);
+        }
+
+        // 对每个点应用画笔大小
+        for (var pi = 0; pi < uniquePoints.length; pi++) {
+            var pr = uniquePoints[pi].r;
+            var pc = uniquePoints[pi].c;
+            for (var dr = -half; dr < size - half; dr++) {
+                for (var dc = -half; dc < size - half; dc++) {
+                    var r = pr + dr;
+                    var c = pc + dc;
+                    if (r < 0 || r >= S.gridH || c < 0 || c >= S.gridW) continue;
+                    if (S.tool === 'pen') {
+                        if (S.noColor) return;
+                        var layerGrid = S.layers[S.activeLayer].grid;
+                        if (layerGrid && layerGrid[r] && layerGrid[r][c] !== S.currentColorIdx) {
+                            layerGrid[r][c] = S.currentColorIdx;
+                            // 同步到合成 grid
+                            syncGridFromLayers(r, c);
+                            renderCellFast(r, c, cs);
+                        }
+                    } else if (S.tool === 'eraser') {
+                        var layerGrid2 = S.layers[S.activeLayer].grid;
+                        if (layerGrid2 && layerGrid2[r] && layerGrid2[r][c] !== null) {
+                            layerGrid2[r][c] = null;
+                            syncGridFromLayers(r, c);
+                            renderCellFast(r, c, cs);
+                        }
+                    }
+                }
             }
         }
     }
@@ -1717,13 +2009,19 @@
 
 
     function fillReplace(row, col) {
+        S.fillPreviewIdx = -1;
         const oldCI = S.grid[row][col];
         const newCI = S.currentColorIdx;
         if (oldCI === newCI) return;
         let changed = false;
         for (let r = 0; r < S.gridH; r++)
             for (let c = 0; c < S.gridW; c++)
-                if (S.grid[r][c] === oldCI) { S.grid[r][c] = newCI; changed = true; }
+                if (S.grid[r][c] === oldCI) {
+                    S.grid[r][c] = newCI;
+                    if (S.layers[S.activeLayer].grid && S.layers[S.activeLayer].grid[r])
+                        S.layers[S.activeLayer].grid[r][c] = newCI;
+                    changed = true;
+                }
         if (changed) { pushHistory(); render(); }
     }
 
@@ -1741,6 +2039,7 @@
         while (stack.length > 0) {
             const [r, c] = stack.pop();
             S.grid[r][c] = newCI;
+            if (S.layers[S.activeLayer].grid) S.layers[S.activeLayer].grid[r][c] = newCI;
 
             const neighbors = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
             for (const [nr, nc] of neighbors) {
@@ -1762,6 +2061,7 @@
         document.querySelectorAll('.btn-tool').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
         document.querySelectorAll('.mob-tool[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
         $('fillHint').style.display = t === 'fill' ? 'block' : 'none';
+        if ($('bucketHint')) $('bucketHint').style.display = t === 'bucket' ? 'block' : 'none';
         canvasWrapper.classList.toggle('hand-mode', t === 'hand');
         // 移动端不禁用 pointerEvents，否则触摸事件无法触发
         var isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -1806,6 +2106,15 @@
 
         // Draw Mouse
         mainCanvas.addEventListener('mousedown', onMouseDown);
+        mainCanvas.addEventListener('mousemove', onCanvasHover);
+        mainCanvas.addEventListener('mouseleave', function () {
+            if (S.fillPreviewIdx >= 0) {
+                S.fillPreviewIdx = -1;
+                renderMain();
+            }
+            $('coordPos').textContent = '行: -- 列: --';
+            $('coordColor').textContent = '';
+        });
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
 
@@ -1942,6 +2251,14 @@
             for (let r = 0; r < S.gridH; r++)
                 for (let c = 0; c < S.gridW; c++)
                     S.grid[r][c] = null;
+            // 清空图层
+            for (var lr = 0; lr < S.layers.length; lr++) {
+                if (S.layers[lr].grid) {
+                    for (var lr2 = 0; lr2 < S.gridH; lr2++) {
+                        S.layers[lr].grid[lr2] = new Array(S.gridW).fill(null);
+                    }
+                }
+            }
             S.currentProjectId = null;
             S.currentProjectName = '';
             // 清空画布时立即删除自动保存数据
@@ -1967,6 +2284,32 @@
             if (e.key === 'i' || e.key === 'I') setTool('picker');
             if (e.key === 'g' || e.key === 'G') setTool('fill');
             if (e.key === 'h' || e.key === 'H') setTool('hand');
+            if (e.key === 'm' || e.key === 'M') setTool('select');
+            if (e.key === 'Home') { e.preventDefault(); fitToView(); }
+            if (e.key === 'f' || e.key === 'F') setTool('bucket');
+            
+            // 选区快捷键
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c' && S.selection) { e.preventDefault(); copySelection(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v' && S.selectionClipboard) { e.preventDefault(); pasteSelection(); }
+            if (e.key === 'Delete' && S.selection) { e.preventDefault(); deleteSelection(); }
+            if (e.key === 'Escape' && S.selection) { e.preventDefault(); clearSelection(); }
+            // 方向键移动选区
+            if (S.selection && !e.ctrlKey && !e.metaKey) {
+                if (e.key === 'ArrowUp') { e.preventDefault(); moveSelectionBy(-1, 0); pushHistory(); }
+                if (e.key === 'ArrowDown') { e.preventDefault(); moveSelectionBy(1, 0); pushHistory(); }
+                if (e.key === 'ArrowLeft') { e.preventDefault(); moveSelectionBy(0, -1); pushHistory(); }
+                if (e.key === 'ArrowRight') { e.preventDefault(); moveSelectionBy(0, 1); pushHistory(); }
+            }
+            if (e.key === '[') {
+                S.brushSize = Math.max(1, S.brushSize - 1);
+                document.querySelectorAll('.brush-sz').forEach(function (b) { b.classList.toggle('active', parseInt(b.dataset.size) === S.brushSize); });
+                $('brushSizeVal').textContent = S.brushSize + 'x' + S.brushSize;
+            }
+            if (e.key === ']') {
+                S.brushSize = Math.min(5, S.brushSize + 1);
+                document.querySelectorAll('.brush-sz').forEach(function (b) { b.classList.toggle('active', parseInt(b.dataset.size) === S.brushSize); });
+                $('brushSizeVal').textContent = S.brushSize + 'x' + S.brushSize;
+            }
 
             // 数字键 1-9 快速选前9个颜色
             if (e.key >= '1' && e.key <= '9') {
@@ -2015,7 +2358,14 @@
         $('bgToleranceSlider').addEventListener('input', function (e) {
             $('bgToleranceVal').textContent = e.target.value;
         });
-        $('convertBtn').addEventListener('click', convertImage);
+        $('convertBtn').addEventListener('click', function () {
+            if (!S.refImage) { alert('请先上传参考底图'); return; }
+            // 打开预览弹窗
+            $('previewMaxColors').value = $('maxColors').value || 24;
+            $('previewFilterBg').checked = $('toggleBgFilter') && $('toggleBgFilter').checked;
+            $('previewBgTolerance').value = $('bgToleranceSlider') ? $('bgToleranceSlider').value : 30;
+            $('convertPreviewModal').classList.add('active');
+        });
         $('recognizeBtn').addEventListener('click', recognizeBlockImage);
         $('removeImage').addEventListener('click', () => {
             S.refImage = null;
@@ -2459,9 +2809,175 @@
             });
         });
 
+        // 选区工具栏事件
+        $('selCopy').addEventListener('click', function () { copySelection(); });
+        $('selPaste').addEventListener('click', function () { pasteSelection(); });
+        $('selDelete').addEventListener('click', function () { deleteSelection(); });
+        $('selFlipH').addEventListener('click', function () { flipSelectionH(); });
+        $('selFlipV').addEventListener('click', function () { flipSelectionV(); });
+        $('selCancel').addEventListener('click', function () { clearSelection(); });
+        $('selMoveMode').addEventListener('click', function () {
+            if (S.selection) alert('在选区上拖拽即可移动选区内容，也可用方向键微调位置。');
+        });
+
+        // 画笔大小
+        document.querySelectorAll('.brush-sz').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                S.brushSize = parseInt(btn.dataset.size) || 1;
+                document.querySelectorAll('.brush-sz').forEach(function (b) {
+                    b.classList.toggle('active', parseInt(b.dataset.size) === S.brushSize);
+                });
+                $('brushSizeVal').textContent = S.brushSize + 'x' + S.brushSize;
+            });
+        });
+
+        // 中心参考线
+        $('toggleCenterLine').addEventListener('change', function (e) {
+            S.showCenterLine = e.target.checked;
+            renderMain();
+        });
+
+        // 对称绘制模式
+        document.querySelectorAll('.sym-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                S.symmetryMode = btn.dataset.sym;
+                document.querySelectorAll('.sym-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.sym === S.symmetryMode);
+                });
+            });
+        });
+
+        // 整体偏移
+        function shiftGrid(dr, dc) {
+            var newGrid = [];
+            for (var r = 0; r < S.gridH; r++) {
+                newGrid[r] = new Array(S.gridW).fill(null);
+                for (var c = 0; c < S.gridW; c++) {
+                    var sr = r - dr;
+                    var sc = c - dc;
+                    if (sr >= 0 && sr < S.gridH && sc >= 0 && sc < S.gridW) {
+                        newGrid[r][c] = S.grid[sr][sc];
+                    }
+                }
+            }
+            S.grid = newGrid;
+            pushHistory('整体偏移');
+            render();
+        }
+
+        $('shiftUp').addEventListener('click', function () { shiftGrid(-1, 0); });
+        $('shiftDown').addEventListener('click', function () { shiftGrid(1, 0); });
+        $('shiftLeft').addEventListener('click', function () { shiftGrid(0, -1); });
+        $('shiftRight').addEventListener('click', function () { shiftGrid(0, 1); });
+        // 转换预览弹窗事件
+        $('convertPreviewClose').addEventListener('click', function () {
+            $('convertPreviewModal').classList.remove('active');
+        });
+        $('convertPreviewCancel').addEventListener('click', function () {
+            $('convertPreviewModal').classList.remove('active');
+        });
+        $('convertPreviewModal').addEventListener('click', function (e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+
+        $('previewRefreshBtn').addEventListener('click', function () {
+            var maxC = Math.min(Math.max(parseInt($('previewMaxColors').value) || 24, 2), 64);
+            var dither = $('previewDither').value;
+            var filterBg = $('previewFilterBg').checked;
+            var bgTol = parseInt($('previewBgTolerance').value) || 30;
+
+            $('convertPreviewLoading').classList.add('active');
+
+            setTimeout(function () {
+                _convertPreviewData = generateConvertPreview(maxC, dither, filterBg, bgTol);
+                if (_convertPreviewData) {
+                    renderPreviewToCanvas(_convertPreviewData);
+                } else {
+                    $('convertPreviewInfo').textContent = '生成预览失败，请检查是否已上传底图';
+                }
+                $('convertPreviewLoading').classList.remove('active');
+            }, 50);
+        });
+
+        $('convertPreviewApply').addEventListener('click', function () {
+            if (!_convertPreviewData) {
+                alert('请先点击"刷新预览"生成预览');
+                return;
+            }
+            // 应用到画布
+            for (var r = 0; r < S.gridH; r++) {
+                for (var c = 0; c < S.gridW; c++) {
+                    var val = _convertPreviewData[r][c];
+                    S.grid[r][c] = val;
+                    if (S.layers[S.activeLayer].grid && S.layers[S.activeLayer].grid[r])
+                        S.layers[S.activeLayer].grid[r][c] = val;
+                }
+            }
+            pushHistory('图片转换');
+            render();
+            $('convertPreviewModal').classList.remove('active');
+            _convertPreviewData = null;
+        });
+
+        // 图层管理
+        document.querySelectorAll('#layerList .layer-item').forEach(function (item) {
+            item.addEventListener('click', function (e) {
+                // 如果点击的是可见性按钮，不切换活动层
+                if (e.target.closest('.layer-vis-btn')) return;
+                S.activeLayer = parseInt(item.dataset.layer);
+                updateLayerUI();
+            });
+        });
+
+        document.querySelectorAll('#layerList .layer-vis-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var idx = parseInt(btn.dataset.layer);
+                S.layers[idx].visible = !S.layers[idx].visible;
+                btn.classList.toggle('hidden', !S.layers[idx].visible);
+                syncGridFromLayers();
+                render();
+            });
+        });
+
+        $('mergeLayersBtn').addEventListener('click', function () {
+            if (!confirm('合并后轮廓层将被清空，所有内容合并到填色层。确定合并？')) return;
+            mergeLayersToGrid();
+        });
+
         // Load saved theme
         loadSavedTheme();
 
+    }
+
+    function onCanvasHover(e) {
+        var cell = cellFromMouse(e);
+
+        // 更新坐标状态栏
+        if (cell) {
+            $('coordPos').textContent = '行: ' + cell.row + '  列: ' + cell.col;
+            var ci = S.grid[cell.row][cell.col];
+            if (ci !== null && PALETTE[ci]) {
+                $('coordColor').innerHTML = '<span class="coord-color-swatch" style="background:' + PALETTE[ci].hex + '"></span>' + PALETTE[ci].id + ' ' + PALETTE[ci].name;
+            } else {
+                $('coordColor').textContent = '空';
+            }
+        } else {
+            $('coordPos').textContent = '行: -- 列: --';
+            $('coordColor').textContent = '';
+        }
+
+        // 换色预览
+        if (S.tool !== 'fill' || S.isDrawing) return;
+        if (!cell) {
+            if (S.fillPreviewIdx >= 0) { S.fillPreviewIdx = -1; renderMain(); }
+            return;
+        }
+        var ci2 = S.grid[cell.row][cell.col];
+        if (ci2 !== S.fillPreviewIdx) {
+            S.fillPreviewIdx = (ci2 !== null) ? ci2 : -1;
+            renderMain();
+        }
     }
 
     // Mouse drawing
@@ -2470,12 +2986,31 @@
         if (S.assistMode) { showAssistDrawBlock(); return; }
         e.preventDefault();
         if (S.tool === 'hand') return;
-        const cell = cellFromMouse(e);
+        var cell = cellFromMouse(e);
         if (!cell) return;
+
+        // 框选工具
+        if (S.tool === 'select') {
+            if (S.selection && isInsideSelection(cell.row, cell.col)) {
+                // 在选区内点击：开始拖拽移动
+                S.selectionDragging = true;
+                S.selectionDragStart = { row: cell.row, col: cell.col };
+            } else {
+                // 在选区外点击：开始新选区
+                startSelection(cell.row, cell.col);
+            }
+            return;
+        }
+
+        // 切换到其他工具时清除选区
+        if (S.selection && S.tool !== 'select') {
+            clearSelection();
+        }
 
         if (S.tool === 'picker') { pickColorAt(cell.row, cell.col); return; }
         if (S.tool === 'bgpicker') { pickBgColorAt(cell.row, cell.col); return; }
         if (S.tool === 'fill') { fillReplace(cell.row, cell.col); return; }
+        if (S.tool === 'bucket') { floodFill(cell.row, cell.col); return; }
 
         S.isDrawing = true;
         S.lastDrawCell = cell.row + ',' + cell.col;
@@ -2483,6 +3018,28 @@
     }
 
     function onMouseMove(e) {
+        // 框选拖拽
+        if (S.tool === 'select') {
+            if (S.selectionDrawing) {
+                var cell = cellFromMouse(e);
+                if (cell) updateSelectionRect(cell.row, cell.col);
+                return;
+            }
+            if (S.selectionDragging && S.selectionDragStart) {
+                var cell2 = cellFromMouse(e);
+                if (cell2) {
+                    var dr = cell2.row - S.selectionDragStart.row;
+                    var dc = cell2.col - S.selectionDragStart.col;
+                    if (dr !== 0 || dc !== 0) {
+                        moveSelectionBy(dr, dc);
+                        S.selectionDragStart = { row: cell2.row, col: cell2.col };
+                    }
+                }
+                return;
+            }
+            return;
+        }
+
         if (!S.isDrawing) return;
         if (_drawRAFPending) return;
         _drawRAFPending = true;
@@ -2524,9 +3081,19 @@
     }
 
     function onMouseUp() {
+        if (S.tool === 'select') {
+            if (S.selectionDrawing) {
+                endSelection();
+            }
+            if (S.selectionDragging) {
+                S.selectionDragging = false;
+                S.selectionDragStart = null;
+                pushHistory();
+            }
+            return;
+        }
         if (S.isDrawing) {
             S.isDrawing = false;
-            // 延迟执行重操作，避免绘图结束瞬间卡顿
             setTimeout(function () {
                 pushHistory();
                 updateUsage();
@@ -2542,19 +3109,36 @@
         if (_pinchJustEnded) return;
         if (S.assistMode) { showAssistDrawBlock(); return; }
         e.preventDefault();
+
         if (S.tool === 'hand') {
-            // 抓手模式：单指拖拽画布
             S.isPanning = true;
             var touch = e.touches[0];
             S.panStart = { x: touch.clientX - S.panX, y: touch.clientY - S.panY };
             return;
         }
-        const cell = cellFromTouch(e);
+
+        var cell = cellFromTouch(e);
         if (!cell) return;
+
+        // 框选工具
+        if (S.tool === 'select') {
+            if (S.selection && isInsideSelection(cell.row, cell.col)) {
+                S.selectionDragging = true;
+                S.selectionDragStart = { row: cell.row, col: cell.col };
+            } else {
+                startSelection(cell.row, cell.col);
+            }
+            return;
+        }
+
+        if (S.selection && S.tool !== 'select') {
+            clearSelection();
+        }
 
         if (S.tool === 'picker') { pickColorAt(cell.row, cell.col); return; }
         if (S.tool === 'bgpicker') { pickBgColorAt(cell.row, cell.col); return; }
         if (S.tool === 'fill') { fillReplace(cell.row, cell.col); return; }
+        if (S.tool === 'bucket') { floodFill(cell.row, cell.col); return; }
 
         S.isDrawing = true;
         S.lastDrawCell = cell.row + ',' + cell.col;
@@ -2563,7 +3147,6 @@
 
     function onTouchMove(e) {
         if (e.touches.length !== 1) return;
-        // 抓手模式：单指拖拽
         if (S.isPanning && S.tool === 'hand') {
             e.preventDefault();
             var touch = e.touches[0];
@@ -2572,32 +3155,61 @@
             applyTransform();
             return;
         }
+
+        // 框选拖拽
+        if (S.tool === 'select') {
+            e.preventDefault();
+            var cell = cellFromTouch(e);
+            if (!cell) return;
+            if (S.selectionDrawing) {
+                updateSelectionRect(cell.row, cell.col);
+            } else if (S.selectionDragging && S.selectionDragStart) {
+                var dr = cell.row - S.selectionDragStart.row;
+                var dc = cell.col - S.selectionDragStart.col;
+                if (dr !== 0 || dc !== 0) {
+                    moveSelectionBy(dr, dc);
+                    S.selectionDragStart = { row: cell.row, col: cell.col };
+                }
+            }
+            return;
+        }
+
         if (!S.isDrawing) return;
         e.preventDefault();
         if (_drawRAFPending) return;
         _drawRAFPending = true;
-        var touch = e.touches[0];
-        var evt = { clientX: touch.clientX, clientY: touch.clientY };
+        var touch2 = e.touches[0];
+        var evt = { clientX: touch2.clientX, clientY: touch2.clientY };
         requestAnimationFrame(function () {
             _drawRAFPending = false;
-            var cell = cellFromMouse(evt);
-            if (!cell) return;
-            var key = cell.row + ',' + cell.col;
+            var cell2 = cellFromMouse(evt);
+            if (!cell2) return;
+            var key = cell2.row + ',' + cell2.col;
             if (key !== S.lastDrawCell) {
                 if (S.lastDrawCell) {
                     var parts = S.lastDrawCell.split(',');
                     var r0 = parseInt(parts[0]), c0 = parseInt(parts[1]);
-                    interpolateLine(r0, c0, cell.row, cell.col);
+                    interpolateLine(r0, c0, cell2.row, cell2.col);
                 }
                 S.lastDrawCell = key;
-                paintCell(cell.row, cell.col);
+                paintCell(cell2.row, cell2.col);
             }
         });
     }
 
+
     function onTouchEnd() {
         if (S.isPanning && S.tool === 'hand') {
             S.isPanning = false;
+            return;
+        }
+        if (S.tool === 'select') {
+            if (S.selectionDrawing) endSelection();
+            if (S.selectionDragging) {
+                S.selectionDragging = false;
+                S.selectionDragStart = null;
+                pushHistory();
+            }
             return;
         }
         if (S.isDrawing) {
@@ -2633,6 +3245,14 @@
                 for (let c = 0; c < Math.min(w, oldW); c++) {
                     S.grid[r][c] = oldGrid[r][c];
                 }
+            }
+        }
+        // 重置图层
+        initLayers();
+        // 如果有旧内容，复制到填色层
+        for (var lr = 0; lr < Math.min(h, oldH); lr++) {
+            for (var lc = 0; lc < Math.min(w, oldW); lc++) {
+                S.layers[1].grid[lr][lc] = S.grid[lr][lc];
             }
         }
         S.currentProjectId = null;
@@ -2681,6 +3301,258 @@
             renderBg();
         };
         img.src = URL.createObjectURL(file);
+    }
+
+    // ===========================
+    //  Floyd-Steinberg 抖动算法
+    // ===========================
+    function floydSteinbergDither(pixelGrid, gridW, gridH, allowedLabs) {
+        // pixelGrid[row][col] = {r, g, b} 原始像素颜色
+        // 返回 resultGrid[row][col] = paletteIndex
+        var errors = [];
+        for (var r = 0; r < gridH; r++) {
+            errors[r] = [];
+            for (var c = 0; c < gridW; c++) {
+                errors[r][c] = { r: 0, g: 0, b: 0 };
+            }
+        }
+
+        var result = [];
+        for (var r2 = 0; r2 < gridH; r2++) {
+            result[r2] = [];
+            for (var c2 = 0; c2 < gridW; c2++) {
+                var px = pixelGrid[r2][c2];
+                if (!px) { result[r2][c2] = null; continue; }
+
+                // 加上累积误差
+                var cr = Math.max(0, Math.min(255, Math.round(px.r + errors[r2][c2].r)));
+                var cg = Math.max(0, Math.min(255, Math.round(px.g + errors[r2][c2].g)));
+                var cb = Math.max(0, Math.min(255, Math.round(px.b + errors[r2][c2].b)));
+
+                // 找最近色
+                var srcLab = rgbToLab(cr, cg, cb);
+                var bestIdx = allowedLabs[0].idx;
+                var bestDist = Infinity;
+                for (var k = 0; k < allowedLabs.length; k++) {
+                    var dist = ciede2000(srcLab, allowedLabs[k].lab);
+                    if (dist < bestDist) { bestDist = dist; bestIdx = allowedLabs[k].idx; }
+                }
+                result[r2][c2] = bestIdx;
+
+                // 计算误差
+                var matched = hexToRgb(PALETTE[bestIdx].hex);
+                var errR = cr - matched.r;
+                var errG = cg - matched.g;
+                var errB = cb - matched.b;
+
+                // 扩散误差到邻居
+                var spread = [
+                    { dr: 0, dc: 1, w: 7 / 16 },
+                    { dr: 1, dc: -1, w: 3 / 16 },
+                    { dr: 1, dc: 0, w: 5 / 16 },
+                    { dr: 1, dc: 1, w: 1 / 16 }
+                ];
+                for (var s = 0; s < spread.length; s++) {
+                    var nr = r2 + spread[s].dr;
+                    var nc = c2 + spread[s].dc;
+                    if (nr >= 0 && nr < gridH && nc >= 0 && nc < gridW) {
+                        errors[nr][nc].r += errR * spread[s].w;
+                        errors[nr][nc].g += errG * spread[s].w;
+                        errors[nr][nc].b += errB * spread[s].w;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    // ===========================
+    //  转换预览缓存
+    // ===========================
+    var _convertPreviewData = null;
+
+    function generateConvertPreview(maxColors, ditherMode, filterBg, bgTolerance) {
+        if (!S.refImage) return null;
+
+        var img = S.refImage;
+        var imgW = img.naturalWidth;
+        var imgH = img.naturalHeight;
+
+        var tmp = document.createElement('canvas');
+        tmp.width = imgW;
+        tmp.height = imgH;
+        var tc = tmp.getContext('2d');
+        tc.drawImage(img, 0, 0, imgW, imgH);
+        var fullData = tc.getImageData(0, 0, imgW, imgH).data;
+
+        var blockW = imgW / S.gridW;
+        var blockH = imgH / S.gridH;
+
+        // 背景色检测
+        var bgColor = null;
+        var bgTolSq = 0;
+        if (filterBg) {
+            bgTolSq = bgTolerance * bgTolerance * 3;
+            var corners = [
+                { x: 0, y: 0 }, { x: imgW - 5, y: 0 },
+                { x: 0, y: imgH - 5 }, { x: imgW - 5, y: imgH - 5 }
+            ];
+            var sr = 0, sg = 0, sb = 0, cnt = 0;
+            corners.forEach(function (corner) {
+                for (var dy = 0; dy < 5 && corner.y + dy < imgH; dy++) {
+                    for (var dx = 0; dx < 5 && corner.x + dx < imgW; dx++) {
+                        var ci = ((corner.y + dy) * imgW + (corner.x + dx)) * 4;
+                        if (fullData[ci + 3] > 100) {
+                            sr += fullData[ci]; sg += fullData[ci + 1]; sb += fullData[ci + 2]; cnt++;
+                        }
+                    }
+                }
+            });
+            if (cnt > 0) bgColor = { r: sr / cnt, g: sg / cnt, b: sb / cnt };
+        }
+
+        _paletteLabCache = null;
+
+        // 第一遍：采样所有格子的平均色
+        var pixelGrid = [];
+        var pmap = [];
+        var counts = {};
+
+        for (var row = 0; row < S.gridH; row++) {
+            pixelGrid[row] = [];
+            for (var col = 0; col < S.gridW; col++) {
+                var x0 = Math.round(col * blockW);
+                var y0 = Math.round(row * blockH);
+                var x1 = Math.round((col + 1) * blockW);
+                var y1 = Math.round((row + 1) * blockH);
+                if (x1 > imgW) x1 = imgW;
+                if (y1 > imgH) y1 = imgH;
+
+                var sumR = 0, sumG = 0, sumB = 0, pixelCount = 0, transparentCount = 0;
+                for (var py = y0; py < y1; py++) {
+                    for (var px = x0; px < x1; px++) {
+                        var idx = (py * imgW + px) * 4;
+                        if (fullData[idx + 3] < 100) { transparentCount++; continue; }
+                        sumR += fullData[idx]; sumG += fullData[idx + 1]; sumB += fullData[idx + 2]; pixelCount++;
+                    }
+                }
+
+                var totalPixels = (x1 - x0) * (y1 - y0);
+                if (pixelCount === 0 || transparentCount > totalPixels * 0.5) {
+                    pixelGrid[row][col] = null;
+                    pmap.push(null);
+                    continue;
+                }
+
+                var avgR = Math.round(sumR / pixelCount);
+                var avgG = Math.round(sumG / pixelCount);
+                var avgB = Math.round(sumB / pixelCount);
+
+                if (filterBg && bgColor) {
+                    var dr2 = avgR - bgColor.r, dg2 = avgG - bgColor.g, db2 = avgB - bgColor.b;
+                    if (dr2 * dr2 + dg2 * dg2 + db2 * db2 < bgTolSq) {
+                        pixelGrid[row][col] = null;
+                        pmap.push(null);
+                        continue;
+                    }
+                }
+
+                pixelGrid[row][col] = { r: avgR, g: avgG, b: avgB };
+                var bestI = findClosestPaletteColor(avgR, avgG, avgB);
+                pmap.push(bestI);
+                counts[bestI] = (counts[bestI] || 0) + 1;
+            }
+        }
+
+        // 限制用色数
+        var topColors = Object.entries(counts)
+            .sort(function (a, b) { return b[1] - a[1]; })
+            .slice(0, maxColors)
+            .map(function (e) { return parseInt(e[0]); });
+
+        var labsAll = getPaletteLabs();
+        var allowedLabs = [];
+        topColors.forEach(function (ci) {
+            allowedLabs.push({ idx: ci, lab: labsAll[ci] });
+        });
+
+        var resultGrid;
+
+        if (ditherMode === 'floyd') {
+            // Floyd-Steinberg 抖动
+            resultGrid = floydSteinbergDither(pixelGrid, S.gridW, S.gridH, allowedLabs);
+        } else {
+            // 无抖动：直接映射
+            resultGrid = [];
+            var flatIdx = 0;
+            var allowed = new Set(topColors);
+            for (var r3 = 0; r3 < S.gridH; r3++) {
+                resultGrid[r3] = [];
+                for (var c3 = 0; c3 < S.gridW; c3++) {
+                    var ci3 = pmap[flatIdx];
+                    if (ci3 === null) { resultGrid[r3][c3] = null; }
+                    else if (allowed.has(ci3)) { resultGrid[r3][c3] = ci3; }
+                    else {
+                        // 重新在允许集合中找最近色
+                        var pg = pixelGrid[r3][c3];
+                        if (!pg) { resultGrid[r3][c3] = null; }
+                        else {
+                            var sLab = rgbToLab(pg.r, pg.g, pg.b);
+                            var bI = allowedLabs[0].idx, bD = Infinity;
+                            for (var k2 = 0; k2 < allowedLabs.length; k2++) {
+                                var d2 = ciede2000(sLab, allowedLabs[k2].lab);
+                                if (d2 < bD) { bD = d2; bI = allowedLabs[k2].idx; }
+                            }
+                            resultGrid[r3][c3] = bI;
+                        }
+                    }
+                    flatIdx++;
+                }
+            }
+        }
+
+        return resultGrid;
+    }
+
+    function renderPreviewToCanvas(resultGrid) {
+        var previewCanvas = $('convertPreviewCanvas');
+        var cellSize = Math.max(2, Math.min(8, Math.floor(560 / Math.max(S.gridW, S.gridH))));
+        var pw = S.gridW * cellSize;
+        var ph = S.gridH * cellSize;
+        previewCanvas.width = pw;
+        previewCanvas.height = ph;
+        previewCanvas.style.width = pw + 'px';
+        previewCanvas.style.height = ph + 'px';
+        var pc = previewCanvas.getContext('2d');
+
+        // 白色背景
+        pc.fillStyle = '#fff';
+        pc.fillRect(0, 0, pw, ph);
+
+        // 渲染色块
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                var ci = resultGrid[r][c];
+                if (ci !== null && PALETTE[ci]) {
+                    pc.fillStyle = PALETTE[ci].hex;
+                    pc.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
+        // 统计用色
+        var usedColors = {};
+        var total = 0;
+        for (var r2 = 0; r2 < S.gridH; r2++) {
+            for (var c2 = 0; c2 < S.gridW; c2++) {
+                if (resultGrid[r2][c2] !== null) {
+                    usedColors[resultGrid[r2][c2]] = (usedColors[resultGrid[r2][c2]] || 0) + 1;
+                    total++;
+                }
+            }
+        }
+        var colorCount = Object.keys(usedColors).length;
+        $('convertPreviewInfo').textContent = '预览结果：' + total + ' 颗豆子，' + colorCount + ' 种颜色 | ' + S.gridW + 'x' + S.gridH;
     }
 
     function convertImage() {
@@ -2845,9 +3717,14 @@
         }
 
         // Apply
-        for (var r = 0; r < S.gridH; r++)
-            for (var c = 0; c < S.gridW; c++)
-                S.grid[r][c] = pmap[r * S.gridW + c];
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                var val = pmap[r * S.gridW + c];
+                S.grid[r][c] = val;
+                if (S.layers[S.activeLayer].grid && S.layers[S.activeLayer].grid[r])
+                    S.layers[S.activeLayer].grid[r][c] = val;
+            }
+        }
 
         pushHistory();
         render();
@@ -3468,19 +4345,33 @@
             console.warn('嵌入数据失败:', embedErr);
         }
 
-        // 下载
-        var link = document.createElement('a');
+        // 下载（使用 toBlob 减少内存占用）
         var ts = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        link.download = 'CatPeas_' + (beadMode ? '仿真豆子' : '色块图纸') + '_' + S.gridW + 'x' + S.gridH + '_' + ts + '.png';
-        link.href = exp.toDataURL('image/png');
-        link.click();
+        var fileName = 'CatPeas_' + (beadMode ? '仿真豆子' : '色块图纸') + '_' + S.gridW + 'x' + S.gridH + '_' + ts + '.png';
 
-        // 恢复
+        // 恢复（先恢复再异步下载）
         S.showBead = prevBead;
         S.showGrid = prevGrid;
         S.showNumbers = prevNum;
         S.cellOpacity = prevCellOpacity;
         renderMain();
+
+        if (exp.toBlob) {
+            exp.toBlob(function (blob) {
+                if (!blob) return;
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.download = fileName;
+                link.href = url;
+                link.click();
+                setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+            }, 'image/png');
+        } else {
+            var link = document.createElement('a');
+            link.download = fileName;
+            link.href = exp.toDataURL('image/png');
+            link.click();
+        }
     }
 
 
@@ -3726,11 +4617,25 @@
                 ec.textBaseline = 'bottom';
                 ec.fillText('Cat Peas · 板' + label + ' · ' + S.gridW + 'x' + S.gridH + ' 分板' + boardSize, ew / 2, eh - 4);
 
-                // 下载
-                var link = document.createElement('a');
-                link.download = 'CatPeas_分板' + label + '_' + boardSize + 'x' + boardSize + '_' + ts + '.png';
-                link.href = exp.toDataURL('image/png');
-                link.click();
+                // 下载（使用 toBlob）
+                (function (expCanvas, downloadName) {
+                    if (expCanvas.toBlob) {
+                        expCanvas.toBlob(function (blob) {
+                            if (!blob) return;
+                            var url = URL.createObjectURL(blob);
+                            var a = document.createElement('a');
+                            a.download = downloadName;
+                            a.href = url;
+                            a.click();
+                            setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+                        }, 'image/png');
+                    } else {
+                        var a = document.createElement('a');
+                        a.download = downloadName;
+                        a.href = expCanvas.toDataURL('image/png');
+                        a.click();
+                    }
+                })(exp, 'CatPeas_分板' + label + '_' + boardSize + 'x' + boardSize + '_' + ts + '.png');
             }
         }
 
@@ -5026,6 +5931,244 @@
     }
 
     // ===========================
+    //  选区操作
+    // ===========================
+    function startSelection(row, col) {
+        S.selectionDrawing = true;
+        S.selectionStartCell = { row: row, col: col };
+        S.selection = { r1: row, c1: col, r2: row, c2: col };
+        updateSelectionUI();
+        renderMain();
+    }
+
+    function updateSelectionRect(row, col) {
+        if (!S.selectionDrawing || !S.selectionStartCell) return;
+        var sr = S.selectionStartCell.row;
+        var sc = S.selectionStartCell.col;
+        S.selection = {
+            r1: Math.min(sr, row),
+            c1: Math.min(sc, col),
+            r2: Math.max(sr, row),
+            c2: Math.max(sc, col)
+        };
+        renderMain();
+    }
+
+    function endSelection() {
+        S.selectionDrawing = false;
+        S.selectionStartCell = null;
+        if (S.selection) {
+            var w = S.selection.c2 - S.selection.c1 + 1;
+            var h = S.selection.r2 - S.selection.r1 + 1;
+            if (w < 1 || h < 1) {
+                clearSelection();
+                return;
+            }
+            updateSelectionUI();
+        }
+    }
+
+    function clearSelection() {
+        S.selection = null;
+        S.selectionDrawing = false;
+        S.selectionDragging = false;
+        S.selectionStartCell = null;
+        $('selectionToolbar').classList.remove('active');
+        renderMain();
+    }
+
+    function updateSelectionUI() {
+        if (!S.selection) {
+            $('selectionToolbar').classList.remove('active');
+            return;
+        }
+        var w = S.selection.c2 - S.selection.c1 + 1;
+        var h = S.selection.r2 - S.selection.r1 + 1;
+        $('selInfo').textContent = w + ' x ' + h;
+        $('selectionToolbar').classList.add('active');
+    }
+
+    function copySelection() {
+        if (!S.selection) return;
+        var sel = S.selection;
+        var w = sel.c2 - sel.c1 + 1;
+        var h = sel.r2 - sel.r1 + 1;
+        var data = [];
+        for (var r = 0; r < h; r++) {
+            data[r] = [];
+            for (var c = 0; c < w; c++) {
+                var gr = sel.r1 + r;
+                var gc = sel.c1 + c;
+                data[r][c] = (gr < S.gridH && gc < S.gridW) ? S.grid[gr][gc] : null;
+            }
+        }
+        S.selectionClipboard = { w: w, h: h, data: data };
+    }
+
+    function pasteSelection() {
+        if (!S.selectionClipboard) { alert('剪贴板为空，请先复制选区'); return; }
+        var clip = S.selectionClipboard;
+        var startR = S.selection ? S.selection.r1 : 0;
+        var startC = S.selection ? S.selection.c1 : 0;
+        for (var r = 0; r < clip.h; r++) {
+            for (var c = 0; c < clip.w; c++) {
+                var gr = startR + r;
+                var gc = startC + c;
+                if (gr < S.gridH && gc < S.gridW) {
+                    S.grid[gr][gc] = clip.data[r][c];
+                }
+            }
+        }
+        S.selection = {
+            r1: startR,
+            c1: startC,
+            r2: Math.min(startR + clip.h - 1, S.gridH - 1),
+            c2: Math.min(startC + clip.w - 1, S.gridW - 1)
+        };
+        pushHistory();
+        updateSelectionUI();
+        render();
+    }
+
+    function deleteSelection() {
+        if (!S.selection) return;
+        var sel = S.selection;
+        for (var r = sel.r1; r <= sel.r2; r++) {
+            for (var c = sel.c1; c <= sel.c2; c++) {
+                if (r < S.gridH && c < S.gridW) {
+                    S.grid[r][c] = null;
+                }
+            }
+        }
+        pushHistory();
+        render();
+        clearSelection();
+    }
+
+    function flipSelectionH() {
+        if (!S.selection) return;
+        var sel = S.selection;
+        var w = sel.c2 - sel.c1 + 1;
+        var h = sel.r2 - sel.r1 + 1;
+        for (var r = sel.r1; r <= sel.r2; r++) {
+            var temp = [];
+            for (var c = 0; c < w; c++) {
+                temp[c] = S.grid[r][sel.c1 + c];
+            }
+            temp.reverse();
+            for (var c2 = 0; c2 < w; c2++) {
+                S.grid[r][sel.c1 + c2] = temp[c2];
+            }
+        }
+        pushHistory();
+        render();
+    }
+
+    function flipSelectionV() {
+        if (!S.selection) return;
+        var sel = S.selection;
+        var w = sel.c2 - sel.c1 + 1;
+        var h = sel.r2 - sel.r1 + 1;
+        for (var c = sel.c1; c <= sel.c2; c++) {
+            var temp = [];
+            for (var r = 0; r < h; r++) {
+                temp[r] = S.grid[sel.r1 + r][c];
+            }
+            temp.reverse();
+            for (var r2 = 0; r2 < h; r2++) {
+                S.grid[sel.r1 + r2][c] = temp[r2];
+            }
+        }
+        pushHistory();
+        render();
+    }
+
+    function moveSelectionBy(dr, dc) {
+        if (!S.selection) return;
+        var sel = S.selection;
+        var w = sel.c2 - sel.c1 + 1;
+        var h = sel.r2 - sel.r1 + 1;
+
+        // 提取选区数据
+        var data = [];
+        for (var r = 0; r < h; r++) {
+            data[r] = [];
+            for (var c = 0; c < w; c++) {
+                data[r][c] = S.grid[sel.r1 + r][sel.c1 + c];
+            }
+        }
+
+        // 清空原位置
+        for (var r2 = sel.r1; r2 <= sel.r2; r2++) {
+            for (var c2 = sel.c1; c2 <= sel.c2; c2++) {
+                if (r2 < S.gridH && c2 < S.gridW) S.grid[r2][c2] = null;
+            }
+        }
+
+        // 写入新位置
+        var nr1 = Math.max(0, Math.min(sel.r1 + dr, S.gridH - h));
+        var nc1 = Math.max(0, Math.min(sel.c1 + dc, S.gridW - w));
+        for (var r3 = 0; r3 < h; r3++) {
+            for (var c3 = 0; c3 < w; c3++) {
+                if (nr1 + r3 < S.gridH && nc1 + c3 < S.gridW) {
+                    S.grid[nr1 + r3][nc1 + c3] = data[r3][c3];
+                }
+            }
+        }
+
+        S.selection = {
+            r1: nr1,
+            c1: nc1,
+            r2: nr1 + h - 1,
+            c2: nc1 + w - 1
+        };
+        updateSelectionUI();
+        render();
+    }
+
+    function isInsideSelection(row, col) {
+        if (!S.selection) return false;
+        return row >= S.selection.r1 && row <= S.selection.r2 &&
+               col >= S.selection.c1 && col <= S.selection.c2;
+    }
+
+    function renderSelectionOverlay() {
+        if (!S.selection) return;
+        var sel = S.selection;
+        var cs = S.cellSize;
+        var x = sel.c1 * cs;
+        var y = sel.r1 * cs;
+        var w = (sel.c2 - sel.c1 + 1) * cs;
+        var h = (sel.r2 - sel.r1 + 1) * cs;
+
+        // 半透明蓝色填充
+        ctx.fillStyle = 'rgba(141, 123, 170, 0.12)';
+        ctx.fillRect(x, y, w, h);
+
+        // 虚线边框
+        ctx.save();
+        ctx.strokeStyle = 'rgba(141, 123, 170, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 3]);
+        ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+        ctx.setLineDash([]);
+
+        // 四个角的把手
+        var handleSize = 5;
+        ctx.fillStyle = 'rgba(141, 123, 170, 0.85)';
+        // 左上
+        ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize);
+        // 右上
+        ctx.fillRect(x + w - handleSize / 2, y - handleSize / 2, handleSize, handleSize);
+        // 左下
+        ctx.fillRect(x - handleSize / 2, y + h - handleSize / 2, handleSize, handleSize);
+        // 右下
+        ctx.fillRect(x + w - handleSize / 2, y + h - handleSize / 2, handleSize, handleSize);
+
+        ctx.restore();
+    }
+
+    // ===========================
     //  Mobile Drawer
     // ===========================
     function initMobileDrawer() {
@@ -5425,6 +6568,86 @@
         mmViewport.style.top = vpTop + 'px';
         mmViewport.style.width = Math.max(4, vpWidth) + 'px';
         mmViewport.style.height = Math.max(4, vpHeight) + 'px';
+    }
+
+    // ===========================
+    //  小地图交互
+    // ===========================
+    function initMinimapInteraction() {
+        var minimap = $('minimap');
+        var mmCanvas = $('minimapCanvas');
+        if (!minimap || !mmCanvas) return;
+
+        var isDragging = false;
+
+        function jumpToMinimapPos(clientX, clientY) {
+            var rect = mmCanvas.getBoundingClientRect();
+            var mx = clientX - rect.left;
+            var my = clientY - rect.top;
+            var mmW = mmCanvas.clientWidth;
+            var mmH = mmCanvas.clientHeight;
+
+            // 转换为画布坐标比例
+            var ratioX = mx / mmW;
+            var ratioY = my / mmH;
+
+            var gridPixelW = S.gridW * S.cellSize;
+            var gridPixelH = S.gridH * S.cellSize;
+            var rs = S.showRuler ? 30 : 0;
+
+            var wrapperRect = canvasWrapper.getBoundingClientRect();
+
+            // 目标：让 ratio 对应的位置在视口中心
+            var targetX = ratioX * gridPixelW;
+            var targetY = ratioY * gridPixelH;
+
+            var totalW = (rs + gridPixelW) * S.zoom;
+            var totalH = (rs + gridPixelH) * S.zoom;
+
+            S.panX = wrapperRect.width / 2 - (rs * S.zoom + targetX * S.zoom);
+            S.panY = wrapperRect.height / 2 - (rs * S.zoom + targetY * S.zoom);
+
+            applyTransform();
+        }
+
+        mmCanvas.addEventListener('dblclick', function (e) {
+            e.preventDefault();
+            jumpToMinimapPos(e.clientX, e.clientY);
+        });
+
+        mmCanvas.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            isDragging = true;
+            jumpToMinimapPos(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mousemove', function (e) {
+            if (!isDragging) return;
+            jumpToMinimapPos(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mouseup', function () {
+            isDragging = false;
+        });
+
+        // 触摸支持
+        mmCanvas.addEventListener('touchstart', function (e) {
+            if (e.touches.length !== 1) return;
+            e.preventDefault();
+            isDragging = true;
+            jumpToMinimapPos(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
+
+        mmCanvas.addEventListener('touchmove', function (e) {
+            if (!isDragging || e.touches.length !== 1) return;
+            e.preventDefault();
+            jumpToMinimapPos(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
+
+        mmCanvas.addEventListener('touchend', function () {
+            isDragging = false;
+        });
     }
 
     // ===========================
