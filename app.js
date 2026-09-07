@@ -184,6 +184,7 @@
     var _pinchActive = false;
     var _pinchMoved = false;
     var _pinchJustEnded = false;
+    var _dirtyCells = [];
     const S = {
         gridW: 52,
         gridH: 52,
@@ -755,7 +756,9 @@
         const cs = S.cellSize;
         const w = S.gridW * cs;
         const h = S.gridH * cs;
-        const renderScale = Math.min(Math.ceil(S.zoom), 4) * DPR;
+        var isMobile = window.innerWidth <= 960;
+        var maxDPR = isMobile ? Math.min(DPR, 2) : DPR;
+        const renderScale = Math.min(Math.ceil(S.zoom), isMobile ? 2 : 4) * maxDPR;
 
         if (mainCanvas._lastScale === renderScale) return;
         mainCanvas._lastScale = renderScale;
@@ -790,8 +793,9 @@
             updateUsage();
             updateLegend();
             if (S.assistMode) buildAssistColorGrid();
-            updateMinimap();
-        }, 100);
+        }, 200);
+        // 小地图单独更低频率更新
+        updateMinimap();
     }
 
     function renderBg() {
@@ -881,20 +885,31 @@
 
         // Color number labels
         if (S.showNumbers && !S.showBead) {
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const fontSize = Math.max(6, Math.min(cs * 0.48, 11));
-            ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
+            // 缩放太小时不画文字（看不清也浪费性能）
+            if (S.zoom >= 0.35) {
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const fontSize = Math.max(6, Math.min(cs * 0.48, 11));
+                ctx.font = 'bold ' + fontSize + 'px -apple-system,sans-serif';
 
-            for (let r = 0; r < S.gridH; r++) {
-                for (let c = 0; c < S.gridW; c++) {
-                    const ci = S.grid[r][c];
-                    if (ci === null) continue;
-                const color = PALETTE[ci];
-                    const lum = luminance(color.hex);
-                    ctx.fillStyle = lum > 0.55 ? 'rgba(60,50,55,0.6)' : 'rgba(255,255,255,0.75)';
-                    const label = color.id.length > 3 ? color.id.slice(-2) : color.id;
-                    ctx.fillText(label, c * cs + cs / 2, r * cs + cs / 2 + 0.5);
+                // 预计算颜色对应的文字颜色和标签，避免重复计算
+                var _labelCache = {};
+                for (let r = 0; r < S.gridH; r++) {
+                    for (let c = 0; c < S.gridW; c++) {
+                        const ci = S.grid[r][c];
+                        if (ci === null) continue;
+                        if (!_labelCache[ci]) {
+                            const color = PALETTE[ci];
+                            const lum = luminance(color.hex);
+                            _labelCache[ci] = {
+                                style: lum > 0.55 ? 'rgba(60,50,55,0.6)' : 'rgba(255,255,255,0.75)',
+                                label: color.id.length > 3 ? color.id.slice(-2) : color.id
+                            };
+                        }
+                        var cached = _labelCache[ci];
+                        ctx.fillStyle = cached.style;
+                        ctx.fillText(cached.label, c * cs + cs / 2, r * cs + cs / 2 + 0.5);
+                    }
                 }
             }
         }
@@ -1853,17 +1868,14 @@
         var points = [{ r: row, c: col }];
 
         if (S.symmetryMode === 'h' || S.symmetryMode === 'hv') {
-            // 水平对称：以垂直中心线为轴
             var mirrorC = S.gridW - 1 - col;
             points.push({ r: row, c: mirrorC });
         }
         if (S.symmetryMode === 'v' || S.symmetryMode === 'hv') {
-            // 垂直对称：以水平中心线为轴
             var mirrorR = S.gridH - 1 - row;
             points.push({ r: mirrorR, c: col });
         }
         if (S.symmetryMode === 'hv') {
-            // 对角对称
             points.push({ r: S.gridH - 1 - row, c: S.gridW - 1 - col });
         }
 
@@ -1878,7 +1890,7 @@
             }
         }
 
-        // 对每个点应用画笔大小
+        // 对每个点应用画笔大小（只修改数据，不立即渲染）
         for (var pi = 0; pi < uniquePoints.length; pi++) {
             var pr = uniquePoints[pi].r;
             var pc = uniquePoints[pi].c;
@@ -1892,21 +1904,41 @@
                         var layerGrid = S.layers[S.activeLayer].grid;
                         if (layerGrid && layerGrid[r] && layerGrid[r][c] !== S.currentColorIdx) {
                             layerGrid[r][c] = S.currentColorIdx;
-                            // 同步到合成 grid
                             syncGridFromLayers(r, c);
-                            renderCellFast(r, c, cs);
+                            _dirtyCells.push(r, c);
                         }
                     } else if (S.tool === 'eraser') {
                         var layerGrid2 = S.layers[S.activeLayer].grid;
                         if (layerGrid2 && layerGrid2[r] && layerGrid2[r][c] !== null) {
                             layerGrid2[r][c] = null;
                             syncGridFromLayers(r, c);
-                            renderCellFast(r, c, cs);
+                            _dirtyCells.push(r, c);
                         }
                     }
                 }
             }
         }
+
+        // 批量刷新脏格子
+        if (_dirtyCells.length > 0 && !_renderRAFPending) {
+            _renderRAFPending = true;
+            requestAnimationFrame(flushDirtyCells);
+        }
+    }
+
+    function flushDirtyCells() {
+        _renderRAFPending = false;
+        var cs = S.cellSize;
+        // 如果脏格子太多（超过总格子的20%），直接全量重绘更快
+        if (_dirtyCells.length > S.gridW * S.gridH * 0.4) {
+            _dirtyCells.length = 0;
+            renderMain();
+            return;
+        }
+        for (var i = 0; i < _dirtyCells.length; i += 2) {
+            renderCellFast(_dirtyCells[i], _dirtyCells[i + 1], cs);
+        }
+        _dirtyCells.length = 0;
     }
 
     function renderCellFast(row, col, cs) {
@@ -3013,7 +3045,7 @@
         if (S.tool === 'bucket') { floodFill(cell.row, cell.col); return; }
 
         S.isDrawing = true;
-        S.lastDrawCell = cell.row + ',' + cell.col;
+        S.lastDrawCell = cell.row * 10000 + cell.col;
         paintCell(cell.row, cell.col);
     }
 
@@ -3048,11 +3080,12 @@
             _drawRAFPending = false;
             var cell = cellFromMouse(evt);
             if (!cell) return;
-            var key = cell.row + ',' + cell.col;
-            if (key !== S.lastDrawCell) {
-                if (S.lastDrawCell) {
-                    var parts = S.lastDrawCell.split(',');
-                    var r0 = parseInt(parts[0]), c0 = parseInt(parts[1]);
+            var key = cell.row * 10000 + cell.col;
+            var lastKey = S.lastDrawCell;
+            if (key !== lastKey) {
+                if (lastKey !== null) {
+                    var r0 = Math.floor(lastKey / 10000);
+                    var c0 = lastKey % 10000;
                     interpolateLine(r0, c0, cell.row, cell.col);
                 }
                 S.lastDrawCell = key;
@@ -3141,7 +3174,7 @@
         if (S.tool === 'bucket') { floodFill(cell.row, cell.col); return; }
 
         S.isDrawing = true;
-        S.lastDrawCell = cell.row + ',' + cell.col;
+        S.lastDrawCell = cell.row * 10000 + cell.col;
         paintCell(cell.row, cell.col);
     }
 
@@ -3178,17 +3211,18 @@
         e.preventDefault();
         if (_drawRAFPending) return;
         _drawRAFPending = true;
-        var touch2 = e.touches[0];
-        var evt = { clientX: touch2.clientX, clientY: touch2.clientY };
+        var _touchX = e.touches[0].clientX;
+        var _touchY = e.touches[0].clientY;
         requestAnimationFrame(function () {
             _drawRAFPending = false;
-            var cell2 = cellFromMouse(evt);
+            var cell2 = cellFromMouse({ clientX: _touchX, clientY: _touchY });
             if (!cell2) return;
-            var key = cell2.row + ',' + cell2.col;
-            if (key !== S.lastDrawCell) {
-                if (S.lastDrawCell) {
-                    var parts = S.lastDrawCell.split(',');
-                    var r0 = parseInt(parts[0]), c0 = parseInt(parts[1]);
+            var key = cell2.row * 10000 + cell2.col;
+            var lastKey = S.lastDrawCell;
+            if (key !== lastKey) {
+                if (lastKey !== null) {
+                    var r0 = Math.floor(lastKey / 10000);
+                    var c0 = lastKey % 10000;
                     interpolateLine(r0, c0, cell2.row, cell2.col);
                 }
                 S.lastDrawCell = key;

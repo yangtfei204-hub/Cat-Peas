@@ -603,6 +603,7 @@ body {
 .canvas-scroller {
     position: relative;
     transform-origin: center center;
+    will-change: transform;
 }
 
 .canvas-container {
@@ -662,6 +663,8 @@ body {
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
     image-rendering: pixelated;
+    will-change: transform;
+    contain: strict;
 }
 
 #mainCanvas {
@@ -672,6 +675,8 @@ body {
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
     image-rendering: pixelated;
+    will-change: transform;
+    contain: strict;
 }
 
 /* ---------- Color Legend ---------- */
