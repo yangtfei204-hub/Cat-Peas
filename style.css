@@ -3748,3 +3748,82 @@ body {
         width: 100%;
     }
 }
+
+/* ========================================
+   缩略图小地图
+   ======================================== */
+.minimap {
+    display: none;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 20;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+}
+
+.minimap:hover {
+    opacity: 1;
+}
+
+.minimap.active {
+    display: block;
+}
+
+.minimap canvas {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.minimap-viewport {
+    position: absolute;
+    border: 2px solid rgba(141, 123, 170, 0.8);
+    background: rgba(176, 160, 196, 0.12);
+    border-radius: 1px;
+    pointer-events: none;
+}
+
+/* ========================================
+   项目库缩略图修复
+   ======================================== */
+.project-card-preview-wrap {
+    position: relative;
+    padding-top: 75%;
+    background:
+        repeating-conic-gradient(var(--border-light) 0% 25%, var(--bg-card) 0% 50%)
+        50% / 16px 16px;
+    overflow: hidden;
+    min-height: 80px;
+}
+
+.project-card-preview-wrap img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    display: block;
+}
+
+.project-grid.list-view .project-card-preview-wrap {
+    padding-top: 0;
+    width: 56px;
+    height: 56px;
+    min-height: 56px;
+}
+
+.project-grid.list-view .project-card-preview-wrap img {
+    padding: 4px;
+}

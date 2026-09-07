@@ -437,6 +437,18 @@
     function startAutoSave() {
         setInterval(function () {
             try {
+                // 检查画布是否有内容，空画布不保存
+                var hasAny = false;
+                for (var cr = 0; cr < S.gridH && !hasAny; cr++) {
+                    for (var cc = 0; cc < S.gridW && !hasAny; cc++) {
+                        if (S.grid[cr][cc] !== null) hasAny = true;
+                    }
+                }
+                if (!hasAny) {
+                    // 画布为空，删除已有的自动保存数据
+                    localStorage.removeItem('catpeas_autosave');
+                    return;
+                }
                 // 用 RLE 压缩减少存储体积
                 var flat = [];
                 for (var r = 0; r < S.gridH; r++) {
@@ -588,6 +600,7 @@
         canvasScroller.style.transform = `translate(${S.panX}px, ${S.panY}px) scale(${S.zoom})`;
         $('zoomValue').textContent = Math.round(S.zoom * 100) + '%';
         updateCanvasResolution();
+        updateMinimap();
     }
 
     function updateCanvasResolution() {
@@ -628,6 +641,7 @@
             updateUsage();
             updateLegend();
             if (S.assistMode) buildAssistColorGrid();
+            updateMinimap();
         }, 100);
     }
 
@@ -1353,12 +1367,31 @@
 
     function restoreSnap() {
         var snap = S.history[S.historyIdx];
+        var sizeChanged = (snap.w !== S.gridW || snap.h !== S.gridH);
         S.gridW = snap.w;
         S.gridH = snap.h;
         S.grid = reconstructGrid(S.historyIdx);
         $('canvasWidth').value = S.gridW;
         $('canvasHeight').value = S.gridH;
-        setupCanvas();
+        if (sizeChanged) {
+            setupCanvas();
+        } else {
+            // 尺寸没变，只重绘，不重置缩放和平移
+            var w = S.gridW * S.cellSize;
+            var h = S.gridH * S.cellSize;
+            var renderScale = Math.min(Math.ceil(S.zoom), 4) * DPR;
+            mainCanvas.width = w * renderScale;
+            mainCanvas.height = h * renderScale;
+            mainCanvas.style.width = w + 'px';
+            mainCanvas.style.height = h + 'px';
+            ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+            bgCanvas.width = w * renderScale;
+            bgCanvas.height = h * renderScale;
+            bgCanvas.style.width = w + 'px';
+            bgCanvas.style.height = h + 'px';
+            bgCtx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+            mainCanvas._lastScale = renderScale;
+        }
         render();
         updateHistoryUI();
     }
@@ -1892,6 +1925,8 @@
                     S.grid[r][c] = null;
             S.currentProjectId = null;
             S.currentProjectName = '';
+            // 清空画布时立即删除自动保存数据
+            try { localStorage.removeItem('catpeas_autosave'); } catch (e) { }
             pushHistory();
             render();
         });
@@ -3622,32 +3657,61 @@
         return 'proj_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
     }
 
-    function generateThumbnail(grid, gridW, gridH) {
+    function generateThumbnail(grid, gridW, gridH, paletteSnapshot) {
         try {
-            var size = 128;
+            var maxSize = 200;
+            var ratio = gridW / gridH;
+            var tw, th;
+            if (ratio >= 1) {
+                tw = maxSize;
+                th = Math.round(maxSize / ratio);
+            } else {
+                th = maxSize;
+                tw = Math.round(maxSize * ratio);
+            }
+            if (tw < 10) tw = 10;
+            if (th < 10) th = 10;
             var tmp = document.createElement('canvas');
-            tmp.width = size;
-            tmp.height = size;
+            tmp.width = tw;
+            tmp.height = th;
             var tc = tmp.getContext('2d');
             if (!tc) return '';
-            tc.fillStyle = '#fff';
-            tc.fillRect(0, 0, size, size);
-            var cellW = size / gridW;
-            var cellH = size / gridH;
+            tc.fillStyle = '#ffffff';
+            tc.fillRect(0, 0, tw, th);
+            var cellW = tw / gridW;
+            var cellH = th / gridH;
+
+            // 优先使用传入的色板快照，否则用当前全局色板
+            var pal = PALETTE;
+            if (paletteSnapshot && paletteSnapshot.length > 0) {
+                pal = paletteSnapshot;
+            }
+
             for (var r = 0; r < gridH; r++) {
+                if (!grid[r]) continue;
                 for (var c = 0; c < gridW; c++) {
                     var ci = grid[r][c];
-                    if (ci !== null && PALETTE[ci]) {
+                    if (ci === null || ci === undefined || ci < 0) continue;
+                    if (ci < pal.length && pal[ci]) {
+                        tc.fillStyle = pal[ci].hex;
+                    } else if (ci < PALETTE.length && PALETTE[ci]) {
                         tc.fillStyle = PALETTE[ci].hex;
-                        tc.fillRect(c * cellW, r * cellH, Math.ceil(cellW), Math.ceil(cellH));
+                    } else {
+                        tc.fillStyle = '#cccccc';
                     }
+                    tc.fillRect(
+                        Math.floor(c * cellW),
+                        Math.floor(r * cellH),
+                        Math.ceil(cellW + 0.5),
+                        Math.ceil(cellH + 0.5)
+                    );
                 }
             }
-            var dataUrl = tmp.toDataURL('image/jpeg', 0.6);
-            // 检查是否生成成功（某些浏览器失败时返回很短的字符串）
-            if (!dataUrl || dataUrl.length < 50) return '';
+            var dataUrl = tmp.toDataURL('image/png');
+            if (!dataUrl || dataUrl.length < 100) return '';
             return dataUrl;
         } catch (e) {
+            console.warn('生成缩略图失败:', e);
             return '';
         }
     }
@@ -3674,7 +3738,7 @@
             return;
         }
 
-        var thumbnail = generateThumbnail(S.grid, S.gridW, S.gridH);
+        var thumbnail = generateThumbnail(S.grid, S.gridW, S.gridH, null);
 
         // 用紧凑格式存储 grid，减小 IndexedDB 存储体积
         var gridData = [];
@@ -3908,8 +3972,8 @@
                 });
 
                 var thumbHtml;
-                if (proj.thumbnail && proj.thumbnail.length > 50) {
-                    thumbHtml = '<img src="' + proj.thumbnail + '" alt="预览" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
+                if (proj.thumbnail && proj.thumbnail.length > 100 && proj.thumbnail.indexOf('data:image') === 0) {
+                    thumbHtml = '<img src="' + proj.thumbnail + '" alt="预览" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
                         '<div class="preview-placeholder" style="display:none;">加载失败</div>';
                 } else {
                     thumbHtml = '<div class="preview-placeholder">无预览</div>';
@@ -3981,10 +4045,36 @@
             _selectedProjectIds.clear();
             updateProjectPageFilters();
             $('projectPage').classList.add('active');
-            // 确保页面显示后再加载卡片，否则缩略图可能因容器宽度为0而不显示
+            // 确保页面显示后再加载卡片
             setTimeout(function () {
-                triggerProjectRefresh();
+                // 先修复缺失缩略图的项目
+                fixMissingThumbnails().then(function () {
+                    triggerProjectRefresh();
+                });
             }, 50);
+        });
+    }
+
+    function fixMissingThumbnails() {
+        return dbGetAll(STORE_PROJECTS).then(function (projects) {
+            var promises = [];
+            projects.forEach(function (proj) {
+                try {
+                    var thumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, proj.paletteSnapshot);
+                    if (thumb && thumb.length > 100) {
+                        if (proj.thumbnail !== thumb) {
+                            proj.thumbnail = thumb;
+                            promises.push(dbPut(STORE_PROJECTS, proj));
+                        }
+                    }
+                } catch (e) {
+                    console.warn('修复缩略图失败:', proj.id, e);
+                }
+            });
+            if (promises.length > 0) {
+                return Promise.all(promises);
+            }
+            return Promise.resolve();
         });
     }
 
@@ -5096,6 +5186,98 @@
     function darkenHex(hex, amt) {
         const { r, g, b } = hexToRgb(hex);
         return 'rgb(' + Math.max(0, r - amt) + ',' + Math.max(0, g - amt) + ',' + Math.max(0, b - amt) + ')';
+    }
+
+    // ===========================
+    //  缩略图小地图
+    // ===========================
+    var MINIMAP_MAX_SIZE = 140;
+
+    function updateMinimap() {
+        var minimap = $('minimap');
+        var mmCanvas = $('minimapCanvas');
+        var mmViewport = $('minimapViewport');
+        if (!minimap || !mmCanvas) return;
+
+        // 只在缩放大于 1.2 倍时显示小地图
+        if (S.zoom <= 1.2) {
+            minimap.classList.remove('active');
+            return;
+        }
+        minimap.classList.add('active');
+
+        // 计算缩略图尺寸，保持画布比例
+        var gridPixelW = S.gridW * S.cellSize;
+        var gridPixelH = S.gridH * S.cellSize;
+        var scale = Math.min(MINIMAP_MAX_SIZE / gridPixelW, MINIMAP_MAX_SIZE / gridPixelH);
+        var mmW = Math.round(gridPixelW * scale);
+        var mmH = Math.round(gridPixelH * scale);
+
+        mmCanvas.width = mmW * 2;
+        mmCanvas.height = mmH * 2;
+        mmCanvas.style.width = mmW + 'px';
+        mmCanvas.style.height = mmH + 'px';
+
+        var mc = mmCanvas.getContext('2d');
+        mc.setTransform(2, 0, 0, 2, 0, 0);
+
+        // 绘制背景
+        mc.fillStyle = '#fff';
+        mc.fillRect(0, 0, mmW, mmH);
+
+        // 绘制色块
+        var cellW = mmW / S.gridW;
+        var cellH = mmH / S.gridH;
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                var ci = S.grid[r][c];
+                if (ci !== null && PALETTE[ci]) {
+                    mc.fillStyle = PALETTE[ci].hex;
+                    mc.fillRect(c * cellW, r * cellH, Math.ceil(cellW), Math.ceil(cellH));
+                }
+            }
+        }
+
+        // 计算视口矩形（当前可见区域在缩略图上的位置）
+        var wrapperRect = canvasWrapper.getBoundingClientRect();
+        var rs = S.showRuler ? 30 : 0;
+        var totalW = (rs + gridPixelW) * S.zoom;
+        var totalH = (rs + gridPixelH) * S.zoom;
+
+        // 画布中心点在 wrapper 中的位置
+        var centerX = wrapperRect.width / 2 + S.panX * 0 ;
+        var centerY = wrapperRect.height / 2 + S.panY * 0;
+
+        // canvasScroller 左上角在 wrapper 中的实际位置
+        var scrollerLeft = wrapperRect.width / 2 - totalW / 2 + S.panX;
+        var scrollerTop = wrapperRect.height / 2 - totalH / 2 + S.panY;
+
+        // 画布内容区域（去掉标尺）的左上角
+        var contentLeft = scrollerLeft + rs * S.zoom;
+        var contentTop = scrollerTop + rs * S.zoom;
+
+        // 可见区域相对于画布内容的偏移（像素）
+        var visibleLeft = Math.max(0, -contentLeft) / S.zoom;
+        var visibleTop = Math.max(0, -contentTop) / S.zoom;
+        var visibleRight = Math.min(gridPixelW, (wrapperRect.width - contentLeft) / S.zoom);
+        var visibleBottom = Math.min(gridPixelH, (wrapperRect.height - contentTop) / S.zoom);
+
+        // 转换到缩略图坐标
+        var vpLeft = visibleLeft * scale;
+        var vpTop = visibleTop * scale;
+        var vpWidth = (visibleRight - visibleLeft) * scale;
+        var vpHeight = (visibleBottom - visibleTop) * scale;
+
+        // 限制边界
+        vpLeft = Math.max(0, vpLeft);
+        vpTop = Math.max(0, vpTop);
+        vpWidth = Math.min(vpWidth, mmW - vpLeft);
+        vpHeight = Math.min(vpHeight, mmH - vpTop);
+
+        mmViewport.style.left = vpLeft + 'px';
+        mmViewport.style.top = vpTop + 'px';
+        mmViewport.style.width = Math.max(4, vpWidth) + 'px';
+        mmViewport.style.height = Math.max(4, vpHeight) + 'px';
     }
 
     // ===========================
