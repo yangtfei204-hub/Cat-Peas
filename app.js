@@ -432,6 +432,7 @@
         initMobileDrawer();
         openDB();
         startAutoSave();
+        loadCustomCSS();
     }
 
     function startAutoSave() {
@@ -2366,6 +2367,77 @@
                 document.querySelectorAll('.help-content').forEach(function (c) {
                     c.classList.toggle('active', c.dataset.content === targetTab);
                 });
+            });
+        });
+
+        // 自定义 CSS
+        $('applyCustomCSS').addEventListener('click', function () {
+            var cssText = $('customCSSInput').value;
+            applyCustomCSSToPage(cssText);
+            saveCustomCSS(cssText);
+            alert('自定义 CSS 已应用！');
+        });
+
+        $('clearCustomCSS').addEventListener('click', function () {
+            $('customCSSInput').value = '';
+            applyCustomCSSToPage('');
+            saveCustomCSS('');
+            alert('自定义 CSS 已清除！');
+        });
+
+        // CSS 帮助弹窗
+        $('cssHelpBtn').addEventListener('click', function () {
+            $('cssHelpModal').classList.add('active');
+        });
+
+        $('cssHelpModalClose').addEventListener('click', function () {
+            $('cssHelpModal').classList.remove('active');
+        });
+
+        $('cssHelpModal').addEventListener('click', function (e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+
+        // CSS 示例折叠展开
+        document.querySelectorAll('.css-example-toggle').forEach(function (toggle) {
+            toggle.addEventListener('click', function () {
+                var content = this.nextElementSibling;
+                var isCollapsed = this.classList.toggle('collapsed');
+                if (content) content.classList.toggle('collapsed', isCollapsed);
+            });
+        });
+
+        // 复制按钮
+        document.querySelectorAll('.css-copy-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var codeEl = this.closest('.css-example-code-wrap').querySelector('.css-example-code');
+                var text = codeEl.textContent;
+                var self = this;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function () {
+                        self.classList.add('copied');
+                        self.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                        setTimeout(function () {
+                            self.classList.remove('copied');
+                            self.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>';
+                        }, 1500);
+                    });
+                } else {
+                    var textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    self.classList.add('copied');
+                    self.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                    setTimeout(function () {
+                        self.classList.remove('copied');
+                        self.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>';
+                    }, 1500);
+                }
             });
         });
 
@@ -5278,6 +5350,44 @@
         mmViewport.style.top = vpTop + 'px';
         mmViewport.style.width = Math.max(4, vpWidth) + 'px';
         mmViewport.style.height = Math.max(4, vpHeight) + 'px';
+    }
+
+    // ===========================
+    //  自定义 CSS 功能
+    // ===========================
+    function loadCustomCSS() {
+        try {
+            var savedCSS = localStorage.getItem('catpeas_custom_css');
+            if (savedCSS) {
+                applyCustomCSSToPage(savedCSS);
+                var textarea = $('customCSSInput');
+                if (textarea) textarea.value = savedCSS;
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function applyCustomCSSToPage(cssText) {
+        // 移除旧的自定义样式
+        var oldStyle = document.getElementById('catpeas-custom-style');
+        if (oldStyle) oldStyle.remove();
+
+        if (!cssText || !cssText.trim()) return;
+
+        // 创建新的 style 标签
+        var style = document.createElement('style');
+        style.id = 'catpeas-custom-style';
+        style.textContent = cssText;
+        document.head.appendChild(style);
+    }
+
+    function saveCustomCSS(cssText) {
+        try {
+            if (cssText && cssText.trim()) {
+                localStorage.setItem('catpeas_custom_css', cssText);
+            } else {
+                localStorage.removeItem('catpeas_custom_css');
+            }
+        } catch (e) { /* ignore */ }
     }
 
     // ===========================

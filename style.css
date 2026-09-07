@@ -3827,3 +3827,343 @@ body {
 .project-grid.list-view .project-card-preview-wrap img {
     padding: 4px;
 }
+
+/* ========================================
+   自定义 CSS 功能
+   ======================================== */
+
+/* 问号按钮 */
+.css-help-btn {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg-card);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: var(--transition);
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.css-help-btn:hover {
+    background: var(--iris-lighter);
+    color: var(--iris-dark);
+    border-color: var(--iris);
+}
+
+/* CSS 输入框 */
+.custom-css-textarea {
+    width: 100%;
+    min-height: 120px;
+    max-height: 300px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg-card);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    tab-size: 4;
+    -moz-tab-size: 4;
+}
+
+.custom-css-textarea:focus {
+    border-color: var(--iris);
+    box-shadow: 0 0 0 2px rgba(176, 160, 196, 0.15);
+}
+
+.custom-css-textarea::placeholder {
+    color: var(--text-muted);
+    font-family: var(--font-base);
+    font-style: italic;
+}
+
+/* CSS 帮助弹窗 */
+.css-help-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9997;
+    background: rgba(62, 54, 64, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.css-help-modal.active {
+    display: flex;
+}
+
+.css-help-modal-inner {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 520px;
+    max-width: 94vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalIn 0.25s ease;
+}
+
+.css-help-modal-header {
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--iris-dark);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(219, 168, 173, 0.08), rgba(176, 160, 196, 0.08));
+    flex-shrink: 0;
+}
+
+.css-help-modal-header span {
+    flex: 1;
+}
+
+.css-help-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: var(--radius-xs);
+    transition: var(--transition);
+}
+
+.css-help-modal-close:hover {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+.css-help-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.css-help-modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.css-help-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.css-help-modal-body::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.css-help-modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.css-help-intro {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    padding: 10px 12px;
+    background: var(--iris-lighter);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--iris);
+}
+
+/* 示例块 */
+.css-example-block {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.css-example-block:hover {
+    border-color: var(--iris-light);
+}
+
+.css-example-title {
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.css-example-title svg:first-child {
+    color: var(--iris-dark);
+    flex-shrink: 0;
+}
+
+.css-example-title span {
+    flex: 1;
+}
+
+/* 折叠箭头 */
+.css-example-arrow {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+
+.css-example-toggle.collapsed .css-example-arrow {
+    transform: rotate(-90deg);
+}
+
+/* 可点击的标题 */
+.css-example-toggle {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.css-example-toggle:hover {
+    background: var(--iris-lighter);
+}
+
+.css-example-toggle:not(.collapsed) {
+    border-bottom-color: var(--border-light);
+}
+
+/* 折叠内容区域 */
+.css-example-content {
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    opacity: 1;
+}
+
+.css-example-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+}
+
+.css-example-code-wrap {
+    position: relative;
+}
+
+.css-example-code {
+    margin: 0;
+    padding: 12px 14px;
+    font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--bg-card);
+    overflow-x: auto;
+    white-space: pre;
+    tab-size: 4;
+    -moz-tab-size: 4;
+}
+
+/* 复制按钮 */
+.css-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    background: var(--bg-card);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: var(--transition);
+    opacity: 0;
+}
+
+.css-example-code-wrap:hover .css-copy-btn {
+    opacity: 1;
+}
+
+.css-copy-btn:hover {
+    background: var(--iris-lighter);
+    color: var(--iris-dark);
+    border-color: var(--iris);
+}
+
+.css-copy-btn.copied {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+}
+
+/* 底部提示 */
+.css-help-tip {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    padding: 10px 12px;
+    background: var(--pink-lighter);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--pink);
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.css-help-tip svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--pink-dark);
+}
+
+/* 移动端适配 */
+@media (max-width: 960px) {
+    .css-help-modal-inner {
+        width: 96vw;
+        max-height: 90vh;
+    }
+
+    .css-help-modal-body {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .css-example-code {
+        font-size: 10px;
+        padding: 10px 12px;
+    }
+
+    .css-copy-btn {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .css-help-modal-inner {
+        width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .custom-css-textarea {
+        min-height: 100px;
+        font-size: 10px;
+    }
+}
