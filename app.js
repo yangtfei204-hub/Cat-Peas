@@ -486,7 +486,42 @@
         });
     }
 
+    function dismissSplash() {
+        var splash = $('splashScreen');
+        if (!splash) return;
+        // 最少显示1.8秒，最多3秒
+        var minTime = 1800;
+        var startTime = Date.now();
+        function tryDismiss() {
+            var elapsed = Date.now() - startTime;
+            if (elapsed < minTime) {
+                setTimeout(tryDismiss, minTime - elapsed);
+                return;
+            }
+            splash.classList.add('fade-out');
+            setTimeout(function () {
+                splash.classList.add('hidden');
+                // 移除 DOM 释放内存
+                setTimeout(function () {
+                    if (splash.parentNode) splash.parentNode.removeChild(splash);
+                }, 500);
+            }, 600);
+        }
+        // 页面加载完毕后开始倒计时
+        if (document.readyState === 'complete') {
+            setTimeout(tryDismiss, minTime);
+        } else {
+            window.addEventListener('load', function () {
+                tryDismiss();
+            });
+            // 保底：3秒后无论如何关闭
+            setTimeout(tryDismiss, 3000);
+        }
+    }
+
     function init() {
+        // 开屏动画（必须在最前面调用，不依赖任何条件）
+        dismissSplash();
         // 显示版本号
         if ($('logoVersion')) $('logoVersion').textContent = 'v' + APP_VERSION;
         showDisclaimer();
@@ -4289,93 +4324,167 @@
 
         ec.globalAlpha = 1;
 
-        // 猫头轮廓
+        // 新版猫咪图标
         var catX = logoX + 16;
         var catY = logoY + logoAreaH / 2;
-        var catS = 0.52;
+        var catS = 0.48;
 
         ec.save();
         ec.translate(catX, catY);
         ec.scale(catS, catS);
 
-        // 头部形状
-        ec.fillStyle = '#d4979c';
+        // 左耳
+        ec.fillStyle = '#f0c8c0';
         ec.beginPath();
-        ec.moveTo(-12, 12);
-        ec.quadraticCurveTo(-14, -6, -10, -12);
-        ec.lineTo(-6, -20);
-        ec.quadraticCurveTo(-5, -22, -4, -19);
-        ec.lineTo(-3, -12);
-        ec.lineTo(3, -12);
-        ec.lineTo(4, -19);
-        ec.quadraticCurveTo(5, -22, 6, -20);
-        ec.lineTo(10, -12);
-        ec.quadraticCurveTo(14, -6, 12, 12);
+        ec.moveTo(-10, -2);
+        ec.quadraticCurveTo(-14, -18, -8, -24);
+        ec.quadraticCurveTo(-6, -26, -4, -24);
+        ec.lineTo(-3, -16);
+        ec.quadraticCurveTo(-5, -8, -8, -4);
         ec.closePath();
         ec.fill();
-        ec.strokeStyle = '#b07a80';
-        ec.lineWidth = 0.8;
+        // 左耳内
+        ec.fillStyle = '#f0a8a8';
+        ec.globalAlpha = 0.7;
+        ec.beginPath();
+        ec.moveTo(-9, -5);
+        ec.quadraticCurveTo(-12, -16, -7, -21);
+        ec.quadraticCurveTo(-5.5, -23, -4.5, -21);
+        ec.lineTo(-4, -14);
+        ec.quadraticCurveTo(-5.5, -8, -7.5, -6);
+        ec.closePath();
+        ec.fill();
+        ec.globalAlpha = 1;
+
+        // 右耳
+        ec.fillStyle = '#f0c8c0';
+        ec.beginPath();
+        ec.moveTo(10, -2);
+        ec.quadraticCurveTo(14, -18, 8, -24);
+        ec.quadraticCurveTo(6, -26, 4, -24);
+        ec.lineTo(3, -16);
+        ec.quadraticCurveTo(5, -8, 8, -4);
+        ec.closePath();
+        ec.fill();
+        // 右耳内
+        ec.fillStyle = '#f0a8a8';
+        ec.globalAlpha = 0.7;
+        ec.beginPath();
+        ec.moveTo(9, -5);
+        ec.quadraticCurveTo(12, -16, 7, -21);
+        ec.quadraticCurveTo(5.5, -23, 4.5, -21);
+        ec.lineTo(4, -14);
+        ec.quadraticCurveTo(5.5, -8, 7.5, -6);
+        ec.closePath();
+        ec.fill();
+        ec.globalAlpha = 1;
+
+        // 头部
+        ec.fillStyle = '#fff5f0';
+        ec.beginPath();
+        ec.ellipse(0, 4, 13, 12, 0, 0, Math.PI * 2);
+        ec.fill();
+        ec.strokeStyle = '#e8c4b8';
+        ec.lineWidth = 0.6;
+        ec.beginPath();
+        ec.ellipse(0, 4, 13, 12, 0, 0, Math.PI * 2);
         ec.stroke();
 
         // 左眼
-        ec.fillStyle = '#4a4148';
+        ec.fillStyle = '#3a3040';
         ec.beginPath();
-        ec.arc(-5, -2, 2.2, 0, Math.PI * 2);
+        ec.ellipse(-5, 2, 2.3, 2.5, 0, 0, Math.PI * 2);
         ec.fill();
-
-        // 左眼高光
-        ec.fillStyle = '#ffffff';
+        ec.fillStyle = '#fff';
+        ec.globalAlpha = 0.85;
         ec.beginPath();
-        ec.arc(-5.7, -3, 0.7, 0, Math.PI * 2);
+        ec.arc(-5.8, 0.8, 0.8, 0, Math.PI * 2);
         ec.fill();
+        ec.globalAlpha = 0.4;
+        ec.beginPath();
+        ec.arc(-4, 3, 0.4, 0, Math.PI * 2);
+        ec.fill();
+        ec.globalAlpha = 1;
 
         // 右眼
-        ec.fillStyle = '#4a4148';
+        ec.fillStyle = '#3a3040';
         ec.beginPath();
-        ec.arc(5, -2, 2.2, 0, Math.PI * 2);
+        ec.ellipse(5, 2, 2.3, 2.5, 0, 0, Math.PI * 2);
         ec.fill();
-
-        // 右眼高光
-        ec.fillStyle = '#ffffff';
+        ec.fillStyle = '#fff';
+        ec.globalAlpha = 0.85;
         ec.beginPath();
-        ec.arc(4.3, -3, 0.7, 0, Math.PI * 2);
+        ec.arc(4.2, 0.8, 0.8, 0, Math.PI * 2);
         ec.fill();
+        ec.globalAlpha = 0.4;
+        ec.beginPath();
+        ec.arc(6, 3, 0.4, 0, Math.PI * 2);
+        ec.fill();
+        ec.globalAlpha = 1;
 
         // 鼻子
-        ec.fillStyle = '#b07a80';
+        ec.fillStyle = '#c07078';
         ec.beginPath();
-        ec.ellipse(0, 2, 1.3, 0.9, 0, 0, Math.PI * 2);
+        ec.ellipse(0, 6.5, 1.2, 0.8, 0, 0, Math.PI * 2);
         ec.fill();
 
-        // 嘴巴
-        ec.strokeStyle = '#b07a80';
+        // 嘴
+        ec.strokeStyle = '#c07880';
         ec.lineWidth = 0.7;
+        ec.lineCap = 'round';
         ec.beginPath();
-        ec.moveTo(-1.5, 3.5);
-        ec.quadraticCurveTo(0, 5.5, 1.5, 3.5);
+        ec.moveTo(-1.5, 7.8);
+        ec.quadraticCurveTo(0, 10, 1.5, 7.8);
+        ec.stroke();
+        ec.beginPath();
+        ec.moveTo(0, 6.5);
+        ec.lineTo(0, 8);
         ec.stroke();
 
-        // 左胡须
-        ec.strokeStyle = '#c9a0a4';
+        // 腮红
+        ec.fillStyle = 'rgba(240, 160, 160, 0.3)';
+        ec.beginPath();
+        ec.ellipse(-8.5, 6.5, 2.2, 1.6, 0, 0, Math.PI * 2);
+        ec.fill();
+        ec.beginPath();
+        ec.ellipse(8.5, 6.5, 2.2, 1.6, 0, 0, Math.PI * 2);
+        ec.fill();
+
+        // 胡须
+        ec.strokeStyle = '#d4b0b0';
         ec.lineWidth = 0.5;
+        ec.globalAlpha = 0.5;
         ec.beginPath();
-        ec.moveTo(-8, 0);
-        ec.lineTo(-15, -1.5);
+        ec.moveTo(-9, 4);
+        ec.lineTo(-16, 3);
         ec.stroke();
         ec.beginPath();
-        ec.moveTo(-8, 2);
-        ec.lineTo(-15, 3);
+        ec.moveTo(-9, 6.5);
+        ec.lineTo(-16, 7.5);
         ec.stroke();
+        ec.beginPath();
+        ec.moveTo(9, 4);
+        ec.lineTo(16, 3);
+        ec.stroke();
+        ec.beginPath();
+        ec.moveTo(9, 6.5);
+        ec.lineTo(16, 7.5);
+        ec.stroke();
+        ec.globalAlpha = 1;
 
-        // 右胡须
+        // 头顶小豆子
+        ec.fillStyle = '#FFB7E7';
         ec.beginPath();
-        ec.moveTo(8, 0);
-        ec.lineTo(15, -1.5);
-        ec.stroke();
+        ec.arc(-5, -12, 2, 0, Math.PI * 2);
+        ec.fill();
+        ec.fillStyle = '#A0E2FB';
         ec.beginPath();
-        ec.moveTo(8, 2);
-        ec.lineTo(15, 3);
-        ec.stroke();
+        ec.arc(0, -14, 2.3, 0, Math.PI * 2);
+        ec.fill();
+        ec.fillStyle = '#CAEB7B';
+        ec.beginPath();
+        ec.arc(5, -12, 2, 0, Math.PI * 2);
+        ec.fill();
 
         ec.restore();
 
@@ -4807,17 +4916,14 @@
 
     function generateThumbnail(grid, gridW, gridH, paletteSnapshot) {
         try {
-            if (!grid || !gridW || !gridH) return '';
+            if (!grid || gridW <= 0 || gridH <= 0) return '';
 
-            var maxSize = 200;
-            var ratio = gridW / gridH;
-            var tw, th;
-            if (ratio >= 1) {
-                tw = maxSize;
-                th = Math.round(maxSize / ratio);
-            } else {
-                th = maxSize;
-                tw = Math.round(maxSize * ratio);
+            var tw = 200;
+            var th = 200;
+            if (gridW > gridH) {
+                th = Math.round(200 * gridH / gridW);
+            } else if (gridH > gridW) {
+                tw = Math.round(200 * gridW / gridH);
             }
             if (tw < 10) tw = 10;
             if (th < 10) th = 10;
@@ -4826,65 +4932,57 @@
             tmp.width = tw;
             tmp.height = th;
             var tc = tmp.getContext('2d');
-            if (!tc) return '';
 
-            // 白色背景
             tc.fillStyle = '#ffffff';
             tc.fillRect(0, 0, tw, th);
 
-            var cellW = tw / gridW;
-            var cellH = th / gridH;
-
             var hasContent = false;
 
+            // 构建一个可靠的颜色查找函数
+            function getHex(ci) {
+                // 优先从快照中查找
+                if (paletteSnapshot && ci < paletteSnapshot.length && paletteSnapshot[ci]) {
+                    var entry = paletteSnapshot[ci];
+                    if (typeof entry === 'string') return entry;
+                    if (entry.hex) return entry.hex;
+                }
+                // 回退到全局色板
+                if (PALETTE && ci < PALETTE.length && PALETTE[ci]) {
+                    if (typeof PALETTE[ci] === 'string') return PALETTE[ci];
+                    if (PALETTE[ci].hex) return PALETTE[ci].hex;
+                }
+                return '';
+            }
+
             for (var r = 0; r < gridH; r++) {
-                if (!grid[r]) continue;
+                var row = grid[r];
+                if (!row) continue;
                 for (var c = 0; c < gridW; c++) {
-                    var ci = grid[r][c];
-                    // 兼容 null、undefined、-1 等空值
+                    var ci = row[c];
                     if (ci === null || ci === undefined || ci < 0) continue;
 
-                    var hex = null;
-
-                    // 优先从色板快照中查找（快照可能是数组格式）
-                    if (paletteSnapshot && ci < paletteSnapshot.length && paletteSnapshot[ci]) {
-                        var entry = paletteSnapshot[ci];
-                        if (typeof entry === 'object' && entry.hex) {
-                            hex = entry.hex;
-                        } else if (typeof entry === 'string') {
-                            hex = entry;
-                        }
-                    }
-
-                    // 回退到全局色板
-                    if (!hex && PALETTE && ci < PALETTE.length && PALETTE[ci] && PALETTE[ci].hex) {
-                        hex = PALETTE[ci].hex;
-                    }
-
+                    var hex = getHex(ci);
                     if (!hex) continue;
 
+                    var x1 = Math.floor(c * tw / gridW);
+                    var y1 = Math.floor(r * th / gridH);
+                    var x2 = Math.floor((c + 1) * tw / gridW);
+                    var y2 = Math.floor((r + 1) * th / gridH);
+                    var w = x2 - x1;
+                    var h = y2 - y1;
+                    if (w < 1) w = 1;
+                    if (h < 1) h = 1;
+
                     tc.fillStyle = hex;
-                    tc.fillRect(
-                        Math.floor(c * cellW),
-                        Math.floor(r * cellH),
-                        Math.ceil(cellW + 0.5),
-                        Math.ceil(cellH + 0.5)
-                    );
+                    tc.fillRect(x1, y1, w, h);
                     hasContent = true;
                 }
             }
 
-            // 如果画布上没有任何内容，返回空
             if (!hasContent) return '';
-
-            var dataUrl = tmp.toDataURL('image/png');
-
-            // 验证生成的 dataURL 是否有效
-            if (!dataUrl || dataUrl.length < 100 || dataUrl === 'data:,') return '';
-
-            return dataUrl;
+            return tmp.toDataURL('image/png');
         } catch (e) {
-            console.warn('生成缩略图失败:', e);
+            console.warn('生成缩略图异常:', e);
             return '';
         }
     }
@@ -4957,12 +5055,10 @@
     }
 
     function doSave(projectId, name, category, gridData, thumbnail, total, createdAt, now, isOverwrite) {
-        // 如果缩略图为空，尝试重新生成
-        if (!thumbnail || thumbnail.length < 100) {
-            thumbnail = generateThumbnail(gridData, S.gridW, S.gridH, null);
-        }
+        // 使用传入的 gridData（而非 S.grid）来生成缩略图，确保数据一致
+        thumbnail = generateThumbnail(gridData, S.gridW, S.gridH, null);
 
-        // 保存色板快照（完整保存，确保缩略图生成时能用）
+        // 保存色板快照
         var palSnap = [];
         for (var i = 0; i < PALETTE.length; i++) {
             if (PALETTE[i]) {
@@ -4987,7 +5083,6 @@
         };
 
         dbPut(STORE_PROJECTS, projectData).then(function () {
-            // 更新当前项目引用
             S.currentProjectId = projectId;
             S.currentProjectName = name;
 
@@ -5162,25 +5257,27 @@
                 if (!hasThumb) {
                     // 尝试即时生成缩略图
                     try {
-                        var pal = proj.paletteSnapshot || PALETTE;
-                        var freshThumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, pal);
+                        var freshThumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, proj.paletteSnapshot);
+                        if (!freshThumb || freshThumb.length < 100) {
+                            freshThumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, null);
+                        }
                         if (freshThumb && freshThumb.length > 100) {
                             proj.thumbnail = freshThumb;
                             hasThumb = true;
-                            // 异步保存回数据库，不阻塞渲染
                             dbPut(STORE_PROJECTS, proj).catch(function () {});
                         }
-                    } catch (e) { /* ignore */ }
+                    } catch (e) {
+                        // 忽略
+                    }
                 }
                 if (hasThumb) {
-                    thumbHtml = '<img src="' + proj.thumbnail + '" alt="预览" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
+                    thumbHtml = '<img src="' + proj.thumbnail + '" alt="预览" loading="lazy">' +
                         '<div class="preview-placeholder" style="display:none;">加载失败</div>';
                 } else {
                     thumbHtml = '<div class="preview-placeholder">无预览</div>';
                 }
                 card.innerHTML =
                     '<div class="project-card-preview-wrap">' +
-                        '<div class="project-card-check"></div>' +
                         thumbHtml +
                     '</div>' +
                     '<div class="project-card-body">' +
@@ -5194,6 +5291,12 @@
                     '<div class="project-card-footer">' +
                         '<span class="project-card-category">' + escapeHtml(catName) + '</span>' +
                         '<div class="project-card-actions">' +
+                            '<button class="project-card-btn btn-thumb-upload" title="上传预览图">' +
+                                '<svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3v10M6 7l4-4 4 4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                            '</button>' +
+                            '<button class="project-card-btn btn-rename" title="重命名">' +
+                                '<svg viewBox="0 0 20 20" width="14" height="14"><path d="M13.586 3.586a2 2 0 112.828 2.828l-8.486 8.486L4 16l1.1-3.928 8.486-8.486z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                            '</button>' +
                             '<button class="project-card-btn btn-load" title="加载到画布">' +
                                 '<svg viewBox="0 0 20 20" width="14" height="14"><path d="M4 16h12M10 4v9M7 10l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
                             '</button>' +
@@ -5203,9 +5306,10 @@
                         '</div>' +
                     '</div>';
 
-                // 勾选
-                card.querySelector('.project-card-check').addEventListener('click', function (e) {
-                    e.stopPropagation();
+                // 整张卡片点击 = 选中/取消选中
+                card.addEventListener('click', function (e) {
+                    // 如果点到了按钮，不触发选中
+                    if (e.target.closest('.project-card-btn')) return;
                     if (_selectedProjectIds.has(proj.id)) {
                         _selectedProjectIds.delete(proj.id);
                         card.classList.remove('selected');
@@ -5213,6 +5317,74 @@
                         _selectedProjectIds.add(proj.id);
                         card.classList.add('selected');
                     }
+                });
+
+                // 上传预览图
+                card.querySelector('.btn-thumb-upload').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = 'image/*';
+                    fileInput.style.display = 'none';
+                    document.body.appendChild(fileInput);
+                    fileInput.addEventListener('change', function () {
+                        var file = fileInput.files[0];
+                        if (!file) { document.body.removeChild(fileInput); return; }
+                        var reader = new FileReader();
+                        reader.onload = function (ev) {
+                            var img2 = new Image();
+                            img2.onload = function () {
+                                var maxSz = 200;
+                                var tw2 = img2.width;
+                                var th2 = img2.height;
+                                if (tw2 > maxSz || th2 > maxSz) {
+                                    var ratio2 = Math.min(maxSz / tw2, maxSz / th2);
+                                    tw2 = Math.round(tw2 * ratio2);
+                                    th2 = Math.round(th2 * ratio2);
+                                }
+                                var tmpC = document.createElement('canvas');
+                                tmpC.width = tw2;
+                                tmpC.height = th2;
+                                var tmpX = tmpC.getContext('2d');
+                                tmpX.drawImage(img2, 0, 0, tw2, th2);
+                                var dataUrl = tmpC.toDataURL('image/png');
+                                dbGet(STORE_PROJECTS, proj.id).then(function (pd) {
+                                    if (pd) {
+                                        pd.thumbnail = dataUrl;
+                                        dbPut(STORE_PROJECTS, pd).then(function () {
+                                            triggerProjectRefresh();
+                                        });
+                                    }
+                                });
+                            };
+                            img2.src = ev.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                        document.body.removeChild(fileInput);
+                    });
+                    fileInput.click();
+                });
+
+                // 重命名
+                card.querySelector('.btn-rename').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var newName = prompt('请输入新的项目名称：', proj.name);
+                    if (newName === null || !newName.trim()) return;
+                    newName = newName.trim();
+                    dbGet(STORE_PROJECTS, proj.id).then(function (pd) {
+                        if (pd) {
+                            pd.name = newName;
+                            pd.updatedAt = Date.now();
+                            dbPut(STORE_PROJECTS, pd).then(function () {
+                                // 如果当前正在编辑的就是这个项目，同步更新
+                                if (S.currentProjectId === proj.id) {
+                                    S.currentProjectName = newName;
+                                    $('projectName').value = newName;
+                                }
+                                triggerProjectRefresh();
+                            });
+                        }
+                    });
                 });
 
                 // 加载
@@ -5264,9 +5436,10 @@
                     var needFix = !proj.thumbnail || proj.thumbnail.length < 100 || proj.thumbnail === 'data:,';
 
                     if (needFix) {
-                        // 使用项目自带的色板快照来生成缩略图
-                        var pal = proj.paletteSnapshot || PALETTE;
-                        var thumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, pal);
+                        var thumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, proj.paletteSnapshot);
+                        if (!thumb || thumb.length < 100) {
+                            thumb = generateThumbnail(proj.grid, proj.gridW, proj.gridH, null);
+                        }
                         if (thumb && thumb.length > 100) {
                             proj.thumbnail = thumb;
                             promises.push(dbPut(STORE_PROJECTS, proj));

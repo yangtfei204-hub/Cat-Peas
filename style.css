@@ -1962,6 +1962,41 @@ body {
     margin-top: -2px;
 }
 
+
+.project-card.selected::before {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 6;
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, var(--pink), var(--iris));
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    line-height: 1;
+}
+
+.project-grid .project-card {
+    position: relative;
+}
+
+.project-grid.list-view .project-card.selected::before {
+    top: 50%;
+    right: auto;
+    left: -4px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+}
+
 .project-card-preview {
     width: 48px;
     height: 48px;
@@ -2026,6 +2061,19 @@ body {
 }
 
 .project-card-btn:hover {
+    border-color: var(--iris);
+    color: var(--iris-dark);
+    background: var(--iris-lighter);
+}
+
+
+.project-card-btn.btn-thumb-upload:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+.project-card-btn.btn-rename:hover {
     border-color: var(--iris);
     color: var(--iris-dark);
     background: var(--iris-lighter);
@@ -3816,6 +3864,9 @@ body {
 /* ========================================
    项目库缩略图修复
    ======================================== */
+/* ========================================
+   项目库缩略图修复
+   ======================================== */
 .project-card-preview-wrap {
     position: relative;
     padding-top: 75%;
@@ -3841,6 +3892,27 @@ body {
     display: block;
 }
 
+.project-card-preview-wrap .preview-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    background: var(--bg-card);
+}
+
+.project-card-preview-wrap .project-card-check {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 5;
+}
+
 .project-grid.list-view .project-card-preview-wrap {
     padding-top: 0;
     width: 56px;
@@ -3850,6 +3922,13 @@ body {
 
 .project-grid.list-view .project-card-preview-wrap img {
     padding: 4px;
+}
+
+.project-grid.list-view .project-card-preview-wrap .project-card-check {
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
 }
 
 /* ========================================
@@ -4871,3 +4950,297 @@ body {
     pointer-events: none;
     z-index: 1;
 }
+
+/* ========================================
+   开屏动画
+   ======================================== */
+.splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #fef5f3 0%, #f8e8ec 30%, #f0dde8 60%, #e8daf0 100%);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    overflow: hidden;
+}
+
+.splash-screen.fade-out {
+    opacity: 0;
+    transform: scale(1.05);
+    pointer-events: none;
+}
+
+.splash-screen.hidden {
+    display: none;
+}
+
+/* 背景粒子 */
+.splash-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.splash-particle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0;
+    animation: splashFloat 4s ease-in-out infinite;
+}
+
+.sp1 { width: 120px; height: 120px; background: radial-gradient(circle, rgba(240,180,200,0.3), transparent 70%); top: 10%; left: 5%; animation-delay: 0s; animation-duration: 5s; }
+.sp2 { width: 80px; height: 80px; background: radial-gradient(circle, rgba(176,160,220,0.25), transparent 70%); top: 20%; right: 10%; animation-delay: 0.5s; animation-duration: 4.5s; }
+.sp3 { width: 100px; height: 100px; background: radial-gradient(circle, rgba(200,220,250,0.3), transparent 70%); bottom: 15%; left: 15%; animation-delay: 1s; animation-duration: 5.5s; }
+.sp4 { width: 60px; height: 60px; background: radial-gradient(circle, rgba(250,200,180,0.3), transparent 70%); bottom: 25%; right: 20%; animation-delay: 0.3s; animation-duration: 4s; }
+.sp5 { width: 90px; height: 90px; background: radial-gradient(circle, rgba(200,235,180,0.2), transparent 70%); top: 50%; left: 60%; animation-delay: 0.8s; }
+.sp6 { width: 70px; height: 70px; background: radial-gradient(circle, rgba(255,200,220,0.25), transparent 70%); top: 60%; left: 8%; animation-delay: 1.2s; animation-duration: 4.8s; }
+.sp7 { width: 50px; height: 50px; background: radial-gradient(circle, rgba(180,200,240,0.3), transparent 70%); top: 5%; left: 50%; animation-delay: 0.6s; animation-duration: 3.8s; }
+.sp8 { width: 110px; height: 110px; background: radial-gradient(circle, rgba(240,200,240,0.2), transparent 70%); bottom: 5%; right: 5%; animation-delay: 1.5s; animation-duration: 5.2s; }
+
+@keyframes splashFloat {
+    0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+    30% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-20px) scale(1.1); }
+}
+
+/* 闪光星星 */
+.splash-sparkle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    opacity: 0;
+    animation: splashSparkle 2s ease-in-out infinite;
+}
+
+.splash-sparkle::before,
+.splash-sparkle::after {
+    content: '';
+    position: absolute;
+    background: #fff;
+    border-radius: 1px;
+}
+
+.splash-sparkle::before {
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+}
+
+.splash-sparkle::after {
+    width: 2px;
+    height: 100%;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+}
+
+.sk1 { top: 15%; left: 20%; animation-delay: 0.3s; }
+.sk2 { top: 25%; right: 15%; animation-delay: 0.8s; width: 8px; height: 8px; }
+.sk3 { bottom: 30%; left: 25%; animation-delay: 1.2s; width: 5px; height: 5px; }
+.sk4 { top: 40%; right: 30%; animation-delay: 0.5s; }
+.sk5 { bottom: 20%; right: 25%; animation-delay: 1.5s; width: 7px; height: 7px; }
+.sk6 { top: 10%; left: 45%; animation-delay: 1s; width: 4px; height: 4px; }
+
+@keyframes splashSparkle {
+    0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+    50% { opacity: 0.8; transform: scale(1) rotate(45deg); }
+}
+
+/* 主体内容 */
+.splash-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+}
+
+/* 猫咪动画 */
+.splash-cat {
+    animation: splashBounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+    transform: scale(0.3) translateY(40px);
+}
+
+@keyframes splashBounceIn {
+    0% { opacity: 0; transform: scale(0.3) translateY(40px); }
+    50% { opacity: 1; transform: scale(1.08) translateY(-8px); }
+    70% { transform: scale(0.95) translateY(3px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* 猫咪浮动 */
+.splash-cat svg {
+    animation: splashCatFloat 3s ease-in-out infinite;
+    animation-delay: 0.8s;
+}
+
+@keyframes splashCatFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-6px) rotate(1deg); }
+    75% { transform: translateY(-3px) rotate(-1deg); }
+}
+
+/* 眨眼动画 - 用透明度闪烁模拟 */
+.splash-eye-left,
+.splash-eye-right {
+    animation: splashBlink 4s ease-in-out infinite;
+}
+
+.splash-eye-right {
+    animation-delay: 0.05s;
+}
+
+@keyframes splashBlink {
+    0%, 40%, 50%, 100% { opacity: 1; }
+    44%, 46% { opacity: 0; }
+}
+
+/* 眨眼闭合线 */
+.splash-eye-shut-left,
+.splash-eye-shut-right {
+    animation: splashShutEye 4s ease-in-out infinite;
+}
+
+.splash-eye-shut-right {
+    animation-delay: 0.05s;
+}
+
+@keyframes splashShutEye {
+    0%, 40%, 50%, 100% { opacity: 0; }
+    44%, 46% { opacity: 1; }
+}
+
+/* 爪子挥动 */
+.splash-paw-left {
+    animation: splashPawLeft 2.5s ease-in-out infinite;
+    transform-origin: 80px 155px;
+    animation-delay: 1s;
+}
+
+.splash-paw-right {
+    animation: splashPawRight 2.5s ease-in-out infinite;
+    transform-origin: 120px 155px;
+    animation-delay: 1.3s;
+}
+
+@keyframes splashPawLeft {
+    0%, 100% { transform: rotate(0deg); }
+    30% { transform: rotate(-12deg); }
+    60% { transform: rotate(5deg); }
+}
+
+@keyframes splashPawRight {
+    0%, 100% { transform: rotate(0deg); }
+    30% { transform: rotate(12deg); }
+    60% { transform: rotate(-5deg); }
+}
+
+/* 头顶豆子弹跳 */
+.splash-beads {
+    animation: splashBeadsBounce 2s ease-in-out infinite;
+    animation-delay: 0.5s;
+}
+
+@keyframes splashBeadsBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+/* 文字 */
+.splash-text {
+    text-align: center;
+    animation: splashTextIn 0.6s ease-out forwards;
+    animation-delay: 0.4s;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes splashTextIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.splash-title {
+    font-size: 36px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #c48a90, #8d7baa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+    line-height: 1.2;
+    text-shadow: none;
+}
+
+.splash-subtitle {
+    font-size: 13px;
+    color: #b09aaa;
+    letter-spacing: 4px;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* 加载点 */
+.splash-loading {
+    margin-top: 20px;
+    animation: splashLoadIn 0.5s ease-out forwards;
+    animation-delay: 0.8s;
+    opacity: 0;
+}
+
+@keyframes splashLoadIn {
+    to { opacity: 1; }
+}
+
+.splash-loading-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.splash-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #dba8ad, #b0a0c4);
+    animation: splashDotBounce 1.4s ease-in-out infinite;
+}
+
+.splash-dot:nth-child(2) { animation-delay: 0.15s; }
+.splash-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes splashDotBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+/* 移动端适配 */
+@media (max-width: 480px) {
+    .splash-cat svg {
+        width: 110px;
+        height: 110px;
+    }
+    .splash-title {
+        font-size: 28px;
+    }
+    .splash-subtitle {
+        font-size: 11px;
+        letter-spacing: 3px;
+    }
+    .splash-particle {
+        transform: scale(0.6);
+    }
+}
+
