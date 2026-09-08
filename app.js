@@ -2009,8 +2009,29 @@
         var tc = tmp.getContext('2d');
         tc.drawImage(S.refImage, 0, 0, imgW, imgH);
 
-        var blockW = imgW / S.gridW;
-        var blockH = imgH / S.gridH;
+        // 计算图片在画板上的实际映射区域（保持比例，不压扁）
+        var canvasPixelW = S.gridW * S.cellSize;
+        var canvasPixelH = S.gridH * S.cellSize;
+        var imgScale = Math.min(canvasPixelW / imgW, canvasPixelH / imgH);
+        var mappedW = imgW * imgScale;
+        var mappedH = imgH * imgScale;
+        var offsetX = (canvasPixelW - mappedW) / 2;
+        var offsetY = (canvasPixelH - mappedH) / 2;
+
+        var startCol = Math.floor(offsetX / S.cellSize);
+        var startRow = Math.floor(offsetY / S.cellSize);
+        var endCol = Math.ceil((offsetX + mappedW) / S.cellSize);
+        var endRow = Math.ceil((offsetY + mappedH) / S.cellSize);
+        startCol = Math.max(0, startCol);
+        startRow = Math.max(0, startRow);
+        endCol = Math.min(S.gridW, endCol);
+        endRow = Math.min(S.gridH, endRow);
+
+        var coveredCols = endCol - startCol;
+        var coveredRows = endRow - startRow;
+
+        var blockW = imgW / coveredCols;
+        var blockH = imgH / coveredRows;
         var x0 = Math.round(col * blockW);
         var y0 = Math.round(row * blockH);
         var x1 = Math.round((col + 1) * blockW);
@@ -2397,6 +2418,23 @@
             $('previewFilterBg').checked = $('toggleBgFilter') && $('toggleBgFilter').checked;
             $('previewBgTolerance').value = $('bgToleranceSlider') ? $('bgToleranceSlider').value : 30;
             $('convertPreviewModal').classList.add('active');
+            // 自动生成一次预览
+            setTimeout(function () {
+                var maxC = Math.min(Math.max(parseInt($('previewMaxColors').value) || 24, 2), 64);
+                var dither = $('previewDither').value;
+                var filterBg = $('previewFilterBg').checked;
+                var bgTol = parseInt($('previewBgTolerance').value) || 30;
+                $('convertPreviewLoading').classList.add('active');
+                setTimeout(function () {
+                    _convertPreviewData = generateConvertPreview(maxC, dither, filterBg, bgTol);
+                    if (_convertPreviewData) {
+                        renderPreviewToCanvas(_convertPreviewData);
+                    } else {
+                        $('convertPreviewInfo').textContent = '生成预览失败，请检查是否已上传底图';
+                    }
+                    $('convertPreviewLoading').classList.remove('active');
+                }, 100);
+            }, 100);
         });
         $('recognizeBtn').addEventListener('click', recognizeBlockImage);
         $('removeImage').addEventListener('click', () => {
@@ -3329,10 +3367,8 @@
                 console.warn('检测嵌入数据时出错:', detectErr);
             }
 
-            // 正常的参考底图流程
-            S.refImage = img;
-            $('imageControls').style.display = 'block';
-            renderBg();
+            // 打开裁剪弹窗
+            openCropModal(img);
         };
         img.src = URL.createObjectURL(file);
     }
@@ -3419,8 +3455,29 @@
         tc.drawImage(img, 0, 0, imgW, imgH);
         var fullData = tc.getImageData(0, 0, imgW, imgH).data;
 
-        var blockW = imgW / S.gridW;
-        var blockH = imgH / S.gridH;
+        // 计算图片在画板上的实际映射区域（保持比例，不压扁）
+        var canvasPixelW = S.gridW * S.cellSize;
+        var canvasPixelH = S.gridH * S.cellSize;
+        var imgScale = Math.min(canvasPixelW / imgW, canvasPixelH / imgH);
+        var mappedW = imgW * imgScale;
+        var mappedH = imgH * imgScale;
+        var offsetX = (canvasPixelW - mappedW) / 2;
+        var offsetY = (canvasPixelH - mappedH) / 2;
+
+        var startCol = Math.floor(offsetX / S.cellSize);
+        var startRow = Math.floor(offsetY / S.cellSize);
+        var endCol = Math.ceil((offsetX + mappedW) / S.cellSize);
+        var endRow = Math.ceil((offsetY + mappedH) / S.cellSize);
+        startCol = Math.max(0, startCol);
+        startRow = Math.max(0, startRow);
+        endCol = Math.min(S.gridW, endCol);
+        endRow = Math.min(S.gridH, endRow);
+
+        var coveredCols = endCol - startCol;
+        var coveredRows = endRow - startRow;
+
+        var blockW = imgW / coveredCols;
+        var blockH = imgH / coveredRows;
 
         // 背景色检测
         var bgColor = null;
@@ -3455,10 +3512,19 @@
         for (var row = 0; row < S.gridH; row++) {
             pixelGrid[row] = [];
             for (var col = 0; col < S.gridW; col++) {
-                var x0 = Math.round(col * blockW);
-                var y0 = Math.round(row * blockH);
-                var x1 = Math.round((col + 1) * blockW);
-                var y1 = Math.round((row + 1) * blockH);
+                // 判断该格子是否在图片覆盖范围内
+                if (row < startRow || row >= endRow || col < startCol || col >= endCol) {
+                    pixelGrid[row][col] = null;
+                    pmap.push(null);
+                    continue;
+                }
+
+                var localRow = row - startRow;
+                var localCol = col - startCol;
+                var x0 = Math.round(localCol * blockW);
+                var y0 = Math.round(localRow * blockH);
+                var x1 = Math.round((localCol + 1) * blockW);
+                var y1 = Math.round((localRow + 1) * blockH);
                 if (x1 > imgW) x1 = imgW;
                 if (y1 > imgH) y1 = imgH;
 
@@ -3550,14 +3616,30 @@
 
     function renderPreviewToCanvas(resultGrid) {
         var previewCanvas = $('convertPreviewCanvas');
-        var cellSize = Math.max(2, Math.min(8, Math.floor(560 / Math.max(S.gridW, S.gridH))));
-        var pw = S.gridW * cellSize;
-        var ph = S.gridH * cellSize;
-        previewCanvas.width = pw;
-        previewCanvas.height = ph;
+        // 根据画板宽高比计算预览尺寸，保持比例不压扁
+        var maxSize = 560;
+        var ratio = S.gridW / S.gridH;
+        var cellSize;
+        if (ratio >= 1) {
+            // 宽图
+            cellSize = maxSize / S.gridW;
+        } else {
+            // 高图
+            cellSize = maxSize / S.gridH;
+        }
+        // 确保 cellSize 至少2像素
+        cellSize = Math.max(2, cellSize);
+        var pw = Math.round(S.gridW * cellSize);
+        var ph = Math.round(S.gridH * cellSize);
+
+        // 用2倍DPR渲染，但CSS尺寸保持逻辑尺寸
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        previewCanvas.width = pw * dpr;
+        previewCanvas.height = ph * dpr;
         previewCanvas.style.width = pw + 'px';
         previewCanvas.style.height = ph + 'px';
         var pc = previewCanvas.getContext('2d');
+        pc.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         // 白色背景
         pc.fillStyle = '#fff';
@@ -3569,7 +3651,12 @@
                 var ci = resultGrid[r][c];
                 if (ci !== null && PALETTE[ci]) {
                     pc.fillStyle = PALETTE[ci].hex;
-                    pc.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                    pc.fillRect(
+                        Math.floor(c * cellSize),
+                        Math.floor(r * cellSize),
+                        Math.ceil(cellSize),
+                        Math.ceil(cellSize)
+                    );
                 }
             }
         }
@@ -3606,9 +3693,30 @@
         tc.drawImage(img, 0, 0, imgW, imgH);
         var fullData = tc.getImageData(0, 0, imgW, imgH).data;
 
-        // 每个格子对应原图的一个区块，取区块内所有像素的平均色
-        var blockW = imgW / S.gridW;
-        var blockH = imgH / S.gridH;
+        // 计算图片在画板上的实际映射区域（保持比例，不压扁）
+        var canvasPixelW = S.gridW * S.cellSize;
+        var canvasPixelH = S.gridH * S.cellSize;
+        var imgScale = Math.min(canvasPixelW / imgW, canvasPixelH / imgH);
+        var mappedW = imgW * imgScale;
+        var mappedH = imgH * imgScale;
+        var offsetX = (canvasPixelW - mappedW) / 2;
+        var offsetY = (canvasPixelH - mappedH) / 2;
+
+        // 计算图片实际覆盖的格子范围
+        var startCol = Math.floor(offsetX / S.cellSize);
+        var startRow = Math.floor(offsetY / S.cellSize);
+        var endCol = Math.ceil((offsetX + mappedW) / S.cellSize);
+        var endRow = Math.ceil((offsetY + mappedH) / S.cellSize);
+        startCol = Math.max(0, startCol);
+        startRow = Math.max(0, startRow);
+        endCol = Math.min(S.gridW, endCol);
+        endRow = Math.min(S.gridH, endRow);
+
+        var coveredCols = endCol - startCol;
+        var coveredRows = endRow - startRow;
+
+        var blockW = imgW / coveredCols;
+        var blockH = imgH / coveredRows;
 
         // 背景屏蔽检测
         var filterBg = $('toggleBgFilter') && $('toggleBgFilter').checked;
@@ -3652,10 +3760,17 @@
 
         for (var row = 0; row < S.gridH; row++) {
             for (var col = 0; col < S.gridW; col++) {
-                var x0 = Math.round(col * blockW);
-                var y0 = Math.round(row * blockH);
-                var x1 = Math.round((col + 1) * blockW);
-                var y1 = Math.round((row + 1) * blockH);
+                if (row < startRow || row >= endRow || col < startCol || col >= endCol) {
+                    pmap.push(null);
+                    continue;
+                }
+
+                var localRow = row - startRow;
+                var localCol = col - startCol;
+                var x0 = Math.round(localCol * blockW);
+                var y0 = Math.round(localRow * blockH);
+                var x1 = Math.round((localCol + 1) * blockW);
+                var y1 = Math.round((localRow + 1) * blockH);
                 if (x1 > imgW) x1 = imgW;
                 if (y1 > imgH) y1 = imgH;
 
@@ -3680,7 +3795,6 @@
 
                 var totalPixels = (x1 - x0) * (y1 - y0);
 
-                // 如果超过一半像素是透明的，视为空格
                 if (pixelCount === 0 || transparentCount > totalPixels * 0.5) {
                     pmap.push(null);
                     continue;
@@ -3690,7 +3804,6 @@
                 var avgG = Math.round(sumG / pixelCount);
                 var avgB = Math.round(sumB / pixelCount);
 
-                // 背景屏蔽判断
                 if (filterBg && bgColor) {
                     var dr = avgR - bgColor.r;
                     var dg = avgG - bgColor.g;
@@ -3723,13 +3836,19 @@
 
         for (var i = 0; i < pmap.length; i++) {
             if (pmap[i] === null || allowed.has(pmap[i])) continue;
-            // 用该位置的平均色重新在允许集合里找最近
             var ri = Math.floor(i / S.gridW);
             var ci2 = i % S.gridW;
-            var bx0 = Math.round(ci2 * blockW);
-            var by0 = Math.round(ri * blockH);
-            var bx1 = Math.round((ci2 + 1) * blockW);
-            var by1 = Math.round((ri + 1) * blockH);
+            // 跳过不在图片覆盖范围内的格子
+            if (ri < startRow || ri >= endRow || ci2 < startCol || ci2 >= endCol) {
+                pmap[i] = null;
+                continue;
+            }
+            var localR = ri - startRow;
+            var localC = ci2 - startCol;
+            var bx0 = Math.round(localC * blockW);
+            var by0 = Math.round(localR * blockH);
+            var bx1 = Math.round((localC + 1) * blockW);
+            var by1 = Math.round((localR + 1) * blockH);
             if (bx1 > imgW) bx1 = imgW;
             if (by1 > imgH) by1 = imgH;
             var sR = 0, sG = 0, sB = 0, sC = 0;
@@ -4716,14 +4835,6 @@
             var cellW = tw / gridW;
             var cellH = th / gridH;
 
-            // 构建色板查找表：优先用传入的快照，否则用全局
-            var pal = null;
-            if (paletteSnapshot && paletteSnapshot.length > 0) {
-                pal = paletteSnapshot;
-            } else {
-                pal = PALETTE;
-            }
-
             var hasContent = false;
 
             for (var r = 0; r < gridH; r++) {
@@ -4735,12 +4846,18 @@
 
                     var hex = null;
 
-                    // 先从传入的色板快照中查找
-                    if (pal && ci < pal.length && pal[ci] && pal[ci].hex) {
-                        hex = pal[ci].hex;
+                    // 优先从色板快照中查找（快照可能是数组格式）
+                    if (paletteSnapshot && ci < paletteSnapshot.length && paletteSnapshot[ci]) {
+                        var entry = paletteSnapshot[ci];
+                        if (typeof entry === 'object' && entry.hex) {
+                            hex = entry.hex;
+                        } else if (typeof entry === 'string') {
+                            hex = entry;
+                        }
                     }
+
                     // 回退到全局色板
-                    else if (PALETTE && ci < PALETTE.length && PALETTE[ci] && PALETTE[ci].hex) {
+                    if (!hex && PALETTE && ci < PALETTE.length && PALETTE[ci] && PALETTE[ci].hex) {
                         hex = PALETTE[ci].hex;
                     }
 
@@ -4845,11 +4962,13 @@
             thumbnail = generateThumbnail(gridData, S.gridW, S.gridH, null);
         }
 
-        // 保存色板快照，只保存必要字段，减小体积
+        // 保存色板快照（完整保存，确保缩略图生成时能用）
         var palSnap = [];
         for (var i = 0; i < PALETTE.length; i++) {
             if (PALETTE[i]) {
                 palSnap.push({ id: PALETTE[i].id, name: PALETTE[i].name, hex: PALETTE[i].hex });
+            } else {
+                palSnap.push(null);
             }
         }
 
@@ -6720,6 +6839,605 @@
                 localStorage.removeItem('catpeas_custom_css');
             }
         } catch (e) { /* ignore */ }
+    }
+
+    // ===========================
+    //  图片裁剪功能
+    // ===========================
+    var _cropState = {
+        img: null,
+        displayW: 0,
+        displayH: 0,
+        naturalW: 0,
+        naturalH: 0,
+        scaleRatio: 1,
+        // 选区坐标（相对于canvas显示区域的像素坐标）
+        selX: 0,
+        selY: 0,
+        selW: 0,
+        selH: 0,
+        hasSelection: false,
+        isDragging: false,
+        dragType: '', // 'new', 'move', 'tl','tr','bl','br','t','b','l','r'
+        dragStartX: 0,
+        dragStartY: 0,
+        dragStartSel: null,
+        canvasOffsetX: 0,
+        canvasOffsetY: 0
+    };
+
+    function openCropModal(img) {
+        _cropState.img = img;
+        _cropState.naturalW = img.naturalWidth;
+        _cropState.naturalH = img.naturalHeight;
+        _cropState.hasSelection = false;
+
+        var modal = $('cropModal');
+        modal.classList.add('active');
+
+        // 延迟渲染，让弹窗先显示
+        setTimeout(function () {
+            renderCropCanvas();
+            updateCropBoardSize();
+            bindCropEvents();
+        }, 50);
+    }
+
+    function closeCropModal() {
+        $('cropModal').classList.remove('active');
+        unbindCropEvents();
+        _cropState.img = null;
+    }
+
+    function renderCropCanvas() {
+        var canvas = $('cropCanvas');
+        var wrap = $('cropCanvasWrap');
+        var img = _cropState.img;
+        if (!img) return;
+
+        // 计算画布可用空间
+        var maxW = wrap.clientWidth - 4;
+        var maxH = Math.min(wrap.clientHeight || 500, window.innerHeight * 0.58);
+
+        // 保持图片比例缩放到可用区域内
+        var ratio = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
+        var dw = Math.round(img.naturalWidth * ratio);
+        var dh = Math.round(img.naturalHeight * ratio);
+
+        canvas.width = dw;
+        canvas.height = dh;
+        canvas.style.width = dw + 'px';
+        canvas.style.height = dh + 'px';
+
+        var ctx2 = canvas.getContext('2d');
+        ctx2.clearRect(0, 0, dw, dh);
+        ctx2.drawImage(img, 0, 0, dw, dh);
+
+        _cropState.displayW = dw;
+        _cropState.displayH = dh;
+        _cropState.scaleRatio = ratio;
+
+        // 清除选区
+        resetCropSelection();
+
+        // 更新信息
+        $('cropInfoText').textContent = '原始图片: ' + img.naturalWidth + '×' + img.naturalHeight + ' 像素 | 拖拽框选裁剪区域，或直接使用整张图片';
+    }
+
+    function resetCropSelection() {
+        _cropState.hasSelection = false;
+        _cropState.selX = 0;
+        _cropState.selY = 0;
+        _cropState.selW = 0;
+        _cropState.selH = 0;
+        var sel = $('cropSelection');
+        sel.classList.remove('active');
+        updateCropHandles();
+        updateCropBoardSize();
+    }
+
+    function updateCropSelection() {
+        var sel = $('cropSelection');
+        var canvas = $('cropCanvas');
+        if (!_cropState.hasSelection || _cropState.selW < 2 || _cropState.selH < 2) {
+            sel.classList.remove('active');
+            updateCropHandles();
+            return;
+        }
+
+        sel.classList.add('active');
+
+        // 计算选区相对于 wrap 的位置
+        var canvasRect = canvas.getBoundingClientRect();
+        var wrapRect = $('cropCanvasWrap').getBoundingClientRect();
+        var offsetX = canvasRect.left - wrapRect.left;
+        var offsetY = canvasRect.top - wrapRect.top;
+
+        var sx = offsetX + _cropState.selX;
+        var sy = offsetY + _cropState.selY;
+
+        sel.style.left = sx + 'px';
+        sel.style.top = sy + 'px';
+        sel.style.width = _cropState.selW + 'px';
+        sel.style.height = _cropState.selH + 'px';
+
+        updateCropHandles();
+        updateCropBoardSize();
+    }
+
+    function updateCropHandles() {
+        var sel = $('cropSelection');
+        var handles = document.querySelectorAll('.crop-handle');
+        if (!_cropState.hasSelection || _cropState.selW < 2 || _cropState.selH < 2) {
+            handles.forEach(function (h) { h.style.display = 'none'; });
+            return;
+        }
+
+        var canvas = $('cropCanvas');
+        var canvasRect = canvas.getBoundingClientRect();
+        var wrapRect = $('cropCanvasWrap').getBoundingClientRect();
+        var offsetX = canvasRect.left - wrapRect.left;
+        var offsetY = canvasRect.top - wrapRect.top;
+
+        var sx = offsetX + _cropState.selX;
+        var sy = offsetY + _cropState.selY;
+        var sw = _cropState.selW;
+        var sh = _cropState.selH;
+        var hs = 6; // 把手半尺寸
+
+        var positions = {
+            'tl': { left: sx - hs, top: sy - hs },
+            'tr': { left: sx + sw - hs, top: sy - hs },
+            'bl': { left: sx - hs, top: sy + sh - hs },
+            'br': { left: sx + sw - hs, top: sy + sh - hs },
+            't':  { left: sx + sw / 2 - hs, top: sy - hs },
+            'b':  { left: sx + sw / 2 - hs, top: sy + sh - hs },
+            'l':  { left: sx - hs, top: sy + sh / 2 - hs },
+            'r':  { left: sx + sw - hs, top: sy + sh / 2 - hs }
+        };
+
+        handles.forEach(function (h) {
+            var handleType = h.dataset.handle;
+            if (positions[handleType]) {
+                h.style.display = 'block';
+                h.style.left = positions[handleType].left + 'px';
+                h.style.top = positions[handleType].top + 'px';
+            }
+        });
+    }
+
+    function updateCropBoardSize() {
+        var autoBoard = $('cropAutoBoard').checked;
+        var img = _cropState.img;
+        if (!img) return;
+
+        var cropW, cropH;
+        if (_cropState.hasSelection && _cropState.selW > 2 && _cropState.selH > 2) {
+            // 裁剪区域对应原图的像素
+            cropW = Math.round(_cropState.selW / _cropState.scaleRatio);
+            cropH = Math.round(_cropState.selH / _cropState.scaleRatio);
+        } else {
+            cropW = img.naturalWidth;
+            cropH = img.naturalHeight;
+        }
+
+        if (autoBoard) {
+            // 计算需要的格子数：每格代表的像素 = 图片像素 / 格数
+            // 反过来：格数 = 图片宽 / (图片最大边 / 当前画板最大边)
+            // 更直观的做法：保持像素比例，按52格的倍数向上取
+            var boardUnit = S.splitSize || 52;
+            var ratio = cropW / cropH;
+
+            var gridW, gridH;
+            if (ratio >= 1) {
+                // 宽图：以宽边为基准
+                gridW = Math.max(boardUnit, Math.ceil(cropW / Math.max(1, Math.floor(cropW / boardUnit))) );
+                // 按比例计算高
+                gridH = Math.round(gridW / ratio);
+                // 向上对齐到 boardUnit 的倍数
+                gridW = Math.ceil(gridW / boardUnit) * boardUnit;
+                gridH = Math.max(boardUnit, Math.ceil(gridH / boardUnit) * boardUnit);
+            } else {
+                // 高图
+                gridH = Math.max(boardUnit, Math.ceil(cropH / Math.max(1, Math.floor(cropH / boardUnit))) );
+                gridW = Math.round(gridH * ratio);
+                gridH = Math.ceil(gridH / boardUnit) * boardUnit;
+                gridW = Math.max(boardUnit, Math.ceil(gridW / boardUnit) * boardUnit);
+            }
+
+            // 限制最大
+            gridW = Math.min(gridW, 200);
+            gridH = Math.min(gridH, 200);
+            // 至少是一个板
+            gridW = Math.max(gridW, boardUnit);
+            gridH = Math.max(gridH, boardUnit);
+
+            $('cropBoardSize').textContent = gridW + '×' + gridH;
+
+            // 显示板数
+            var boardCols = Math.ceil(gridW / boardUnit);
+            var boardRows = Math.ceil(gridH / boardUnit);
+            if (boardCols * boardRows > 1) {
+                $('cropBoardSize').textContent += ' (' + boardCols + '×' + boardRows + ' = ' + (boardCols * boardRows) + '块板)';
+            }
+        } else {
+            $('cropBoardSize').textContent = S.gridW + '×' + S.gridH + '（保持当前）';
+        }
+
+        // 更新选区尺寸信息
+        if (_cropState.hasSelection && _cropState.selW > 2) {
+            $('cropInfoText').textContent = '选区: ' + cropW + '×' + cropH + ' 像素 | 比例 ' + (cropW / cropH).toFixed(2);
+        } else {
+            $('cropInfoText').textContent = '原始图片: ' + img.naturalWidth + '×' + img.naturalHeight + ' 像素 | 拖拽框选裁剪区域';
+        }
+
+        $('cropSizeInfo').style.display = autoBoard ? 'block' : 'none';
+    }
+
+    function getCropResult() {
+        var img = _cropState.img;
+        if (!img) return null;
+
+        var sx, sy, sw, sh;
+        if (_cropState.hasSelection && _cropState.selW > 2 && _cropState.selH > 2) {
+            sx = Math.round(_cropState.selX / _cropState.scaleRatio);
+            sy = Math.round(_cropState.selY / _cropState.scaleRatio);
+            sw = Math.round(_cropState.selW / _cropState.scaleRatio);
+            sh = Math.round(_cropState.selH / _cropState.scaleRatio);
+        } else {
+            sx = 0;
+            sy = 0;
+            sw = img.naturalWidth;
+            sh = img.naturalHeight;
+        }
+
+        // 边界检查
+        sx = Math.max(0, sx);
+        sy = Math.max(0, sy);
+        sw = Math.min(sw, img.naturalWidth - sx);
+        sh = Math.min(sh, img.naturalHeight - sy);
+
+        // 创建裁剪后的图片
+        var tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = sw;
+        tmpCanvas.height = sh;
+        var tmpCtx = tmpCanvas.getContext('2d');
+        tmpCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+
+        var croppedImg = new Image();
+        croppedImg.src = tmpCanvas.toDataURL('image/png');
+
+        return {
+            img: croppedImg,
+            canvas: tmpCanvas,
+            width: sw,
+            height: sh
+        };
+    }
+
+    function applyCropAndSetRef(skipCrop) {
+        var img = _cropState.img;
+        if (!img) return;
+
+        var autoBoard = $('cropAutoBoard').checked;
+
+        if (skipCrop) {
+            // 使用整图
+            if (autoBoard) {
+                autoResizeBoardForImage(img.naturalWidth, img.naturalHeight);
+            }
+            S.refImage = img;
+            $('imageControls').style.display = 'block';
+            renderBg();
+            closeCropModal();
+            return;
+        }
+
+        // 有裁剪
+        var result = getCropResult();
+        if (!result) {
+            closeCropModal();
+            return;
+        }
+
+        if (autoBoard) {
+            autoResizeBoardForImage(result.width, result.height);
+        }
+
+        // 等裁剪后的图片加载完成
+        if (result.img.complete) {
+            S.refImage = result.img;
+            $('imageControls').style.display = 'block';
+            renderBg();
+            closeCropModal();
+        } else {
+            result.img.onload = function () {
+                S.refImage = result.img;
+                $('imageControls').style.display = 'block';
+                renderBg();
+                closeCropModal();
+            };
+        }
+    }
+
+    function autoResizeBoardForImage(imgW, imgH) {
+        var boardUnit = S.splitSize || 52;
+        var ratio = imgW / imgH;
+
+        var gridW, gridH;
+        if (ratio >= 1) {
+            gridW = Math.max(boardUnit, Math.ceil(imgW / Math.max(1, Math.floor(imgW / boardUnit))));
+            gridH = Math.round(gridW / ratio);
+            gridW = Math.ceil(gridW / boardUnit) * boardUnit;
+            gridH = Math.max(boardUnit, Math.ceil(gridH / boardUnit) * boardUnit);
+        } else {
+            gridH = Math.max(boardUnit, Math.ceil(imgH / Math.max(1, Math.floor(imgH / boardUnit))));
+            gridW = Math.round(gridH * ratio);
+            gridH = Math.ceil(gridH / boardUnit) * boardUnit;
+            gridW = Math.max(boardUnit, Math.ceil(gridW / boardUnit) * boardUnit);
+        }
+
+        gridW = Math.min(Math.max(gridW, boardUnit), 200);
+        gridH = Math.min(Math.max(gridH, boardUnit), 200);
+
+        // 检查是否需要改变画布尺寸
+        if (gridW !== S.gridW || gridH !== S.gridH) {
+            var oldGrid = S.grid;
+            var oldW = S.gridW;
+            var oldH = S.gridH;
+
+            S.gridW = gridW;
+            S.gridH = gridH;
+            S.grid = [];
+
+            for (var r = 0; r < gridH; r++) {
+                S.grid[r] = new Array(gridW).fill(null);
+                if (r < oldH) {
+                    for (var c = 0; c < Math.min(gridW, oldW); c++) {
+                        S.grid[r][c] = oldGrid[r][c];
+                    }
+                }
+            }
+
+            initLayers();
+            for (var lr = 0; lr < Math.min(gridH, oldH); lr++) {
+                for (var lc = 0; lc < Math.min(gridW, oldW); lc++) {
+                    S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+                }
+            }
+
+            $('canvasWidth').value = gridW;
+            $('canvasHeight').value = gridH;
+
+            // 同步更新预设按钮的高亮状态
+            document.querySelectorAll('.btn-preset').forEach(function (b) {
+                b.classList.toggle('active',
+                    parseInt(b.dataset.w) === gridW && parseInt(b.dataset.h) === gridH
+                );
+            });
+
+            pushHistory('自动扩展画板');
+            setupCanvas();
+            render();
+        }
+    }
+
+    // 裁剪事件绑定
+    var _cropBoundEvents = false;
+    var _cropMouseDown = null;
+    var _cropMouseMove = null;
+    var _cropMouseUp = null;
+
+    function bindCropEvents() {
+        if (_cropBoundEvents) return;
+        _cropBoundEvents = true;
+
+        var wrap = $('cropCanvasWrap');
+        var canvas = $('cropCanvas');
+
+        _cropMouseDown = function (e) {
+            e.preventDefault();
+            var rect = canvas.getBoundingClientRect();
+            var mx = e.clientX - rect.left;
+            var my = e.clientY - rect.top;
+
+            // 检查是否点在把手上
+            var handle = e.target.closest('.crop-handle');
+            if (handle && _cropState.hasSelection) {
+                _cropState.isDragging = true;
+                _cropState.dragType = handle.dataset.handle;
+                _cropState.dragStartX = e.clientX;
+                _cropState.dragStartY = e.clientY;
+                _cropState.dragStartSel = {
+                    x: _cropState.selX,
+                    y: _cropState.selY,
+                    w: _cropState.selW,
+                    h: _cropState.selH
+                };
+                return;
+            }
+
+            // 检查是否在选区内（移动）
+            if (_cropState.hasSelection) {
+                if (mx >= _cropState.selX && mx <= _cropState.selX + _cropState.selW &&
+                    my >= _cropState.selY && my <= _cropState.selY + _cropState.selH) {
+                    _cropState.isDragging = true;
+                    _cropState.dragType = 'move';
+                    _cropState.dragStartX = e.clientX;
+                    _cropState.dragStartY = e.clientY;
+                    _cropState.dragStartSel = {
+                        x: _cropState.selX,
+                        y: _cropState.selY,
+                        w: _cropState.selW,
+                        h: _cropState.selH
+                    };
+                    return;
+                }
+            }
+
+            // 新选区
+            _cropState.isDragging = true;
+            _cropState.dragType = 'new';
+            _cropState.selX = mx;
+            _cropState.selY = my;
+            _cropState.selW = 0;
+            _cropState.selH = 0;
+            _cropState.hasSelection = true;
+            _cropState.dragStartX = e.clientX;
+            _cropState.dragStartY = e.clientY;
+            _cropState.dragStartSel = { x: mx, y: my, w: 0, h: 0 };
+        };
+
+        _cropMouseMove = function (e) {
+            if (!_cropState.isDragging) return;
+            e.preventDefault();
+
+            var rect = canvas.getBoundingClientRect();
+            var dx = e.clientX - _cropState.dragStartX;
+            var dy = e.clientY - _cropState.dragStartY;
+            var keepRatio = $('cropKeepRatio').checked;
+            var ss = _cropState.dragStartSel;
+
+            if (_cropState.dragType === 'new') {
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+                mx = Math.max(0, Math.min(mx, _cropState.displayW));
+                my = Math.max(0, Math.min(my, _cropState.displayH));
+
+                var x1 = ss.x;
+                var y1 = ss.y;
+                var x2 = mx;
+                var y2 = my;
+
+                if (keepRatio) {
+                    var side = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1));
+                    x2 = x1 + (x2 >= x1 ? side : -side);
+                    y2 = y1 + (y2 >= y1 ? side : -side);
+                }
+
+                _cropState.selX = Math.min(x1, x2);
+                _cropState.selY = Math.min(y1, y2);
+                _cropState.selW = Math.abs(x2 - x1);
+                _cropState.selH = Math.abs(y2 - y1);
+            } else if (_cropState.dragType === 'move') {
+                var nx = ss.x + dx;
+                var ny = ss.y + dy;
+                nx = Math.max(0, Math.min(nx, _cropState.displayW - ss.w));
+                ny = Math.max(0, Math.min(ny, _cropState.displayH - ss.h));
+                _cropState.selX = nx;
+                _cropState.selY = ny;
+                _cropState.selW = ss.w;
+                _cropState.selH = ss.h;
+            } else {
+                // 把手拖拽
+                var ht = _cropState.dragType;
+                var nx2 = ss.x, ny2 = ss.y, nw = ss.w, nh = ss.h;
+
+                if (ht === 'br' || ht === 'r' || ht === 'tr') {
+                    nw = Math.max(4, ss.w + dx);
+                }
+                if (ht === 'bl' || ht === 'l' || ht === 'tl') {
+                    nx2 = ss.x + dx;
+                    nw = ss.w - dx;
+                    if (nw < 4) { nx2 = ss.x + ss.w - 4; nw = 4; }
+                }
+                if (ht === 'br' || ht === 'b' || ht === 'bl') {
+                    nh = Math.max(4, ss.h + dy);
+                }
+                if (ht === 'tl' || ht === 't' || ht === 'tr') {
+                    ny2 = ss.y + dy;
+                    nh = ss.h - dy;
+                    if (nh < 4) { ny2 = ss.y + ss.h - 4; nh = 4; }
+                }
+
+                if (keepRatio) {
+                    var side2 = Math.max(nw, nh);
+                    nw = side2;
+                    nh = side2;
+                }
+
+                // 边界约束
+                nx2 = Math.max(0, nx2);
+                ny2 = Math.max(0, ny2);
+                if (nx2 + nw > _cropState.displayW) nw = _cropState.displayW - nx2;
+                if (ny2 + nh > _cropState.displayH) nh = _cropState.displayH - ny2;
+
+                _cropState.selX = nx2;
+                _cropState.selY = ny2;
+                _cropState.selW = nw;
+                _cropState.selH = nh;
+            }
+
+            // 约束到画布范围
+            if (_cropState.selX < 0) _cropState.selX = 0;
+            if (_cropState.selY < 0) _cropState.selY = 0;
+            if (_cropState.selX + _cropState.selW > _cropState.displayW) {
+                _cropState.selW = _cropState.displayW - _cropState.selX;
+            }
+            if (_cropState.selY + _cropState.selH > _cropState.displayH) {
+                _cropState.selH = _cropState.displayH - _cropState.selY;
+            }
+
+            updateCropSelection();
+        };
+
+        _cropMouseUp = function () {
+            _cropState.isDragging = false;
+            if (_cropState.selW < 4 || _cropState.selH < 4) {
+                _cropState.hasSelection = false;
+            }
+            updateCropSelection();
+        };
+
+        wrap.addEventListener('mousedown', _cropMouseDown);
+        window.addEventListener('mousemove', _cropMouseMove);
+        window.addEventListener('mouseup', _cropMouseUp);
+
+        // 触摸支持
+        wrap.addEventListener('touchstart', function (e) {
+            if (e.touches.length !== 1) return;
+            var t = e.touches[0];
+            _cropMouseDown({ clientX: t.clientX, clientY: t.clientY, target: e.target, preventDefault: function () { e.preventDefault(); } });
+        }, { passive: false });
+
+        wrap.addEventListener('touchmove', function (e) {
+            if (e.touches.length !== 1) return;
+            var t = e.touches[0];
+            _cropMouseMove({ clientX: t.clientX, clientY: t.clientY, preventDefault: function () { e.preventDefault(); } });
+        }, { passive: false });
+
+        wrap.addEventListener('touchend', function () {
+            _cropMouseUp();
+        });
+
+        // 按钮事件
+        $('cropModalClose').addEventListener('click', closeCropModal);
+        $('cropResetBtn').addEventListener('click', resetCropSelection);
+        $('cropAutoBoard').addEventListener('change', updateCropBoardSize);
+        $('cropKeepRatio').addEventListener('change', function () {
+            if ($('cropKeepRatio').checked && _cropState.hasSelection) {
+                var side = Math.min(_cropState.selW, _cropState.selH);
+                _cropState.selW = side;
+                _cropState.selH = side;
+                updateCropSelection();
+            }
+        });
+
+        $('cropSkipBtn').addEventListener('click', function () {
+            applyCropAndSetRef(true);
+        });
+
+        $('cropApplyBtn').addEventListener('click', function () {
+            applyCropAndSetRef(false);
+        });
+    }
+
+    function unbindCropEvents() {
+        var wrap = $('cropCanvasWrap');
+        if (_cropMouseDown) wrap.removeEventListener('mousedown', _cropMouseDown);
+        if (_cropMouseMove) window.removeEventListener('mousemove', _cropMouseMove);
+        if (_cropMouseUp) window.removeEventListener('mouseup', _cropMouseUp);
+        _cropBoundEvents = false;
     }
 
     // ===========================

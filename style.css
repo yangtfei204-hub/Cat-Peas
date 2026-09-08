@@ -4488,7 +4488,7 @@ body {
 .convert-preview-canvas-wrap {
     position: relative;
     min-height: 200px;
-    max-height: 50vh;
+    max-height: 55vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4498,13 +4498,14 @@ body {
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     overflow: auto;
+    padding: 8px;
 }
 
 .convert-preview-canvas-wrap canvas {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     max-width: 100%;
-    max-height: 50vh;
+    height: auto;
 }
 
 .convert-preview-loading {
@@ -4636,4 +4637,237 @@ body {
 .layer-actions {
     display: flex;
     gap: 4px;
+}
+
+/* ========================================
+   图片裁剪弹窗
+   ======================================== */
+.crop-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 700;
+    background: rgba(62, 54, 64, 0.55);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.crop-modal.active {
+    display: flex;
+}
+
+.crop-modal-inner {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 720px;
+    max-width: 96vw;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalIn 0.25s ease;
+}
+
+.crop-modal-header {
+    padding: 12px 16px;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--iris-dark);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(219, 168, 173, 0.08), rgba(176, 160, 196, 0.08));
+    flex-shrink: 0;
+}
+
+.crop-modal-header span {
+    flex: 1;
+}
+
+.crop-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: var(--radius-xs);
+    transition: var(--transition);
+}
+
+.crop-modal-close:hover {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+.crop-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.crop-info-bar {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 6px 10px;
+    background: var(--iris-lighter);
+    border-radius: var(--radius-xs);
+    border-left: 3px solid var(--iris);
+}
+
+.crop-options-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.crop-option-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.crop-option-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--iris-dark);
+    cursor: pointer;
+}
+
+.crop-size-info {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.crop-size-info strong {
+    color: var(--iris-dark);
+    font-weight: 800;
+}
+
+.crop-canvas-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        repeating-conic-gradient(var(--border-light) 0% 25%, var(--bg-card) 0% 50%)
+        50% / 14px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    min-height: 300px;
+    max-height: 60vh;
+    cursor: crosshair;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.crop-canvas-wrap canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh;
+    image-rendering: auto;
+}
+
+.crop-selection {
+    position: absolute;
+    border: 2px dashed rgba(141, 123, 170, 0.85);
+    background: rgba(176, 160, 196, 0.08);
+    pointer-events: none;
+    display: none;
+    z-index: 2;
+    box-shadow: 0 0 0 3000px rgba(0, 0, 0, 0.35);
+}
+
+.crop-selection.active {
+    display: block;
+}
+
+.crop-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--iris-dark);
+    border: 2px solid #fff;
+    border-radius: 2px;
+    z-index: 3;
+    display: none;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.crop-selection.active ~ .crop-handle {
+    display: block;
+}
+
+.crop-handle-tl { cursor: nw-resize; }
+.crop-handle-tr { cursor: ne-resize; }
+.crop-handle-bl { cursor: sw-resize; }
+.crop-handle-br { cursor: se-resize; }
+.crop-handle-t  { cursor: n-resize; }
+.crop-handle-b  { cursor: s-resize; }
+.crop-handle-l  { cursor: w-resize; }
+.crop-handle-r  { cursor: e-resize; }
+
+.crop-modal-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 960px) {
+    .crop-modal-inner {
+        width: 98vw;
+        max-height: 94vh;
+    }
+
+    .crop-options-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .crop-size-info {
+        margin-left: 0;
+    }
+
+    .crop-modal-footer {
+        flex-wrap: wrap;
+    }
+
+    .crop-modal-footer .btn {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+/* 裁剪时的暗色遮罩 - 让选区外变暗 */
+.crop-canvas-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
 }

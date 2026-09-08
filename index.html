@@ -99,7 +99,7 @@
                         </div>
                         <button class="btn btn-apply" id="applySize">应用</button>
                     </div>
-                    <p class="size-note">范围4~200格，常规小板选52×52，中版选78×78，大版选104×104。应用新尺寸会清空画布生成空白图纸（可撤销）。</p>
+                    <p class="size-note">范围4~200格，常规小板选52×52（约2700颗），中版选78×78（约6000颗），大版选104×104（约10800颗）。应用新尺寸会保留在范围内的已有内容。</p>
                     <div class="size-presets">
                         <button class="btn btn-preset" data-w="32" data-h="32">32×32</button>
                         <button class="btn btn-preset" data-w="40" data-h="40">40×40</button>
@@ -1112,6 +1112,58 @@
                     <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zm0 3v3M8 11h.01" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
                     提示：自定义 CSS 会保存在浏览器本地，刷新页面后自动加载。如果样式导致界面异常，点击「清除 CSS」即可恢复。
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片裁剪弹窗 -->
+    <div class="crop-modal" id="cropModal">
+        <div class="crop-modal-inner">
+            <div class="crop-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><path d="M5 1v14h14M1 5h14v14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>裁剪图片</span>
+                <button class="crop-modal-close" id="cropModalClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="crop-modal-body">
+                <div class="crop-info-bar">
+                    <span class="crop-info-text" id="cropInfoText">拖拽选择裁剪区域，或直接使用整张图片</span>
+                </div>
+                <div class="crop-options-bar">
+                    <label class="crop-option-item">
+                        <input type="checkbox" id="cropKeepRatio"> 锁定正方形
+                    </label>
+                    <label class="crop-option-item">
+                        <input type="checkbox" id="cropAutoBoard" checked> 自动扩展画板适应图片
+                    </label>
+                    <div class="crop-size-info" id="cropSizeInfo">
+                        预计画板：<strong id="cropBoardSize">52×52</strong>
+                    </div>
+                </div>
+                <div class="crop-canvas-wrap" id="cropCanvasWrap">
+                    <canvas id="cropCanvas"></canvas>
+                    <div class="crop-selection" id="cropSelection"></div>
+                    <div class="crop-handle crop-handle-tl" data-handle="tl"></div>
+                    <div class="crop-handle crop-handle-tr" data-handle="tr"></div>
+                    <div class="crop-handle crop-handle-bl" data-handle="bl"></div>
+                    <div class="crop-handle crop-handle-br" data-handle="br"></div>
+                    <div class="crop-handle crop-handle-t" data-handle="t"></div>
+                    <div class="crop-handle crop-handle-b" data-handle="b"></div>
+                    <div class="crop-handle crop-handle-l" data-handle="l"></div>
+                    <div class="crop-handle crop-handle-r" data-handle="r"></div>
+                </div>
+            </div>
+            <div class="crop-modal-footer">
+                <button class="btn" id="cropResetBtn">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 8a6 6 0 0110-4.5V1M14 3.5V1h-2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M12 8a6 6 0 01-10 4.5V15M2 12.5V15h2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                    重置选区
+                </button>
+                <button class="btn" id="cropSkipBtn">跳过裁剪（使用整图）</button>
+                <button class="btn btn-apply" id="cropApplyBtn">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    确认裁剪
+                </button>
             </div>
         </div>
     </div>
