@@ -5340,6 +5340,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .grid-align-info {
@@ -5485,6 +5486,7 @@ body {
     border-radius: var(--radius-sm);
     overflow: hidden;
     cursor: grab;
+    touch-action: none;
     background:
         repeating-conic-gradient(var(--border-light) 0% 25%, var(--bg-card) 0% 50%)
         50% / 14px 14px;
@@ -5566,6 +5568,21 @@ body {
 
     .grid-align-slider-row label {
         min-width: auto;
+    }
+
+    .grid-align-slider-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+    }
+
+    .grid-align-slider-row label {
+        min-width: auto;
+    }
+
+    .grid-align-zoom-bar {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .ga-hint {

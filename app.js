@@ -4453,6 +4453,12 @@
     //  Export
     // ===========================
     function doExport(beadMode) {
+
+        // 如果还没有设置项目名称，提示用户输入一个
+        if (!S.currentProjectName && $('projectName').value.trim()) {
+            S.currentProjectName = $('projectName').value.trim();
+        }
+
         const prevBead = S.showBead;
         const prevGrid = S.showGrid;
         const prevNum = S.showNumbers;
@@ -4923,8 +4929,15 @@
         }
 
         // 下载（使用 toBlob 减少内存占用）
-        var ts = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        var fileName = 'CatPeas_' + (beadMode ? '仿真豆子' : '色块图纸') + '_' + S.gridW + 'x' + S.gridH + '_' + ts + '.png';
+        var now = new Date();
+        var ts = now.getFullYear().toString() +
+            String(now.getMonth() + 1).padStart(2, '0') +
+            String(now.getDate()).padStart(2, '0') + '_' +
+            String(now.getHours()).padStart(2, '0') +
+            String(now.getMinutes()).padStart(2, '0') +
+            String(now.getSeconds()).padStart(2, '0');
+        var projectLabel = S.currentProjectName ? S.currentProjectName.replace(/[\\/:*?"<>|]/g, '_').slice(0, 20) + '_' : '';
+        var fileName = 'CatPeas_' + projectLabel + (beadMode ? '仿真豆子' : '色块图纸') + '_' + S.gridW + 'x' + S.gridH + '_' + ts + '.png';
 
         // 恢复（先恢复再异步下载）
         S.showBead = prevBead;
@@ -4983,8 +4996,13 @@
         var cs = S.cellSize;
         var scale = 2;
         var rs = S.showRuler ? 30 : 0;
-        var ts = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-
+        var now2 = new Date();
+        var ts = now2.getFullYear().toString() +
+            String(now2.getMonth() + 1).padStart(2, '0') +
+            String(now2.getDate()).padStart(2, '0') + '_' +
+            String(now2.getHours()).padStart(2, '0') +
+            String(now2.getMinutes()).padStart(2, '0') +
+            String(now2.getSeconds()).padStart(2, '0');
         for (var br = 0; br < boardRows; br++) {
             for (var bc = 0; bc < boardCols; bc++) {
                 var startR = br * boardSize;
@@ -6954,6 +6972,17 @@
         // 清空
         body.innerHTML = '';
 
+        // 克隆前先填充所有懒加载的色板分组
+        var allGroups = source.querySelectorAll('.palette-group-colors');
+        allGroups.forEach(function (wrapper) {
+            if (wrapper.dataset.loaded === '1') return;
+            var prefix = wrapper.dataset.groupPrefix;
+            if (prefix && _paletteGroupsCache[prefix]) {
+                fillPaletteGroupItems(wrapper, _paletteGroupsCache[prefix]);
+            }
+        });
+
+
         // 深度克隆右侧面板内容
         var clone = source.cloneNode(true);
 
@@ -6988,6 +7017,15 @@
                     this.classList.toggle('collapsed', isCollapsed);
                 }
             });
+        });
+
+        // 移动端默认折叠所有分组
+        container.querySelectorAll('.palette-group-colors').forEach(function (wrapper) {
+            wrapper.classList.add('collapsed');
+            var header2 = wrapper.previousElementSibling;
+            if (header2 && header2.classList.contains('palette-group-header')) {
+                header2.classList.add('collapsed');
+            }
         });
 
         // 自定义颜色添加按钮
@@ -8444,9 +8482,30 @@
 
         // 触摸支持
         var _gaTouchId = null;
+        var _gaPinchStart = 0;
+        var _gaPinchZoom = 1;
         canvas.addEventListener('touchstart', function (e) {
+            if (e.touches.length === 2) {
+                // 双指缩放
+                e.preventDefault();
+                e.stopPropagation();
+                _ga.isDragging = false;
+                var dx2 = e.touches[0].clientX - e.touches[1].clientX;
+                var dy2 = e.touches[0].clientY - e.touches[1].clientY;
+                _gaPinchStart = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                _gaPinchZoom = _ga.zoom;
+                var mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                var my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                _ga.panStartX = mx;
+                _ga.panStartY = my;
+                _ga.panStartPanX = _ga.panX;
+                _ga.panStartPanY = _ga.panY;
+                _ga.isPanning = true;
+                return;
+            }
             if (e.touches.length === 1) {
                 e.preventDefault();
+                e.stopPropagation();
                 var t = e.touches[0];
                 _gaTouchId = t.identifier;
                 _ga.isDragging = true;
@@ -8463,8 +8522,24 @@
         }, { passive: false });
 
         canvas.addEventListener('touchmove', function (e) {
+            if (e.touches.length === 2 && _ga.isPanning) {
+                e.preventDefault();
+                e.stopPropagation();
+                var dx2 = e.touches[0].clientX - e.touches[1].clientX;
+                var dy2 = e.touches[0].clientY - e.touches[1].clientY;
+                var dist = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                _ga.zoom = Math.min(Math.max(_gaPinchZoom * (dist / _gaPinchStart), 0.1), 10);
+                var mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                var my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                _ga.panX = _ga.panStartPanX + (mx - _ga.panStartX);
+                _ga.panY = _ga.panStartPanY + (my - _ga.panStartY);
+                $('gaZoomVal').textContent = Math.round(_ga.zoom * 100) + '%';
+                renderGridAlignPreview();
+                return;
+            }
             if (_ga.isDragging && e.touches.length === 1) {
                 e.preventDefault();
+                e.stopPropagation();
                 var t = e.touches[0];
                 var dx = (t.clientX - _ga.dragStartX) / _ga.zoom;
                 var dy = (t.clientY - _ga.dragStartY) / _ga.zoom;
@@ -8479,8 +8554,13 @@
             }
         }, { passive: false });
 
-        canvas.addEventListener('touchend', function () {
-            _ga.isDragging = false;
+        canvas.addEventListener('touchend', function (e) {
+            if (e.touches.length < 2) {
+                _ga.isPanning = false;
+            }
+            if (e.touches.length === 0) {
+                _ga.isDragging = false;
+            }
         });
     }
 
