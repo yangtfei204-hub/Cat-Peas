@@ -2809,6 +2809,7 @@
             $('gridAlignBtn').style.display = 'none';
             $('imageInput').value = '';
             renderBg();
+            syncControlDrawerImageControls();
         });
 
         // Import sheet image
@@ -7338,6 +7339,9 @@
 
         // 绑定事件
         bindControlDrawerEvents(body);
+
+        // 同步底图控制区域的显示状态
+        syncControlDrawerImageControls();
     }
 
     function bindControlDrawerEvents(container) {
@@ -7627,6 +7631,39 @@
                 $('removeImage').click();
             });
         }
+        // 同步屏蔽背景色开关
+        var mobToggleBgFilter = container.querySelector('[data-original-id="toggleBgFilter"]');
+        if (mobToggleBgFilter) {
+            var mainToggleBgFilter = $('toggleBgFilter');
+            if (mainToggleBgFilter) mobToggleBgFilter.checked = mainToggleBgFilter.checked;
+            mobToggleBgFilter.addEventListener('change', function () {
+                if (mainToggleBgFilter) mainToggleBgFilter.checked = mobToggleBgFilter.checked;
+                var mainBgFilterControls = $('bgFilterControls');
+                var mobBgFilterControls = container.querySelector('[data-original-id="bgFilterControls"]');
+                if (mainBgFilterControls) mainBgFilterControls.style.display = mobToggleBgFilter.checked ? 'block' : 'none';
+                if (mobBgFilterControls) mobBgFilterControls.style.display = mobToggleBgFilter.checked ? 'block' : 'none';
+            });
+        }
+
+        // 同步背景容差滑块
+        var mobBgToleranceSlider = container.querySelector('[data-original-id="bgToleranceSlider"]');
+        if (mobBgToleranceSlider) {
+            mobBgToleranceSlider.addEventListener('input', function () {
+                $('bgToleranceSlider').value = mobBgToleranceSlider.value;
+                $('bgToleranceVal').textContent = mobBgToleranceSlider.value;
+                var mobVal = container.querySelector('[data-original-id="bgToleranceVal"]');
+                if (mobVal) mobVal.textContent = mobBgToleranceSlider.value;
+            });
+        }
+
+        // 同步最大用色数
+        var mobMaxColors = container.querySelector('[data-original-id="maxColors"]');
+        if (mobMaxColors) {
+            mobMaxColors.addEventListener('change', function () {
+                $('maxColors').value = mobMaxColors.value;
+            });
+        }
+
         var mobGridAlignBtn = container.querySelector('[data-original-id="gridAlignBtn"]');
         if (mobGridAlignBtn) {
             mobGridAlignBtn.addEventListener('click', function () {
@@ -7656,6 +7693,39 @@
                 $('cellOpacityVal').textContent = mobCellOpacitySlider.value + '%';
                 renderMain();
             });
+        }
+    }
+
+    function syncControlDrawerImageControls() {
+        var container = $('mobileControlBody');
+        if (!container) return;
+        if (window.innerWidth > 960) return;
+
+        // 同步底图控制区域的显示状态
+        var srcControls = $('imageControls');
+        var mobControls = container.querySelector('[data-original-id="imageControls"]');
+        if (srcControls && mobControls) {
+            mobControls.style.display = srcControls.style.display;
+        }
+
+        // 同步网格对齐按钮
+        var srcGridAlign = $('gridAlignBtn');
+        var mobGridAlign = container.querySelector('[data-original-id="gridAlignBtn"]');
+        if (srcGridAlign && mobGridAlign) {
+            mobGridAlign.style.display = srcGridAlign.style.display;
+        }
+
+        // 同步识别提示
+        var srcRecognizeHint = $('recognizeHint');
+        var mobRecognizeHint = container.querySelector('[data-original-id="recognizeHint"]');
+        if (srcRecognizeHint && mobRecognizeHint) {
+            mobRecognizeHint.style.display = srcRecognizeHint.style.display;
+        }
+
+        var srcRecognizeToggle = $('recognizeResizeToggle');
+        var mobRecognizeToggle = container.querySelector('[data-original-id="recognizeResizeToggle"]');
+        if (srcRecognizeToggle && mobRecognizeToggle) {
+            mobRecognizeToggle.style.display = srcRecognizeToggle.style.display;
         }
     }
 
@@ -8532,6 +8602,7 @@
             $('imageControls').style.display = 'block';
             $('gridAlignBtn').style.display = '';
             renderBg();
+            syncControlDrawerImageControls();
             closeCropModal();
             return;
         }
@@ -8553,6 +8624,7 @@
             $('imageControls').style.display = 'block';
             $('gridAlignBtn').style.display = '';
             renderBg();
+            syncControlDrawerImageControls();
             closeCropModal();
         } else {
             result.img.onload = function () {
@@ -8560,6 +8632,7 @@
                 $('imageControls').style.display = 'block';
                 $('gridAlignBtn').style.display = '';
                 renderBg();
+                syncControlDrawerImageControls();
                 closeCropModal();
             };
         }
