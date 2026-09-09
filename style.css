@@ -6409,3 +6409,87 @@ body {
         width: 100%;
     }
 }
+
+/* ========================================
+   移动端功能抽屉图层排序和重命名
+   ======================================== */
+.mobile-control-body .layer-order-btns {
+    display: flex;
+}
+
+.mobile-control-body .layer-name {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background 0.15s ease;
+}
+
+.mobile-control-body .layer-name:hover,
+.mobile-control-body .layer-name:active {
+    background: var(--iris-lighter);
+}
+
+/* 导入图层按钮 */
+.project-card-btn.btn-layer-import:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: linear-gradient(135deg, var(--iris-lighter), var(--pink-lighter));
+}
+
+/* 图层名称禁止双击选中文字 */
+.layer-name {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.layer-name-input {
+    user-select: auto;
+    -webkit-user-select: auto;
+}
+
+/* ========================================
+   网格对齐微调按钮
+   ======================================== */
+.ga-nudge-btns {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.ga-nudge-btn {
+    min-width: 28px;
+    height: 24px;
+    padding: 0 4px !important;
+    font-size: 9px !important;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--iris-dark);
+    border-color: var(--border);
+    background: var(--bg-card);
+}
+
+.ga-nudge-btn:hover {
+    background: var(--iris-lighter);
+    border-color: var(--iris);
+}
+
+.ga-nudge-btn:active {
+    transform: scale(0.92);
+}
+
+@media (max-width: 960px) {
+    .ga-nudge-btns {
+        gap: 2px;
+        margin-top: 4px;
+    }
+
+    .ga-nudge-btn {
+        min-width: 32px;
+        height: 28px;
+        font-size: 10px !important;
+    }
+
+    .grid-align-slider-row {
+        flex-wrap: wrap;
+    }
+}

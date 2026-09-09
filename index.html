@@ -1608,9 +1608,11 @@
                         <p>支持最多 10 个自由图层，可独立绘制、调节透明度、显示/隐藏、重命名和排序。</p>
                         <p>· <strong>添加图层</strong>：点击「添加图层」按钮新建空白图层</p>
                         <p>· <strong>透明度</strong>：每个图层右侧有滑块，拖动可减淡该图层（如先画身体，减淡后在新图层上画衣服）</p>
-                        <p>· <strong>双击重命名</strong>：双击图层名称可修改（如命名为"身体"、"衣服"）</p>
+                        <p>· <strong>重命名</strong>：桌面端双击图层名称，移动端点击图层名称即可修改</p>
+                        <p>· <strong>排序</strong>：使用上下箭头按钮调整图层叠放顺序</p>
                         <p>· <strong>向下合并</strong>：将当前图层合并到下方图层</p>
                         <p>· <strong>仅导出当前图层</strong>：只导出选中图层的内容，适合分层输出</p>
+                        <p>· <strong>从项目库导入图层</strong>：在项目库中点击图层图标，可将已有项目作为新图层叠加到当前画布上</p>
                     </div>
                     <div class="help-block">
                         <h4>
@@ -1733,6 +1735,9 @@
                         </h4>
                         <p>输入项目名称后点击「保存到项目库」，数据存储在浏览器本地。支持分类管理、覆盖保存、搜索筛选和排序。</p>
                         <p>点击顶部的文件夹图标打开项目库页面，可以查看所有已保存的项目、上传自定义预览图、重命名、删除和批量导出。</p>
+                        <p><strong>加载项目时提供两种方式：</strong></p>
+                        <p>· <strong>覆盖画板</strong>：清空当前画布，完整加载项目内容</p>
+                        <p>· <strong>导入为图层</strong>：将项目内容添加为一个新图层，叠加到当前画布上。适合将多个项目素材组合到一起</p>
                         <p>系统每 30 秒自动保存画布数据，下次打开时可恢复未保存的内容。</p>
                     </div>
                     <div class="help-block">
@@ -1905,6 +1910,12 @@
                     <div class="grid-align-slider-row">
                         <label>网格格子间距：<strong id="gaCellSizeVal">16.0 px</strong></label>
                         <input type="range" id="gaCellSizeSlider" min="30" max="500" value="160" step="1" class="slider">
+                        <div class="ga-nudge-btns">
+                            <button class="btn btn-sm ga-nudge-btn" id="gaCellDec1" title="-1.0px">−1</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaCellDec01" title="-0.1px">−.1</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaCellInc01" title="+0.1px">+.1</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaCellInc1" title="+1.0px">+1</button>
+                        </div>
                     </div>
                     <div class="grid-align-slider-row">
                         <label>精确格子间距：</label>
@@ -1915,10 +1926,22 @@
                     <div class="grid-align-slider-row">
                         <label>图片缩放：<strong id="gaScaleVal">100%</strong></label>
                         <input type="range" id="gaScaleSlider" min="20" max="500" value="100" class="slider">
+                        <div class="ga-nudge-btns">
+                            <button class="btn btn-sm ga-nudge-btn" id="gaScaleDec5" title="-5%">−5</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaScaleDec1" title="-1%">−1</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaScaleInc1" title="+1%">+1</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaScaleInc5" title="+5%">+5</button>
+                        </div>
                     </div>
                     <div class="grid-align-slider-row">
                         <label>网格线透明度：<strong id="gaGridOpacityVal">60%</strong></label>
                         <input type="range" id="gaGridOpacitySlider" min="10" max="100" value="60" class="slider">
+                        <div class="ga-nudge-btns">
+                            <button class="btn btn-sm ga-nudge-btn" id="gaOpacityDec5" title="-5%">−5</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaOpacityDec1" title="-1%">−1</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaOpacityInc1" title="+1%">+1</button>
+                            <button class="btn btn-sm ga-nudge-btn" id="gaOpacityInc5" title="+5%">+5</button>
+                        </div>
                     </div>
                     <div class="grid-align-slider-row">
                         <label>网格线颜色：</label>
