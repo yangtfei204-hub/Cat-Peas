@@ -4,7 +4,7 @@
     'use strict';
 
     // 版本号 —— 每次功能更新后递增此值，将触发用户重新确认免责声明和查看使用说明
-    var APP_VERSION = '1.2.0';
+    var APP_VERSION = '1.4.0';
 
     // ===========================
     //  IndexedDB 项目库管理
@@ -244,8 +244,7 @@
         // 图层
         activeLayer: 0,
         layers: [
-            { name: '轮廓层', visible: true, grid: null },
-            { name: '填色层', visible: true, grid: null }
+            { name: '图层 1', visible: true, opacity: 1.0, grid: null }
         ],
     };
 
@@ -389,8 +388,8 @@
         // 显示版本号
         if ($('disclaimerVersion')) $('disclaimerVersion').textContent = 'v' + APP_VERSION;
 
-        // 首次使用需要等待 5 秒，版本更新只需等待 3 秒
-        var waitTime = isFirstTime ? 5 : 3;
+        // 首次使用需要等待 15 秒，版本更新只需等待 5 秒
+        var waitTime = isFirstTime ? 15 : 5;
         var remaining = waitTime;
         btn.disabled = true;
         btn.textContent = '请等待 ' + remaining + ' 秒';
@@ -538,6 +537,7 @@
         loadAutoSave();
         pushHistory();
         setupCanvas();
+        updateLayerUI();
         render();
         bindAllEvents();
         initMobileDrawer();
@@ -638,11 +638,12 @@
                 S.gridW = data.gridW;
                 S.gridH = data.gridH;
                 S.grid = grid.map(function (row) { return Array.from(row); });
-                // 同步到填色层
+                // 同步到图层
+                S.layers = [{ name: '图层 1', visible: true, opacity: 1.0, grid: null }];
                 initLayers();
                 for (var lr = 0; lr < S.gridH; lr++) {
                     for (var lc = 0; lc < S.gridW; lc++) {
-                        S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+                        S.layers[0].grid[lr][lc] = S.grid[lr][lc];
                     }
                 }
                 $('canvasWidth').value = S.gridW;
@@ -664,20 +665,30 @@
     }
 
     function initLayers() {
-        S.layers[0].grid = [];
-        S.layers[1].grid = [];
-        for (var r = 0; r < S.gridH; r++) {
-            S.layers[0].grid[r] = new Array(S.gridW).fill(null);
-            S.layers[1].grid[r] = new Array(S.gridW).fill(null);
+        // 如果图层数组为空（全新初始化），创建默认图层
+        if (S.layers.length === 0) {
+            S.layers = [
+                { name: '图层 1', visible: true, opacity: 1.0, grid: null }
+            ];
         }
-        S.activeLayer = 1; // 默认编辑填色层
+        // 为每个图层初始化 grid
+        for (var i = 0; i < S.layers.length; i++) {
+            S.layers[i].grid = [];
+            for (var r = 0; r < S.gridH; r++) {
+                S.layers[i].grid[r] = new Array(S.gridW).fill(null);
+            }
+            // 确保 opacity 字段存在
+            if (S.layers[i].opacity === undefined) S.layers[i].opacity = 1.0;
+        }
+        // 确保 activeLayer 有效
+        if (S.activeLayer >= S.layers.length) S.activeLayer = S.layers.length - 1;
+        if (S.activeLayer < 0) S.activeLayer = 0;
     }
 
     function syncGridFromLayers(row, col) {
-        // 从下到上合成：轮廓层(0)在底，填色层(1)在上
+        // 从下（索引0）到上（索引最大）合成
         // 上层有颜色则显示上层，否则显示下层
         if (row !== undefined && col !== undefined) {
-            // 单格同步
             var val = null;
             for (var i = 0; i < S.layers.length; i++) {
                 if (!S.layers[i].visible) continue;
@@ -688,7 +699,6 @@
             }
             S.grid[row][col] = val;
         } else {
-            // 全量同步
             for (var r = 0; r < S.gridH; r++) {
                 for (var c = 0; c < S.gridW; c++) {
                     var v = null;
@@ -706,29 +716,303 @@
     }
 
     function mergeLayersToGrid() {
-        // 将所有图层合并到 grid 和 填色层，清空轮廓层
+        // 将所有图层合并到一个图层
         syncGridFromLayers();
-        // 把合并结果写到填色层
+        // 只保留一个图层，写入合并结果
+        var mergedGrid = [];
         for (var r = 0; r < S.gridH; r++) {
+            mergedGrid[r] = new Array(S.gridW).fill(null);
             for (var c = 0; c < S.gridW; c++) {
-                S.layers[1].grid[r][c] = S.grid[r][c];
-                S.layers[0].grid[r][c] = null;
+                mergedGrid[r][c] = S.grid[r][c];
             }
         }
-        S.activeLayer = 1;
+        S.layers = [
+            { name: '合并图层', visible: true, opacity: 1.0, grid: mergedGrid }
+        ];
+        S.activeLayer = 0;
         updateLayerUI();
-        pushHistory('合并图层');
+        pushHistory('合并全部图层');
         render();
     }
 
     function updateLayerUI() {
-        var items = document.querySelectorAll('#layerList .layer-item');
-        items.forEach(function (item) {
-            var idx = parseInt(item.dataset.layer);
-            item.classList.toggle('active', idx === S.activeLayer);
-            var visBtn = item.querySelector('.layer-vis-btn');
-            visBtn.classList.toggle('hidden', !S.layers[idx].visible);
+        var list = $('layerList');
+        list.innerHTML = '';
+
+        // 从最上面的图层到最下面（倒序显示，最上面的图层显示在列表顶部）
+        for (var i = S.layers.length - 1; i >= 0; i--) {
+            var layer = S.layers[i];
+            var div = document.createElement('div');
+            div.className = 'layer-item' + (i === S.activeLayer ? ' active' : '');
+            div.dataset.layer = i;
+
+            var opacityPct = Math.round((layer.opacity !== undefined ? layer.opacity : 1) * 100);
+
+            div.innerHTML =
+                '<button class="layer-vis-btn' + (layer.visible ? '' : ' hidden') + '" data-layer="' + i + '" title="显示/隐藏">' +
+                    '<svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 3C3 3 1 8 1 8s2 5 7 5 7-5 7-5-2-5-7-5z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>' +
+                '</button>' +
+                '<span class="layer-name" title="双击重命名">' + escapeHtml(layer.name) + '</span>' +
+                '<div class="layer-opacity-wrap">' +
+                    '<input type="range" class="layer-opacity-slider" min="0" max="100" value="' + opacityPct + '" data-layer="' + i + '" title="图层透明度">' +
+                    '<span class="layer-opacity-val">' + opacityPct + '%</span>' +
+                '</div>' +
+                '<div class="layer-order-btns">' +
+                    '<button class="layer-order-btn" data-layer="' + i + '" data-dir="up" title="上移">' +
+                        '<svg viewBox="0 0 10 6" width="10" height="6"><path d="M1 5l4-4 4 4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                    '</button>' +
+                    '<button class="layer-order-btn" data-layer="' + i + '" data-dir="down" title="下移">' +
+                        '<svg viewBox="0 0 10 6" width="10" height="6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                    '</button>' +
+                '</div>' +
+                '<span class="layer-active-badge">编辑中</span>';
+
+            list.appendChild(div);
+        }
+
+        // 绑定事件
+        bindLayerListEvents();
+        // 同步移动端功能抽屉的图层列表
+        if (window.innerWidth <= 960) {
+            syncControlDrawerLayerUI();
+        }
+
+        // 同步移动端抽屉中的图层显示
+        syncMobileLayerInfo();
+
+    }
+
+    function bindLayerListEvents() {
+        var list = $('layerList');
+
+        // 点击图层项 = 选中
+        list.querySelectorAll('.layer-item').forEach(function (item) {
+            item.addEventListener('click', function (e) {
+                if (e.target.closest('.layer-vis-btn') ||
+                    e.target.closest('.layer-opacity-slider') ||
+                    e.target.closest('.layer-order-btn') ||
+                    e.target.closest('.layer-name-input')) return;
+                S.activeLayer = parseInt(item.dataset.layer);
+                updateLayerUI();
+            });
         });
+
+        // 可见性按钮
+        list.querySelectorAll('.layer-vis-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var idx = parseInt(btn.dataset.layer);
+                S.layers[idx].visible = !S.layers[idx].visible;
+                syncGridFromLayers();
+                updateLayerUI();
+                render();
+            });
+        });
+
+        // 透明度滑块
+        list.querySelectorAll('.layer-opacity-slider').forEach(function (slider) {
+            slider.addEventListener('input', function (e) {
+                e.stopPropagation();
+                var idx = parseInt(slider.dataset.layer);
+                var val = parseInt(slider.value);
+                S.layers[idx].opacity = val / 100;
+                var valSpan = slider.parentElement.querySelector('.layer-opacity-val');
+                if (valSpan) valSpan.textContent = val + '%';
+                render();
+            });
+            // 阻止点击冒泡到图层项
+            slider.addEventListener('click', function (e) { e.stopPropagation(); });
+        });
+
+        // 排序按钮
+        list.querySelectorAll('.layer-order-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var idx = parseInt(btn.dataset.layer);
+                var dir = btn.dataset.dir;
+                moveLayer(idx, dir);
+            });
+        });
+
+        // 双击重命名
+        list.querySelectorAll('.layer-name').forEach(function (nameEl) {
+            nameEl.addEventListener('dblclick', function (e) {
+                e.stopPropagation();
+                var item = nameEl.closest('.layer-item');
+                var idx = parseInt(item.dataset.layer);
+                var currentName = S.layers[idx].name;
+
+                // 替换为输入框
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'layer-name-input';
+                input.value = currentName;
+                input.maxLength = 20;
+                nameEl.replaceWith(input);
+                input.focus();
+                input.select();
+
+                function finishRename() {
+                    var newName = input.value.trim() || currentName;
+                    S.layers[idx].name = newName;
+                    updateLayerUI();
+                }
+
+                input.addEventListener('blur', finishRename);
+                input.addEventListener('keydown', function (ke) {
+                    if (ke.key === 'Enter') { ke.preventDefault(); input.blur(); }
+                    if (ke.key === 'Escape') { input.value = currentName; input.blur(); }
+                });
+            });
+        });
+    }
+
+    function syncMobileLayerInfo() {
+        // 更新移动端工具栏的当前图层指示
+        var activeLayer = S.layers[S.activeLayer];
+        if (!activeLayer) return;
+        var mobPanelLeft = $('mobPanelLeft');
+        if (mobPanelLeft) {
+            var layerSpan = mobPanelLeft.querySelector('span');
+            if (layerSpan) {
+                layerSpan.textContent = '控制';
+                if (S.layers.length > 1) {
+                    layerSpan.textContent = activeLayer.name;
+                }
+            }
+        }
+    }
+
+    function addLayer() {
+        if (S.layers.length >= 10) {
+            cdAlert('最多支持 10 个图层', { type: 'warn', title: '图层限制' });
+            return;
+        }
+        var newGrid = [];
+        for (var r = 0; r < S.gridH; r++) {
+            newGrid[r] = new Array(S.gridW).fill(null);
+        }
+        var newName = '图层 ' + (S.layers.length + 1);
+        S.layers.push({ name: newName, visible: true, opacity: 1.0, grid: newGrid });
+        S.activeLayer = S.layers.length - 1;
+        updateLayerUI();
+        showToast('已添加「' + newName + '」', 'success', 1500);
+    }
+
+    function deleteCurrentLayer() {
+        if (S.layers.length <= 1) {
+            cdAlert('至少需要保留一个图层', { type: 'warn', title: '无法删除' });
+            return;
+        }
+        var layerName = S.layers[S.activeLayer].name;
+        cdConfirm('确定删除图层「' + layerName + '」吗？该图层上的内容将丢失。', {
+            title: '删除图层',
+            danger: true,
+            okText: '删除'
+        }).then(function (ok) {
+            if (!ok) return;
+            S.layers.splice(S.activeLayer, 1);
+            if (S.activeLayer >= S.layers.length) {
+                S.activeLayer = S.layers.length - 1;
+            }
+            syncGridFromLayers();
+            updateLayerUI();
+            pushHistory('删除图层「' + layerName + '」');
+            render();
+        });
+    }
+
+    function mergeDown() {
+        if (S.activeLayer <= 0) {
+            cdAlert('当前图层已在最底部，无法向下合并', { type: 'warn', title: '无法合并' });
+            return;
+        }
+        var upperIdx = S.activeLayer;
+        var lowerIdx = S.activeLayer - 1;
+        var upperLayer = S.layers[upperIdx];
+        var lowerLayer = S.layers[lowerIdx];
+
+        // 将上层内容合并到下层（上层覆盖下层）
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                if (upperLayer.grid[r] && upperLayer.grid[r][c] !== null) {
+                    lowerLayer.grid[r][c] = upperLayer.grid[r][c];
+                }
+            }
+        }
+
+        // 删除上层
+        var mergedName = lowerLayer.name;
+        S.layers.splice(upperIdx, 1);
+        S.activeLayer = lowerIdx;
+        syncGridFromLayers();
+        updateLayerUI();
+        pushHistory('向下合并到「' + mergedName + '」');
+        render();
+    }
+
+    function moveLayer(idx, direction) {
+        if (direction === 'up' && idx < S.layers.length - 1) {
+            // 上移 = 在数组中向后移动（因为数组末尾是最上层）
+            var temp = S.layers[idx];
+            S.layers[idx] = S.layers[idx + 1];
+            S.layers[idx + 1] = temp;
+            if (S.activeLayer === idx) S.activeLayer = idx + 1;
+            else if (S.activeLayer === idx + 1) S.activeLayer = idx;
+        } else if (direction === 'down' && idx > 0) {
+            // 下移 = 在数组中向前移动
+            var temp2 = S.layers[idx];
+            S.layers[idx] = S.layers[idx - 1];
+            S.layers[idx - 1] = temp2;
+            if (S.activeLayer === idx) S.activeLayer = idx - 1;
+            else if (S.activeLayer === idx - 1) S.activeLayer = idx;
+        } else {
+            return;
+        }
+        syncGridFromLayers();
+        updateLayerUI();
+        render();
+    }
+
+    function exportCurrentLayer() {
+        var layer = S.layers[S.activeLayer];
+        if (!layer) return;
+
+        // 临时用当前图层的内容替换 S.grid
+        var originalGrid = S.grid;
+        S.grid = [];
+        for (var r = 0; r < S.gridH; r++) {
+            S.grid[r] = new Array(S.gridW).fill(null);
+            if (layer.grid[r]) {
+                for (var c = 0; c < S.gridW; c++) {
+                    S.grid[r][c] = layer.grid[r][c];
+                }
+            }
+        }
+
+        // 检查是否有内容
+        var hasContent = false;
+        for (var r2 = 0; r2 < S.gridH && !hasContent; r2++) {
+            for (var c2 = 0; c2 < S.gridW && !hasContent; c2++) {
+                if (S.grid[r2][c2] !== null) hasContent = true;
+            }
+        }
+
+        if (!hasContent) {
+            S.grid = originalGrid;
+            cdAlert('当前图层为空，没有内容可导出', { type: 'warn', title: '导出失败' });
+            return;
+        }
+
+        // 临时修改项目名，加上图层名
+        var origName = S.currentProjectName;
+        S.currentProjectName = (origName || '') + (origName ? '_' : '') + layer.name;
+
+        doExport(false);
+
+        // 还原
+        S.grid = originalGrid;
+        S.currentProjectName = origName;
     }
 
     // ===========================
@@ -880,23 +1164,30 @@
         const h = S.gridH * cs;
         ctx.clearRect(0, 0, w, h);
 
-        // Draw filled cells
-        ctx.globalAlpha = S.cellOpacity;
-        for (let r = 0; r < S.gridH; r++) {
-            for (let c = 0; c < S.gridW; c++) {
-                const ci = S.grid[r][c];
-                if (ci === null) continue;
-                const color = PALETTE[ci];
-                if (!color) continue;
+        // Draw filled cells — 按图层顺序从下到上绘制，支持独立透明度
+        for (var li = 0; li < S.layers.length; li++) {
+            var layer = S.layers[li];
+            if (!layer.visible || !layer.grid) continue;
+            var layerOpacity = (layer.opacity !== undefined ? layer.opacity : 1) * S.cellOpacity;
+            if (layerOpacity <= 0) continue;
+            ctx.globalAlpha = layerOpacity;
+            for (let r = 0; r < S.gridH; r++) {
+                if (!layer.grid[r]) continue;
+                for (let c = 0; c < S.gridW; c++) {
+                    const ci = layer.grid[r][c];
+                    if (ci === null) continue;
+                    const color = PALETTE[ci];
+                    if (!color) continue;
 
-                const x = c * cs;
-                const y = r * cs;
+                    const x = c * cs;
+                    const y = r * cs;
 
-                if (S.showBead) {
-                    drawBead(ctx, x, y, cs, color.hex);
-                } else {
-                    ctx.fillStyle = color.hex;
-                    ctx.fillRect(x, y, cs, cs);
+                    if (S.showBead) {
+                        drawBead(ctx, x, y, cs, color.hex);
+                    } else {
+                        ctx.fillStyle = color.hex;
+                        ctx.fillRect(x, y, cs, cs);
+                    }
                 }
             }
         }
@@ -1678,14 +1969,15 @@
         S.gridW = snap.w;
         S.gridH = snap.h;
         S.grid = reconstructGrid(S.historyIdx);
-        // 同步到填色层
-        initLayers();
-        for (var lr = 0; lr < S.gridH; lr++) {
-            for (var lc = 0; lc < S.gridW; lc++) {
-                if (S.grid[lr] && S.grid[lr][lc] !== undefined)
-                    S.layers[1].grid[lr][lc] = S.grid[lr][lc];
-            }
-        }
+                // 还原到单图层
+                S.layers = [{ name: '图层 1', visible: true, opacity: 1.0, grid: null }];
+                initLayers();
+                for (var lr = 0; lr < S.gridH; lr++) {
+                    for (var lc = 0; lc < S.gridW; lc++) {
+                        if (S.grid[lr] && S.grid[lr][lc] !== undefined)
+                            S.layers[0].grid[lr][lc] = S.grid[lr][lc];
+                    }
+                }
         $('canvasWidth').value = S.gridW;
         $('canvasHeight').value = S.gridH;
         if (sizeChanged) {
@@ -1707,6 +1999,7 @@
             bgCtx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
             mainCanvas._lastScale = renderScale;
         }
+        updateLayerUI();
         render();
         updateHistoryUI();
     }
@@ -2554,7 +2847,20 @@
         $('exportSplitPNG').addEventListener('click', exportSplitBoards);
 
         // Mobile panels
-        if ($('mobPanelLeft')) $('mobPanelLeft').addEventListener('click', () => togglePanel('left'));
+        if ($('mobPanelLeft')) $('mobPanelLeft').addEventListener('click', function () {
+            var controlDrawer = $('mobileControlDrawer');
+            if (controlDrawer && window.innerWidth <= 960) {
+                // 移动端：切换功能控制抽屉
+                var paletteDrawer = $('mobilePaletteDrawer');
+                var isExpanding = !controlDrawer.classList.contains('expanded');
+                if (isExpanding && paletteDrawer) {
+                    paletteDrawer.classList.remove('expanded');
+                }
+                controlDrawer.classList.toggle('expanded');
+            } else {
+                togglePanel('left');
+            }
+        });
         if ($('mobPanelRight')) $('mobPanelRight').addEventListener('click', () => togglePanel('right'));
         $('overlay').addEventListener('click', closePanels);
         document.querySelectorAll('.panel-close').forEach(b => b.addEventListener('click', closePanels));
@@ -3083,32 +3389,32 @@
             _convertPreviewData = null;
         });
 
-        // 图层管理
-        document.querySelectorAll('#layerList .layer-item').forEach(function (item) {
-            item.addEventListener('click', function (e) {
-                // 如果点击的是可见性按钮，不切换活动层
-                if (e.target.closest('.layer-vis-btn')) return;
-                S.activeLayer = parseInt(item.dataset.layer);
-                updateLayerUI();
-            });
-        });
-
-        document.querySelectorAll('#layerList .layer-vis-btn').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var idx = parseInt(btn.dataset.layer);
-                S.layers[idx].visible = !S.layers[idx].visible;
-                btn.classList.toggle('hidden', !S.layers[idx].visible);
-                syncGridFromLayers();
-                render();
-            });
+        // 图层管理 — 按钮事件
+        $('addLayerBtn').addEventListener('click', function () {
+            addLayer();
         });
 
         $('mergeLayersBtn').addEventListener('click', function () {
-            cdConfirm('合并后轮廓层将被清空，所有内容合并到填色层。确定合并？', { title: '合并图层', type: 'warn' }).then(function (ok) {
+            if (S.layers.length <= 1) {
+                cdAlert('只有一个图层，无需合并', { type: 'warn', title: '无需合并' });
+                return;
+            }
+            cdConfirm('将所有图层合并为一个图层，其他图层会被删除。确定合并？', { title: '合并全部图层', type: 'warn' }).then(function (ok) {
                 if (!ok) return;
                 mergeLayersToGrid();
             });
+        });
+
+        $('mergeDownBtn').addEventListener('click', function () {
+            mergeDown();
+        });
+
+        $('deleteLayerBtn').addEventListener('click', function () {
+            deleteCurrentLayer();
+        });
+
+        $('exportCurrentLayerBtn').addEventListener('click', function () {
+            exportCurrentLayer();
         });
 
         // Load saved theme
@@ -3501,10 +3807,21 @@
         S.gridH = newH;
         S.grid = newGrid;
 
-        initLayers();
-        for (var lr = 0; lr < S.gridH; lr++) {
-            for (var lc = 0; lc < S.gridW; lc++) {
-                S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+        // 裁剪所有图层
+        for (var li = 0; li < S.layers.length; li++) {
+            var oldLG2 = S.layers[li].grid;
+            S.layers[li].grid = [];
+            for (var lr = 0; lr < newH; lr++) {
+                S.layers[li].grid[lr] = new Array(newW).fill(null);
+                var srcR3 = newR1 + lr;
+                if (oldLG2 && srcR3 >= 0 && srcR3 < oldLG2.length) {
+                    for (var lc = 0; lc < newW; lc++) {
+                        var srcC3 = newC1 + lc;
+                        if (oldLG2[srcR3] && srcC3 >= 0 && srcC3 < oldLG2[srcR3].length) {
+                            S.layers[li].grid[lr][lc] = oldLG2[srcR3][srcC3];
+                        }
+                    }
+                }
             }
         }
 
@@ -3618,10 +3935,21 @@
         S.gridH = newH;
         S.grid = newGrid;
 
-        initLayers();
-        for (var lr = 0; lr < S.gridH; lr++) {
-            for (var lc = 0; lc < S.gridW; lc++) {
-                S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+        // 扩展所有图层
+        for (var li = 0; li < S.layers.length; li++) {
+            var oldLG = S.layers[li].grid;
+            S.layers[li].grid = [];
+            for (var lr = 0; lr < newH; lr++) {
+                S.layers[li].grid[lr] = new Array(newW).fill(null);
+                var srcR2 = lr - addTop;
+                if (oldLG && srcR2 >= 0 && srcR2 < oldLG.length) {
+                    for (var lc = 0; lc < newW; lc++) {
+                        var srcC2 = lc - addLeft;
+                        if (oldLG[srcR2] && srcC2 >= 0 && srcC2 < oldLG[srcR2].length) {
+                            S.layers[li].grid[lr][lc] = oldLG[srcR2][srcC2];
+                        }
+                    }
+                }
             }
         }
 
@@ -3669,12 +3997,17 @@
                 }
             }
         }
-        // 重置图层
-        initLayers();
-        // 如果有旧内容，复制到填色层
-        for (var lr = 0; lr < Math.min(h, oldH); lr++) {
-            for (var lc = 0; lc < Math.min(w, oldW); lc++) {
-                S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+        // 调整所有图层的 grid 尺寸
+        for (var li = 0; li < S.layers.length; li++) {
+            var oldLayerGrid = S.layers[li].grid;
+            S.layers[li].grid = [];
+            for (var lr = 0; lr < h; lr++) {
+                S.layers[li].grid[lr] = new Array(w).fill(null);
+                if (oldLayerGrid && lr < oldH) {
+                    for (var lc = 0; lc < Math.min(w, oldW); lc++) {
+                        S.layers[li].grid[lr][lc] = oldLayerGrid[lr] ? oldLayerGrid[lr][lc] : null;
+                    }
+                }
             }
         }
         S.currentProjectId = null;
@@ -6950,18 +7283,442 @@
     //  Mobile Drawer
     // ===========================
     function initMobileDrawer() {
-        var drawer = $('mobilePaletteDrawer');
-        var handle = $('mobileDrawerHandle');
-        var body = $('mobileDrawerBody');
-        if (!drawer || !handle || !body) return;
+        var paletteDrawer = $('mobilePaletteDrawer');
+        var paletteHandle = $('mobileDrawerHandle');
+        var controlDrawer = $('mobileControlDrawer');
+        var controlHandle = $('mobileControlHandle');
 
-        // 点击把手展开/收起
-        handle.addEventListener('click', function () {
-            drawer.classList.toggle('expanded');
+        if (!paletteDrawer || !paletteHandle) return;
+
+        // 色板抽屉：点击把手展开/收起
+        paletteHandle.addEventListener('click', function () {
+            var isExpanding = !paletteDrawer.classList.contains('expanded');
+            // 关闭另一个抽屉
+            if (isExpanding && controlDrawer) {
+                controlDrawer.classList.remove('expanded');
+            }
+            paletteDrawer.classList.toggle('expanded');
         });
 
-        // 首次填充内容：克隆右侧面板的内容
+        // 功能控制抽屉：点击把手展开/收起
+        if (controlDrawer && controlHandle) {
+            controlHandle.addEventListener('click', function () {
+                var isExpanding = !controlDrawer.classList.contains('expanded');
+                // 关闭另一个抽屉
+                if (isExpanding) {
+                    paletteDrawer.classList.remove('expanded');
+                }
+                controlDrawer.classList.toggle('expanded');
+            });
+        }
+
+        // 首次填充内容
         cloneRightPanelToDrawer();
+        cloneLeftPanelToDrawer();
+    }
+
+    function cloneLeftPanelToDrawer() {
+        var body = $('mobileControlBody');
+        var source = document.querySelector('#panelLeft .panel-content');
+        if (!body || !source) return;
+
+        body.innerHTML = '';
+
+        // 深度克隆左侧面板内容
+        var clone = source.cloneNode(true);
+
+        // 给克隆的元素加前缀避免 ID 冲突
+        var allIds = clone.querySelectorAll('[id]');
+        allIds.forEach(function (el) {
+            el.setAttribute('data-original-id', el.id);
+            el.id = 'mobl_' + el.id;
+        });
+
+        body.appendChild(clone);
+
+        // 绑定事件
+        bindControlDrawerEvents(body);
+    }
+
+    function bindControlDrawerEvents(container) {
+        // 画布尺寸 - 应用按钮
+        var mobApplySize = container.querySelector('[data-original-id="applySize"]');
+        if (mobApplySize) {
+            mobApplySize.addEventListener('click', function () {
+                // 同步值到主面板
+                var mobW = container.querySelector('[data-original-id="canvasWidth"]');
+                var mobH = container.querySelector('[data-original-id="canvasHeight"]');
+                if (mobW) $('canvasWidth').value = mobW.value;
+                if (mobH) $('canvasHeight').value = mobH.value;
+                applySize();
+                // 同步回来
+                if (mobW) mobW.value = S.gridW;
+                if (mobH) mobH.value = S.gridH;
+            });
+        }
+
+        // 预设按钮
+        container.querySelectorAll('.btn-preset').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var mobW = container.querySelector('[data-original-id="canvasWidth"]');
+                var mobH = container.querySelector('[data-original-id="canvasHeight"]');
+                if (mobW) mobW.value = btn.dataset.w;
+                if (mobH) mobH.value = btn.dataset.h;
+                $('canvasWidth').value = btn.dataset.w;
+                $('canvasHeight').value = btn.dataset.h;
+                container.querySelectorAll('.btn-preset').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                document.querySelectorAll('#panelLeft .btn-preset').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.w === btn.dataset.w && b.dataset.h === btn.dataset.h);
+                });
+                applySize();
+                if (mobW) mobW.value = S.gridW;
+                if (mobH) mobH.value = S.gridH;
+            });
+        });
+
+        // 工具按钮
+        container.querySelectorAll('.btn-tool').forEach(function (b) {
+            b.addEventListener('click', function () {
+                setTool(b.dataset.tool);
+                // 同步抽屉内的选中状态
+                container.querySelectorAll('.btn-tool').forEach(function (tb) {
+                    tb.classList.toggle('active', tb.dataset.tool === S.tool);
+                });
+            });
+        });
+
+        // 缩放
+        var mobZoomIn = container.querySelector('[data-original-id="zoomIn"]');
+        var mobZoomOut = container.querySelector('[data-original-id="zoomOut"]');
+        var mobZoomFit = container.querySelector('[data-original-id="zoomFit"]');
+        if (mobZoomIn) mobZoomIn.addEventListener('click', function () { S.zoom = Math.min(S.zoom * 1.25, 6); applyTransform(); });
+        if (mobZoomOut) mobZoomOut.addEventListener('click', function () { S.zoom = Math.max(S.zoom / 1.25, 0.05); applyTransform(); });
+        if (mobZoomFit) mobZoomFit.addEventListener('click', fitToView);
+
+        // 显示选项开关
+        var toggleMap = {
+            'toggleGrid': function (v) { S.showGrid = v; renderMain(); },
+            'toggleRuler': function (v) { S.showRuler = v; renderRulers(); fitToView(); },
+            'toggleNumbers': function (v) { S.showNumbers = v; renderMain(); },
+            'toggleBead': function (v) { S.showBead = v; renderMain(); },
+            'toggleSplitLine': function (v) { S.showSplitLine = v; renderMain(); },
+            'toggleCenterLine': function (v) { S.showCenterLine = v; renderMain(); }
+        };
+
+        Object.keys(toggleMap).forEach(function (origId) {
+            var mobToggle = container.querySelector('[data-original-id="' + origId + '"]');
+            var mainToggle = $(origId);
+            if (mobToggle) {
+                // 同步初始状态
+                if (mainToggle) mobToggle.checked = mainToggle.checked;
+                mobToggle.addEventListener('change', function () {
+                    toggleMap[origId](mobToggle.checked);
+                    if (mainToggle) mainToggle.checked = mobToggle.checked;
+                });
+            }
+        });
+
+        // 图案变换
+        var mobFlipH = container.querySelector('[data-original-id="flipH"]');
+        var mobFlipV = container.querySelector('[data-original-id="flipV"]');
+        var mobRotate = container.querySelector('[data-original-id="rotate90"]');
+        if (mobFlipH) mobFlipH.addEventListener('click', function () {
+            for (var r = 0; r < S.gridH; r++) S.grid[r].reverse();
+            pushHistory(); render();
+        });
+        if (mobFlipV) mobFlipV.addEventListener('click', function () {
+            S.grid.reverse();
+            pushHistory(); render();
+        });
+        if (mobRotate) mobRotate.addEventListener('click', function () {
+            var nw = S.gridH, nh = S.gridW;
+            var ng = [];
+            for (var r = 0; r < nh; r++) {
+                ng[r] = [];
+                for (var c = 0; c < nw; c++) ng[r][c] = S.grid[nw - 1 - c][r];
+            }
+            S.grid = ng; S.gridW = nw; S.gridH = nh;
+            $('canvasWidth').value = nw; $('canvasHeight').value = nh;
+            pushHistory(); setupCanvas(); render();
+        });
+
+        // 撤销/重做
+        var mobUndo = container.querySelector('[data-original-id="undoBtn"]');
+        var mobRedo = container.querySelector('[data-original-id="redoBtn"]');
+        if (mobUndo) mobUndo.addEventListener('click', undo);
+        if (mobRedo) mobRedo.addEventListener('click', redo);
+
+        // 清空画布
+        var mobClear = container.querySelector('[data-original-id="clearCanvasBtn"]');
+        if (mobClear) mobClear.addEventListener('click', function () {
+            cdConfirm('确定要清空整个画布吗？此操作可以撤销。', { title: '清空画布', danger: true, okText: '清空' }).then(function (ok) {
+                if (!ok) return;
+                for (var r = 0; r < S.gridH; r++)
+                    for (var c = 0; c < S.gridW; c++)
+                        S.grid[r][c] = null;
+                for (var lr = 0; lr < S.layers.length; lr++) {
+                    if (S.layers[lr].grid) {
+                        for (var lr2 = 0; lr2 < S.gridH; lr2++) {
+                            S.layers[lr].grid[lr2] = new Array(S.gridW).fill(null);
+                        }
+                    }
+                }
+                S.currentProjectId = null;
+                S.currentProjectName = '';
+                try { localStorage.removeItem('catpeas_autosave'); } catch (e) { }
+                pushHistory();
+                render();
+            });
+        });
+
+        // 画笔大小
+        container.querySelectorAll('.brush-sz').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                S.brushSize = parseInt(btn.dataset.size) || 1;
+                container.querySelectorAll('.brush-sz').forEach(function (b) {
+                    b.classList.toggle('active', parseInt(b.dataset.size) === S.brushSize);
+                });
+                document.querySelectorAll('#panelLeft .brush-sz').forEach(function (b) {
+                    b.classList.toggle('active', parseInt(b.dataset.size) === S.brushSize);
+                });
+                $('brushSizeVal').textContent = S.brushSize + 'x' + S.brushSize;
+                var mobVal = container.querySelector('[data-original-id="brushSizeVal"]');
+                if (mobVal) mobVal.textContent = S.brushSize + 'x' + S.brushSize;
+            });
+        });
+
+        // 对称模式
+        container.querySelectorAll('.sym-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                S.symmetryMode = btn.dataset.sym;
+                container.querySelectorAll('.sym-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.sym === S.symmetryMode);
+                });
+                document.querySelectorAll('#panelLeft .sym-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.sym === S.symmetryMode);
+                });
+            });
+        });
+
+        // 整体偏移
+        function shiftGridMob(dr, dc) {
+            var newGrid = [];
+            for (var r = 0; r < S.gridH; r++) {
+                newGrid[r] = new Array(S.gridW).fill(null);
+                for (var c = 0; c < S.gridW; c++) {
+                    var sr = r - dr;
+                    var sc = c - dc;
+                    if (sr >= 0 && sr < S.gridH && sc >= 0 && sc < S.gridW) {
+                        newGrid[r][c] = S.grid[sr][sc];
+                    }
+                }
+            }
+            S.grid = newGrid;
+            pushHistory('整体偏移');
+            render();
+        }
+        var mobShiftUp = container.querySelector('[data-original-id="shiftUp"]');
+        var mobShiftDown = container.querySelector('[data-original-id="shiftDown"]');
+        var mobShiftLeft = container.querySelector('[data-original-id="shiftLeft"]');
+        var mobShiftRight = container.querySelector('[data-original-id="shiftRight"]');
+        if (mobShiftUp) mobShiftUp.addEventListener('click', function () { shiftGridMob(-1, 0); });
+        if (mobShiftDown) mobShiftDown.addEventListener('click', function () { shiftGridMob(1, 0); });
+        if (mobShiftLeft) mobShiftLeft.addEventListener('click', function () { shiftGridMob(0, -1); });
+        if (mobShiftRight) mobShiftRight.addEventListener('click', function () { shiftGridMob(0, 1); });
+
+        // 图层管理
+        var mobAddLayer = container.querySelector('[data-original-id="addLayerBtn"]');
+        var mobMergeLayers = container.querySelector('[data-original-id="mergeLayersBtn"]');
+        var mobMergeDown = container.querySelector('[data-original-id="mergeDownBtn"]');
+        var mobDeleteLayer = container.querySelector('[data-original-id="deleteLayerBtn"]');
+        var mobExportLayer = container.querySelector('[data-original-id="exportCurrentLayerBtn"]');
+
+        if (mobAddLayer) mobAddLayer.addEventListener('click', function () { addLayer(); syncControlDrawerLayerUI(); });
+        if (mobMergeLayers) mobMergeLayers.addEventListener('click', function () {
+            if (S.layers.length <= 1) { cdAlert('只有一个图层，无需合并', { type: 'warn', title: '无需合并' }); return; }
+            cdConfirm('将所有图层合并为一个图层，其他图层会被删除。确定合并？', { title: '合并全部图层', type: 'warn' }).then(function (ok) {
+                if (!ok) return;
+                mergeLayersToGrid();
+                syncControlDrawerLayerUI();
+            });
+        });
+        if (mobMergeDown) mobMergeDown.addEventListener('click', function () { mergeDown(); syncControlDrawerLayerUI(); });
+        if (mobDeleteLayer) mobDeleteLayer.addEventListener('click', function () { deleteCurrentLayer(); });
+        if (mobExportLayer) mobExportLayer.addEventListener('click', function () { exportCurrentLayer(); });
+
+        // 图层列表项的事件
+        syncControlDrawerLayerUI();
+
+        // 图片上传
+        var mobUploadBtn = container.querySelector('[data-original-id="uploadBtn"]');
+        if (mobUploadBtn) {
+            mobUploadBtn.addEventListener('click', function () {
+                $('imageInput').click();
+            });
+        }
+
+        // 导出按钮
+        var mobExportPNG = container.querySelector('[data-original-id="exportPNG"]');
+        var mobExportBead = container.querySelector('[data-original-id="exportBeadPNG"]');
+        var mobExportSplit = container.querySelector('[data-original-id="exportSplitPNG"]');
+        if (mobExportPNG) mobExportPNG.addEventListener('click', function () { doExport(false); });
+        if (mobExportBead) mobExportBead.addEventListener('click', function () { doExport(true); });
+        if (mobExportSplit) mobExportSplit.addEventListener('click', function () { exportSplitBoards(); });
+
+        // 裁剪/扩展
+        var mobCropBtn = container.querySelector('[data-original-id="cropCanvasBtn"]');
+        var mobExpandBtn = container.querySelector('[data-original-id="expandCanvasBtn"]');
+        if (mobCropBtn) mobCropBtn.addEventListener('click', function () { cropCanvasToContent(); });
+        if (mobExpandBtn) mobExpandBtn.addEventListener('click', function () { expandCanvasDialog(); });
+
+        // 保存项目
+        var mobSaveProject = container.querySelector('[data-original-id="saveToProject"]');
+        if (mobSaveProject) {
+            mobSaveProject.addEventListener('click', function () {
+                // 同步项目名称到主面板
+                var mobName = container.querySelector('[data-original-id="projectName"]');
+                if (mobName && mobName.value.trim()) {
+                    $('projectName').value = mobName.value.trim();
+                }
+                var mobCat = container.querySelector('[data-original-id="projectCategory"]');
+                if (mobCat) {
+                    $('projectCategory').value = mobCat.value;
+                }
+                saveProject();
+            });
+        }
+
+        // 导入图纸
+        var mobImportSheet = container.querySelector('[data-original-id="importSheetBtn"]');
+        if (mobImportSheet) {
+            mobImportSheet.addEventListener('click', function () {
+                $('importSheetInput').click();
+            });
+        }
+
+        // 导出/导入项目JSON
+        var mobExportJSON = container.querySelector('[data-original-id="exportProjectJSON"]');
+        if (mobExportJSON) mobExportJSON.addEventListener('click', function () { exportProjectJSON(); });
+
+        var mobImportJSON = container.querySelector('[data-original-id="importProjectJSON"]');
+        if (mobImportJSON) {
+            mobImportJSON.addEventListener('click', function () {
+                $('projectFileInput').click();
+            });
+        }
+
+        // 底图相关
+        var mobConvertBtn = container.querySelector('[data-original-id="convertBtn"]');
+        if (mobConvertBtn) {
+            mobConvertBtn.addEventListener('click', function () {
+                $('convertBtn').click();
+            });
+        }
+        var mobRecognizeBtn = container.querySelector('[data-original-id="recognizeBtn"]');
+        if (mobRecognizeBtn) {
+            mobRecognizeBtn.addEventListener('click', function () {
+                recognizeBlockImage();
+            });
+        }
+        var mobRemoveImage = container.querySelector('[data-original-id="removeImage"]');
+        if (mobRemoveImage) {
+            mobRemoveImage.addEventListener('click', function () {
+                $('removeImage').click();
+            });
+        }
+        var mobGridAlignBtn = container.querySelector('[data-original-id="gridAlignBtn"]');
+        if (mobGridAlignBtn) {
+            mobGridAlignBtn.addEventListener('click', function () {
+                openGridAlignModal();
+            });
+        }
+
+        // 底图透明度
+        var mobOpacitySlider = container.querySelector('[data-original-id="opacitySlider"]');
+        if (mobOpacitySlider) {
+            mobOpacitySlider.addEventListener('input', function () {
+                S.refOpacity = mobOpacitySlider.value / 100;
+                var mobVal = container.querySelector('[data-original-id="opacityVal"]');
+                if (mobVal) mobVal.textContent = mobOpacitySlider.value + '%';
+                $('opacitySlider').value = mobOpacitySlider.value;
+                $('opacityVal').textContent = mobOpacitySlider.value + '%';
+                renderBg();
+            });
+        }
+        var mobCellOpacitySlider = container.querySelector('[data-original-id="cellOpacitySlider"]');
+        if (mobCellOpacitySlider) {
+            mobCellOpacitySlider.addEventListener('input', function () {
+                S.cellOpacity = mobCellOpacitySlider.value / 100;
+                var mobVal2 = container.querySelector('[data-original-id="cellOpacityVal"]');
+                if (mobVal2) mobVal2.textContent = mobCellOpacitySlider.value + '%';
+                $('cellOpacitySlider').value = mobCellOpacitySlider.value;
+                $('cellOpacityVal').textContent = mobCellOpacitySlider.value + '%';
+                renderMain();
+            });
+        }
+    }
+
+    function syncControlDrawerLayerUI() {
+        var container = $('mobileControlBody');
+        if (!container) return;
+        var mobLayerList = container.querySelector('[data-original-id="layerList"]');
+        if (!mobLayerList) return;
+
+        // 用和主面板相同的逻辑重建图层列表
+        mobLayerList.innerHTML = '';
+        for (var i = S.layers.length - 1; i >= 0; i--) {
+            var layer = S.layers[i];
+            var div = document.createElement('div');
+            div.className = 'layer-item' + (i === S.activeLayer ? ' active' : '');
+            div.dataset.layer = i;
+
+            var opacityPct = Math.round((layer.opacity !== undefined ? layer.opacity : 1) * 100);
+
+            div.innerHTML =
+                '<button class="layer-vis-btn' + (layer.visible ? '' : ' hidden') + '" data-layer="' + i + '" title="显示/隐藏">' +
+                    '<svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 3C3 3 1 8 1 8s2 5 7 5 7-5 7-5-2-5-7-5z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>' +
+                '</button>' +
+                '<span class="layer-name">' + escapeHtml(layer.name) + '</span>' +
+                '<div class="layer-opacity-wrap">' +
+                    '<input type="range" class="layer-opacity-slider" min="0" max="100" value="' + opacityPct + '" data-layer="' + i + '" title="图层透明度">' +
+                '</div>' +
+                '<span class="layer-active-badge">编辑中</span>';
+
+            mobLayerList.appendChild(div);
+        }
+
+        // 绑定事件
+        mobLayerList.querySelectorAll('.layer-item').forEach(function (item) {
+            item.addEventListener('click', function (e) {
+                if (e.target.closest('.layer-vis-btn') || e.target.closest('.layer-opacity-slider')) return;
+                S.activeLayer = parseInt(item.dataset.layer);
+                updateLayerUI();
+                syncControlDrawerLayerUI();
+            });
+        });
+
+        mobLayerList.querySelectorAll('.layer-vis-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var idx = parseInt(btn.dataset.layer);
+                S.layers[idx].visible = !S.layers[idx].visible;
+                syncGridFromLayers();
+                updateLayerUI();
+                syncControlDrawerLayerUI();
+                render();
+            });
+        });
+
+        mobLayerList.querySelectorAll('.layer-opacity-slider').forEach(function (slider) {
+            slider.addEventListener('input', function (e) {
+                e.stopPropagation();
+                var idx = parseInt(slider.dataset.layer);
+                S.layers[idx].opacity = parseInt(slider.value) / 100;
+                render();
+            });
+            slider.addEventListener('click', function (e) { e.stopPropagation(); });
+        });
     }
 
     function cloneRightPanelToDrawer() {
@@ -7850,7 +8607,7 @@
             initLayers();
             for (var lr = 0; lr < Math.min(gridH, oldH); lr++) {
                 for (var lc = 0; lc < Math.min(gridW, oldW); lc++) {
-                    S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+                    S.layers[0].grid[lr][lc] = S.grid[lr][lc];
                 }
             }
 

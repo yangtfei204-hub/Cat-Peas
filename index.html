@@ -395,25 +395,30 @@
                         图层
                     </h3>
                     <div class="layer-list" id="layerList">
-                        <div class="layer-item active" data-layer="1">
-                            <button class="layer-vis-btn" data-layer="1" title="显示/隐藏">
-                                <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 3C3 3 1 8 1 8s2 5 7 5 7-5 7-5-2-5-7-5z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
-                            </button>
-                            <span class="layer-name">填色层</span>
-                            <span class="layer-active-badge">编辑中</span>
-                        </div>
-                        <div class="layer-item" data-layer="0">
-                            <button class="layer-vis-btn" data-layer="0" title="显示/隐藏">
-                                <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 3C3 3 1 8 1 8s2 5 7 5 7-5 7-5-2-5-7-5z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
-                            </button>
-                            <span class="layer-name">轮廓层</span>
-                            <span class="layer-active-badge">编辑中</span>
-                        </div>
+                        <!-- JS 动态生成 -->
                     </div>
                     <div class="layer-actions">
+                        <button class="btn btn-sm" id="addLayerBtn" title="添加新图层">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                            添加图层
+                        </button>
                         <button class="btn btn-sm" id="mergeLayersBtn">
                             <svg viewBox="0 0 16 16" width="10" height="10"><path d="M3 12l5-4 5 4M3 8l5-4 5 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            合并图层
+                            合并全部
+                        </button>
+                        <button class="btn btn-sm" id="mergeDownBtn" title="将当前图层向下合并">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M8 2v8M5 7l3 3 3-3M3 13h10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            向下合并
+                        </button>
+                        <button class="btn btn-sm" id="deleteLayerBtn" title="删除当前图层">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M5 3V2.5a.5.5 0 01.5-.5h5a.5.5 0 01.5.5V3M2 3h12M4 3v9.5a1.5 1.5 0 001.5 1.5h5a1.5 1.5 0 001.5-1.5V3" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            删除图层
+                        </button>
+                    </div>
+                    <div class="layer-export-row" style="margin-top:6px;">
+                        <button class="btn btn-sm btn-export btn-full" id="exportCurrentLayerBtn" style="margin-top:0;">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M8 2v8M5 7l3 3 3-3M2 12v1.5a.5.5 0 00.5.5h11a.5.5 0 00.5-.5V12" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            仅导出当前图层
                         </button>
                     </div>
                 </section>
@@ -696,6 +701,21 @@
                 <span class="coord-pos" id="coordPos">行: -- 列: --</span>
                 <span class="coord-color" id="coordColor"></span>
             </div>
+            <!-- 移动端底部功能控制抽屉 -->
+            <div class="mobile-control-drawer" id="mobileControlDrawer">
+                <div class="mobile-drawer-handle mobile-control-handle" id="mobileControlHandle">
+                    <div class="drawer-handle-bar"></div>
+                    <div class="drawer-handle-info">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 1a1 1 0 011 1v1.07A7.002 7.002 0 0117 10a7 7 0 01-6 6.93V18a1 1 0 11-2 0v-1.07A7.002 7.002 0 013 10a7 7 0 016-6.93V2a1 1 0 011-1zm0 4a5 5 0 100 10A5 5 0 0010 5z" fill="currentColor"/></svg>
+                        <span class="drawer-control-text" id="drawerControlText">功能控制</span>
+                    </div>
+                    <span class="drawer-handle-hint" id="drawerControlHint">图层·变换·导出</span>
+                    <svg class="drawer-arrow" viewBox="0 0 20 20" width="14" height="14"><path d="M5 12l5-5 5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="mobile-control-body" id="mobileControlBody">
+                    <!-- JS 动态填充左侧面板内容 -->
+                </div>
+            </div>
             <!-- 移动端底部色板抽屉 -->
             <div class="mobile-palette-drawer" id="mobilePaletteDrawer">
                 <div class="mobile-drawer-handle" id="mobileDrawerHandle">
@@ -746,9 +766,9 @@
                     <svg viewBox="0 0 20 20" width="20" height="20"><path d="M17 7l-4-4M17 7l-4 4M17 7H7a4 4 0 000 8h4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
                 <span class="mob-divider"></span>
-                <button class="mob-tool mob-tool-label" id="mobPanelLeft" title="控制面板">
+                <button class="mob-tool mob-tool-label" id="mobPanelLeft" title="功能面板">
                     <svg viewBox="0 0 20 20" width="16" height="16"><path d="M10 1a1 1 0 011 1v1.07A7 7 0 0117 10a7 7 0 01-6 6.93V18a1 1 0 11-2 0v-1.07A7 7 0 013 10a7 7 0 016-6.93V2a1 1 0 011-1zm0 4a5 5 0 100 10 5 5 0 000-10z" fill="currentColor"/></svg>
-                    <span>控制</span>
+                    <span>功能</span>
                 </button>
                 <button class="mob-tool mob-tool-label" id="mobPanelRight" title="色板面板">
                     <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="6" cy="6" r="2.5" fill="#e8b4b8"/><circle cx="14" cy="6" r="2.5" fill="#b8a9c9"/><circle cx="6" cy="14" r="2.5" fill="#a0c4dc"/><circle cx="14" cy="14" r="2.5" fill="#a0c9a0"/></svg>
@@ -1583,10 +1603,23 @@
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 12l6 3 6-3M2 9l6 3 6-3M8 2l6 3-6 3-6-3z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            图层
+                            多图层
                         </h4>
-                        <p>画布有两层：轮廓层（底）和填色层（上）。可以先在轮廓层画线稿，再切到填色层涂颜色。每层可独立显示/隐藏。「合并图层」会将内容合并到填色层。</p>
+                        <p>支持最多 10 个自由图层，可独立绘制、调节透明度、显示/隐藏、重命名和排序。</p>
+                        <p>· <strong>添加图层</strong>：点击「添加图层」按钮新建空白图层</p>
+                        <p>· <strong>透明度</strong>：每个图层右侧有滑块，拖动可减淡该图层（如先画身体，减淡后在新图层上画衣服）</p>
+                        <p>· <strong>双击重命名</strong>：双击图层名称可修改（如命名为"身体"、"衣服"）</p>
+                        <p>· <strong>向下合并</strong>：将当前图层合并到下方图层</p>
+                        <p>· <strong>仅导出当前图层</strong>：只导出选中图层的内容，适合分层输出</p>
                     </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 12l6 3 6-3M2 9l6 3 6-3M8 2l6 3-6 3-6-3z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            移动端双抽屉
+                        </h4>
+                        <p>手机端底部有两个独立抽屉：「色板与统计」和「功能控制」。点击对应把手即可展开，两个抽屉互斥——打开一个会自动关闭另一个，最大化画布可视面积。工具栏的「功能」按钮也可快速切换功能控制抽屉。</p>
+                    </div>
+
                 </div>
 
                 <!-- ========== 工具详解 ========== -->

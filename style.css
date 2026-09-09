@@ -2533,6 +2533,190 @@ body {
 }
 
 /* ========================================
+   Mobile Bottom Control Drawer
+   ======================================== */
+.mobile-control-drawer {
+    display: none;
+    flex-direction: column;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 11;
+    position: relative;
+}
+
+@media (max-width: 960px) {
+    .mobile-control-drawer {
+        display: flex;
+    }
+}
+
+.mobile-control-handle {
+    border-bottom: none;
+}
+
+.mobile-control-handle svg:first-of-type {
+    color: var(--iris-dark);
+    flex-shrink: 0;
+}
+
+.drawer-control-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--iris-dark);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.mobile-control-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-control-drawer.expanded .mobile-control-body {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.mobile-control-drawer.expanded .drawer-arrow {
+    transform: rotate(180deg);
+}
+
+.mobile-control-body::-webkit-scrollbar {
+    width: 3px;
+}
+
+.mobile-control-body::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+.mobile-control-body .panel-section {
+    padding: 10px 12px;
+}
+
+.mobile-control-body .section-title {
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.mobile-control-body .size-inputs {
+    flex-wrap: wrap;
+}
+
+.mobile-control-body .size-presets {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+}
+
+.mobile-control-body .tools-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.mobile-control-body .btn-tool {
+    padding: 6px 3px 5px;
+    font-size: 9px;
+}
+
+.mobile-control-body .btn-tool svg {
+    width: 16px;
+    height: 16px;
+}
+
+.mobile-control-body .toggle-list {
+    gap: 4px;
+}
+
+.mobile-control-body .toggle-item {
+    font-size: 11px;
+    padding: 2px 0;
+}
+
+.mobile-control-body .transform-grid {
+    gap: 3px;
+}
+
+.mobile-control-body .btn-action {
+    padding: 6px 8px;
+    font-size: 10px;
+}
+
+.mobile-control-body .history-controls {
+    gap: 4px;
+}
+
+.mobile-control-body .layer-list {
+    max-height: 160px;
+}
+
+.mobile-control-body .layer-item {
+    padding: 5px 6px;
+    gap: 4px;
+    font-size: 10px;
+}
+
+.mobile-control-body .layer-opacity-slider {
+    width: 36px;
+}
+
+.mobile-control-body .layer-opacity-val {
+    display: none;
+}
+
+.mobile-control-body .layer-order-btns {
+    display: none;
+}
+
+.mobile-control-body .layer-actions {
+    gap: 3px;
+}
+
+.mobile-control-body .layer-actions .btn {
+    font-size: 9px;
+    padding: 4px 6px;
+}
+
+.mobile-control-body .size-note {
+    font-size: 9px;
+    padding: 5px 7px;
+    margin-bottom: 6px;
+}
+
+.mobile-control-body .slider-label {
+    font-size: 10px;
+    margin: 6px 0 4px;
+}
+
+.mobile-control-body .brush-size-row {
+    margin-top: 6px;
+    padding: 6px;
+}
+
+.mobile-control-body .brush-size-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+}
+
+.mobile-control-body .sym-btn,
+.mobile-control-body .brush-sz {
+    font-size: 9px !important;
+    padding: 3px 6px !important;
+}
+
+.mobile-control-body .shift-btns {
+    width: 100px !important;
+}
+
+.mobile-control-body .shift-btns .btn {
+    padding: 3px !important;
+}
+
+/* ========================================
    Mobile Bottom Palette Drawer
    ======================================== */
 .mobile-palette-drawer {
@@ -2680,6 +2864,17 @@ body {
     #mobPanelRight {
         display: none;
     }
+
+    /* 移动端功能控制抽屉展开时把手样式 */
+    .mobile-control-drawer.expanded .mobile-control-handle {
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .mobile-control-drawer.expanded .drawer-handle-hint {
+        background: var(--pink-lighter);
+        color: var(--pink-dark);
+    }
+
 }
 
 /* ========================================
@@ -4661,13 +4856,15 @@ body {
     flex-direction: column;
     gap: 3px;
     margin-bottom: 8px;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .layer-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
+    gap: 6px;
+    padding: 6px 8px;
     background: var(--bg-card);
     border: 1.5px solid var(--border);
     border-radius: var(--radius-xs);
@@ -4675,6 +4872,7 @@ body {
     transition: var(--transition);
     font-size: 11px;
     color: var(--text-secondary);
+    position: relative;
 }
 
 .layer-item:hover {
@@ -4715,25 +4913,111 @@ body {
 .layer-name {
     flex: 1;
     font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.layer-name-input {
+    flex: 1;
+    min-width: 0;
+    padding: 1px 4px;
+    border: 1px solid var(--iris);
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: var(--font-base);
+    font-weight: 600;
+    color: var(--text);
+    background: var(--bg-card);
+    outline: none;
+}
+
+.layer-opacity-wrap {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.layer-opacity-slider {
+    width: 50px;
+    height: 3px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.layer-opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(135deg, var(--pink), var(--iris));
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1.5px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.layer-opacity-val {
+    font-size: 9px;
+    color: var(--text-muted);
+    width: 26px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
 }
 
 .layer-active-badge {
-    font-size: 9px;
-    padding: 1px 6px;
+    font-size: 8px;
+    padding: 1px 5px;
     background: var(--iris);
     color: #fff;
     border-radius: 8px;
     font-weight: 700;
     display: none;
+    flex-shrink: 0;
 }
 
 .layer-item.active .layer-active-badge {
     display: inline;
 }
 
+.layer-order-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex-shrink: 0;
+}
+
+.layer-order-btn {
+    width: 16px;
+    height: 12px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    transition: var(--transition);
+}
+
+.layer-order-btn:hover {
+    background: var(--iris-lighter);
+    color: var(--iris-dark);
+}
+
 .layer-actions {
     display: flex;
     gap: 4px;
+    flex-wrap: wrap;
 }
 
 /* ========================================
@@ -4958,6 +5242,24 @@ body {
         flex: 1;
         min-width: 0;
     }
+
+    .layer-opacity-slider {
+        width: 40px;
+    }
+
+    .layer-opacity-val {
+        display: none;
+    }
+
+    .layer-order-btns {
+        display: none;
+    }
+
+    .layer-active-badge {
+        font-size: 7px;
+        padding: 1px 4px;
+    }
+
 }
 
 /* 裁剪时的暗色遮罩 - 让选区外变暗 */
