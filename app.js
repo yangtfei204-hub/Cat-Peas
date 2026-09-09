@@ -4,7 +4,7 @@
     'use strict';
 
     // 版本号 —— 每次功能更新后递增此值，将触发用户重新确认免责声明和查看使用说明
-    var APP_VERSION = '1.1.0';
+    var APP_VERSION = '1.2.0';
 
     // ===========================
     //  IndexedDB 项目库管理
@@ -235,6 +235,12 @@
         selectionDrawing: false,
         currentProjectId: null,
         currentProjectName: '',
+        // 网格对齐参数
+        gridAlignImgOffX: 0,
+        gridAlignImgOffY: 0,
+        gridAlignGridOffX: 0,
+        gridAlignGridOffY: 0,
+        gridAlignImgScale: 1,
         // 图层
         activeLayer: 0,
         layers: [
@@ -852,16 +858,17 @@
             }
         }
 
-        // Reference image (保持比例居中)
+        // Reference image (保持比例居中 + 对齐偏移)
         if (S.refImage) {
             bgCtx.globalAlpha = S.refOpacity;
             var iw = S.refImage.naturalWidth;
             var ih = S.refImage.naturalHeight;
-            var scale = Math.min(w / iw, h / ih);
-            var dw = iw * scale;
-            var dh = ih * scale;
-            var dx = (w - dw) / 2;
-            var dy = (h - dh) / 2;
+            var baseScale = Math.min(w / iw, h / ih);
+            var finalScale = baseScale * S.gridAlignImgScale;
+            var dw = iw * finalScale;
+            var dh = ih * finalScale;
+            var dx = (w - dw) / 2 + S.gridAlignImgOffX - S.gridAlignGridOffX;
+            var dy = (h - dh) / 2 + S.gridAlignImgOffY - S.gridAlignGridOffY;
             bgCtx.drawImage(S.refImage, dx, dy, dw, dh);
             bgCtx.globalAlpha = 1;
         }
@@ -2158,6 +2165,26 @@
         } else {
             mainCanvas.style.pointerEvents = t === 'hand' ? 'none' : 'auto';
         }
+        // 显示工具提示
+        var toolHints = {
+            'pen': '画笔 <span class="tool-hint-key">B</span>',
+            'eraser': '橡皮 <span class="tool-hint-key">E</span>',
+            'picker': '吸色 <span class="tool-hint-key">I</span>',
+            'bgpicker': '吸底图色',
+            'bucket': '填充 <span class="tool-hint-key">F</span>',
+            'fill': '换色 <span class="tool-hint-key">G</span>',
+            'hand': '抓手 <span class="tool-hint-key">H</span>',
+            'select': '框选 <span class="tool-hint-key">M</span>'
+        };
+        var hintBar = $('toolHintBar');
+        if (hintBar && toolHints[t]) {
+            hintBar.innerHTML = toolHints[t];
+            hintBar.classList.add('active');
+            clearTimeout(hintBar._timer);
+            hintBar._timer = setTimeout(function () {
+                hintBar.classList.remove('active');
+            }, 1200);
+        }
     }
 
     // ===========================
@@ -2335,7 +2362,8 @@
         $('undoBtn').addEventListener('click', undo);
         $('redoBtn').addEventListener('click', redo);
         $('clearCanvasBtn').addEventListener('click', function () {
-            if (!confirm('确定要清空整个画布吗？此操作可以撤销。')) return;
+            cdConfirm('确定要清空整个画布吗？此操作可以撤销。', { title: '清空画布', danger: true, okText: '清空' }).then(function (ok) {
+            if (!ok) return;
             for (let r = 0; r < S.gridH; r++)
                 for (let c = 0; c < S.gridW; c++)
                     S.grid[r][c] = null;
@@ -2353,6 +2381,7 @@
             try { localStorage.removeItem('catpeas_autosave'); } catch (e) { }
             pushHistory();
             render();
+            }); // cdConfirm.then 结束
         });
         if ($('mobUndo')) $('mobUndo').addEventListener('click', undo);
         if ($('mobRedo')) $('mobRedo').addEventListener('click', redo);
@@ -2472,9 +2501,19 @@
             }, 100);
         });
         $('recognizeBtn').addEventListener('click', recognizeBlockImage);
+        // 网格对齐
+        $('gridAlignBtn').addEventListener('click', function () {
+            openGridAlignModal();
+        });
         $('removeImage').addEventListener('click', () => {
             S.refImage = null;
+            S.gridAlignImgOffX = 0;
+            S.gridAlignImgOffY = 0;
+            S.gridAlignGridOffX = 0;
+            S.gridAlignGridOffY = 0;
+            S.gridAlignImgScale = 1;
             $('imageControls').style.display = 'none';
+            $('gridAlignBtn').style.display = 'none';
             $('imageInput').value = '';
             renderBg();
         });
@@ -2634,14 +2673,20 @@
 
         // 新建分类
         $('addProjectCategory').addEventListener('click', function () {
-            var name = prompt('请输入分类名称：');
-            if (!name || !name.trim()) return;
-            var cat = { id: 'pcat_' + Date.now().toString(36), name: name.trim() };
-            dbPut(STORE_CATEGORIES, cat).then(function () {
-                _projectCategories.push(cat);
-                updateProjectCategoryUI();
-                $('projectCategory').value = cat.id;
+            cdPrompt('', { title: '新建分类', placeholder: '请输入分类名称' }).then(function (name) {
+                if (!name || !name.trim()) return;
+                var cat = { id: 'pcat_' + Date.now().toString(36), name: name.trim() };
+                dbPut(STORE_CATEGORIES, cat).then(function () {
+                    _projectCategories.push(cat);
+                    updateProjectCategoryUI();
+                    $('projectCategory').value = cat.id;
+                });
             });
+        });
+
+        // 管理分类（重命名/删除）
+        $('manageCategoryBtn').addEventListener('click', function () {
+            manageCategoriesDialog();
         });
 
         // 项目库页面筛选/搜索/排序
@@ -2832,11 +2877,9 @@
         document.querySelectorAll('.help-tab').forEach(function (tab) {
             tab.addEventListener('click', function () {
                 var targetTab = this.dataset.tab;
-                // 切换标签激活状态
                 document.querySelectorAll('.help-tab').forEach(function (t) {
                     t.classList.toggle('active', t.dataset.tab === targetTab);
                 });
-                // 切换内容显示
                 document.querySelectorAll('.help-content').forEach(function (c) {
                     c.classList.toggle('active', c.dataset.content === targetTab);
                 });
@@ -2920,6 +2963,12 @@
         $('selDelete').addEventListener('click', function () { deleteSelection(); });
         $('selFlipH').addEventListener('click', function () { flipSelectionH(); });
         $('selFlipV').addEventListener('click', function () { flipSelectionV(); });
+        $('selConfirm').addEventListener('click', function () {
+            if (S.selection) {
+                pushHistory('移动选区');
+                clearSelection();
+            }
+        });
         $('selCancel').addEventListener('click', function () { clearSelection(); });
         $('selMoveMode').addEventListener('click', function () {
             if (S.selection) alert('在选区上拖拽即可移动选区内容，也可用方向键微调位置。');
@@ -2969,6 +3018,16 @@
             pushHistory('整体偏移');
             render();
         }
+        // 裁剪画板
+        $('cropCanvasBtn').addEventListener('click', function () {
+            cropCanvasToContent();
+        });
+
+        // 扩展画板
+        $('expandCanvasBtn').addEventListener('click', function () {
+            expandCanvasDialog();
+        });
+
 
         $('shiftUp').addEventListener('click', function () { shiftGrid(-1, 0); });
         $('shiftDown').addEventListener('click', function () { shiftGrid(1, 0); });
@@ -3046,8 +3105,10 @@
         });
 
         $('mergeLayersBtn').addEventListener('click', function () {
-            if (!confirm('合并后轮廓层将被清空，所有内容合并到填色层。确定合并？')) return;
-            mergeLayersToGrid();
+            cdConfirm('合并后轮廓层将被清空，所有内容合并到填色层。确定合并？', { title: '合并图层', type: 'warn' }).then(function (ok) {
+                if (!ok) return;
+                mergeLayersToGrid();
+            });
         });
 
         // Load saved theme
@@ -3327,6 +3388,260 @@
                 updateLegend();
             }, 50);
         }
+    }
+
+    // ===========================
+    //  裁剪画板（去除空白边缘）
+    // ===========================
+    async function cropCanvasToContent() {
+        // 找到内容的边界
+        var minR = S.gridH, maxR = -1, minC = S.gridW, maxC = -1;
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                if (S.grid[r][c] !== null) {
+                    if (r < minR) minR = r;
+                    if (r > maxR) maxR = r;
+                    if (c < minC) minC = c;
+                    if (c > maxC) maxC = c;
+                }
+            }
+        }
+
+        if (maxR < 0) {
+            cdAlert('画布为空，无法裁剪', { type: 'warn', title: '无法裁剪' });
+            return;
+        }
+
+        var contentW = maxC - minC + 1;
+        var contentH = maxR - minR + 1;
+
+        if (contentW === S.gridW && contentH === S.gridH) {
+            cdAlert('画布没有空白边缘可裁剪', { type: 'warn', title: '无需裁剪' });
+            return;
+        }
+
+        // 提供两种模式
+        var mode = await cdPrompt(
+            '当前内容区域：' + contentW + '×' + contentH +
+            '（行' + minR + '-' + maxR + '，列' + minC + '-' + maxC + '）\n\n' +
+            '请选择裁剪模式：\n' +
+            '1 = 自动裁剪到内容边界（' + contentW + '×' + contentH + '）\n' +
+            '2 = 自定义裁剪范围\n' +
+            '3 = 带边距裁剪（保留指定格数的边距）',
+            { title: '裁剪画板', defaultValue: '1', placeholder: '输入 1、2 或 3' }
+        );
+
+        if (mode === null) return;
+        mode = mode.trim();
+
+        var newR1, newC1, newW, newH;
+
+        if (mode === '1') {
+            newR1 = minR;
+            newC1 = minC;
+            newW = contentW;
+            newH = contentH;
+        } else if (mode === '2') {
+            var rangeStr = await cdPrompt(
+                '请输入裁剪范围（格式：起始列,起始行,宽度,高度）\n' +
+                '例如：' + minC + ',' + minR + ',' + contentW + ',' + contentH,
+                { title: '自定义裁剪', defaultValue: minC + ',' + minR + ',' + contentW + ',' + contentH }
+            );
+            if (!rangeStr) return;
+            var parts = rangeStr.split(',').map(function (s) { return parseInt(s.trim()); });
+            if (parts.length !== 4 || parts.some(isNaN)) {
+                cdAlert('格式不正确，请输入4个数字用逗号分隔', { type: 'error' });
+                return;
+            }
+            newC1 = parts[0];
+            newR1 = parts[1];
+            newW = parts[2];
+            newH = parts[3];
+        } else if (mode === '3') {
+            var marginStr = await cdPrompt('请输入保留的边距格数（上下左右相同）：', { title: '带边距裁剪', defaultValue: '2' });
+            if (marginStr === null) return;
+            var margin = parseInt(marginStr) || 0;
+            newR1 = Math.max(0, minR - margin);
+            newC1 = Math.max(0, minC - margin);
+            newW = Math.min(S.gridW - newC1, contentW + margin * 2);
+            newH = Math.min(S.gridH - newR1, contentH + margin * 2);
+        } else {
+            return;
+        }
+
+        // 验证范围
+        if (newW < 4 || newH < 4) {
+            cdAlert('裁剪后尺寸不能小于 4×4', { type: 'error' });
+            return;
+        }
+        if (newW > 200 || newH > 200) {
+            cdAlert('尺寸不能超过 200', { type: 'error' });
+            return;
+        }
+
+        var cropOk = await cdConfirm('确定将画布裁剪为 ' + newW + '×' + newH + ' 吗？此操作可以撤销。', { title: '确认裁剪' });
+        if (!cropOk) return;
+
+        // 执行裁剪
+        var newGrid = [];
+        for (var r2 = 0; r2 < newH; r2++) {
+            newGrid[r2] = new Array(newW).fill(null);
+            var srcR = newR1 + r2;
+            if (srcR >= 0 && srcR < S.gridH) {
+                for (var c2 = 0; c2 < newW; c2++) {
+                    var srcC = newC1 + c2;
+                    if (srcC >= 0 && srcC < S.gridW) {
+                        newGrid[r2][c2] = S.grid[srcR][srcC];
+                    }
+                }
+            }
+        }
+
+        S.gridW = newW;
+        S.gridH = newH;
+        S.grid = newGrid;
+
+        initLayers();
+        for (var lr = 0; lr < S.gridH; lr++) {
+            for (var lc = 0; lc < S.gridW; lc++) {
+                S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+            }
+        }
+
+        $('canvasWidth').value = S.gridW;
+        $('canvasHeight').value = S.gridH;
+        document.querySelectorAll('.btn-preset').forEach(function (b) {
+            b.classList.toggle('active',
+                parseInt(b.dataset.w) === S.gridW && parseInt(b.dataset.h) === S.gridH
+            );
+        });
+
+        pushHistory('裁剪画板');
+        setupCanvas();
+        render();
+    }
+
+    // ===========================
+    //  扩展画板
+    // ===========================
+    async function expandCanvasDialog() {
+        var dirStr = await cdPrompt(
+            '当前画布：' + S.gridW + '×' + S.gridH + '\n\n' +
+            '请选择扩展方向：\n' +
+            '1 = 向上扩展\n' +
+            '2 = 向下扩展\n' +
+            '3 = 向左扩展\n' +
+            '4 = 向右扩展\n' +
+            '5 = 四周均匀扩展\n' +
+            '6 = 自定义（分别设置上下左右）',
+            { title: '扩展画板', defaultValue: '5', placeholder: '输入 1-6' }
+        );
+
+        if (dirStr === null) return;
+        dirStr = dirStr.trim();
+
+        var addTop = 0, addBottom = 0, addLeft = 0, addRight = 0;
+
+        if (dirStr === '1') {
+            var nStr = await cdPrompt('向上扩展多少格？', { title: '向上扩展', defaultValue: '10' });
+            var n = parseInt(nStr);
+            if (isNaN(n) || n <= 0) return;
+            addTop = n;
+        } else if (dirStr === '2') {
+            var nStr2 = await cdPrompt('向下扩展多少格？', { title: '向下扩展', defaultValue: '10' });
+            var n2 = parseInt(nStr2);
+            if (isNaN(n2) || n2 <= 0) return;
+            addBottom = n2;
+        } else if (dirStr === '3') {
+            var nStr3 = await cdPrompt('向左扩展多少格？', { title: '向左扩展', defaultValue: '10' });
+            var n3 = parseInt(nStr3);
+            if (isNaN(n3) || n3 <= 0) return;
+            addLeft = n3;
+        } else if (dirStr === '4') {
+            var nStr4 = await cdPrompt('向右扩展多少格？', { title: '向右扩展', defaultValue: '10' });
+            var n4 = parseInt(nStr4);
+            if (isNaN(n4) || n4 <= 0) return;
+            addRight = n4;
+        } else if (dirStr === '5') {
+            var nStr5 = await cdPrompt('四周各扩展多少格？', { title: '四周扩展', defaultValue: '5' });
+            var n5 = parseInt(nStr5);
+            if (isNaN(n5) || n5 <= 0) return;
+            addTop = addBottom = addLeft = addRight = n5;
+        } else if (dirStr === '6') {
+            var custom = await cdPrompt(
+                '请输入四个方向的扩展格数（格式：上,下,左,右）\n例如：5,5,10,10',
+                { title: '自定义扩展', defaultValue: '0,0,0,0' }
+            );
+            if (!custom) return;
+            var parts2 = custom.split(',').map(function (s) { return parseInt(s.trim()); });
+            if (parts2.length !== 4 || parts2.some(isNaN)) {
+                cdAlert('格式不正确，请输入4个数字用逗号分隔', { type: 'error' });
+                return;
+            }
+            addTop = Math.max(0, parts2[0]);
+            addBottom = Math.max(0, parts2[1]);
+            addLeft = Math.max(0, parts2[2]);
+            addRight = Math.max(0, parts2[3]);
+        } else {
+            return;
+        }
+
+        var newW = S.gridW + addLeft + addRight;
+        var newH = S.gridH + addTop + addBottom;
+
+        if (newW > 200 || newH > 200) {
+            cdAlert('扩展后尺寸 ' + newW + '×' + newH + ' 超过最大限制 200×200', { type: 'error' });
+            return;
+        }
+
+        if (newW === S.gridW && newH === S.gridH) {
+            cdAlert('没有需要扩展的方向', { type: 'warn' });
+            return;
+        }
+
+        // 执行扩展
+        var newGrid = [];
+        for (var r = 0; r < newH; r++) {
+            newGrid[r] = new Array(newW).fill(null);
+            var srcR = r - addTop;
+            if (srcR >= 0 && srcR < S.gridH) {
+                for (var c = 0; c < newW; c++) {
+                    var srcC = c - addLeft;
+                    if (srcC >= 0 && srcC < S.gridW) {
+                        newGrid[r][c] = S.grid[srcR][srcC];
+                    }
+                }
+            }
+        }
+
+        S.gridW = newW;
+        S.gridH = newH;
+        S.grid = newGrid;
+
+        initLayers();
+        for (var lr = 0; lr < S.gridH; lr++) {
+            for (var lc = 0; lc < S.gridW; lc++) {
+                S.layers[1].grid[lr][lc] = S.grid[lr][lc];
+            }
+        }
+
+        $('canvasWidth').value = S.gridW;
+        $('canvasHeight').value = S.gridH;
+        document.querySelectorAll('.btn-preset').forEach(function (b) {
+            b.classList.toggle('active',
+                parseInt(b.dataset.w) === S.gridW && parseInt(b.dataset.h) === S.gridH
+            );
+        });
+
+        pushHistory('扩展画板');
+        setupCanvas();
+        render();
+
+        cdAlert('画板已扩展为 ' + newW + '×' + newH +
+            (addTop ? '\n上 +' + addTop : '') +
+            (addBottom ? '\n下 +' + addBottom : '') +
+            (addLeft ? '\n左 +' + addLeft : '') +
+            (addRight ? '\n右 +' + addRight : ''), { type: 'success', title: '扩展完成' });
     }
 
     // ===========================
@@ -4637,15 +4952,14 @@
     }
 
 
-    function exportSplitBoards() {
+    async function exportSplitBoards() {
         // 弹出选择分板尺寸
-        var sizeStr = prompt(
+        var sizeStr = await cdPrompt(
             '请输入每块板的格数（正方形）：\n' +
             '· 26 = 半板（26×26）\n' +
             '· 29 = 中半板（29×29）\n' +
-            '· 52 = 标准板（52×52）\n' +
-            '默认为 26',
-            '26'
+            '· 52 = 标准板（52×52）',
+            { title: '分板导出', defaultValue: '26', placeholder: '输入格数' }
         );
         if (sizeStr === null) return;
         var boardSize = parseInt(sizeStr) || 26;
@@ -4663,9 +4977,8 @@
             return;
         }
 
-        if (!confirm('将画布分为 ' + boardCols + '×' + boardRows + ' = ' + totalBoards + ' 块板（每块 ' + boardSize + '×' + boardSize + '），确认导出？')) {
-            return;
-        }
+        var splitOk = await cdConfirm('将画布分为 ' + boardCols + '×' + boardRows + ' = ' + totalBoards + ' 块板（每块 ' + boardSize + '×' + boardSize + '），确认导出？', { title: '确认分板导出' });
+        if (!splitOk) return;
 
         var cs = S.cellSize;
         var scale = 2;
@@ -4987,10 +5300,10 @@
         }
     }
 
-    function saveProject() {
+    async function saveProject() {
         var name = $('projectName').value.trim();
         if (!name) {
-            alert('请输入项目名称');
+            cdAlert('请输入项目名称', { type: 'warn', title: '保存项目' });
             return;
         }
         var category = $('projectCategory').value || 'default';
@@ -5005,7 +5318,7 @@
         }
 
         if (total === 0) {
-            alert('画布为空，请先绘制内容再保存');
+            cdAlert('画布为空，请先绘制内容再保存', { type: 'warn', title: '保存项目' });
             return;
         }
 
@@ -5024,10 +5337,9 @@
 
         if (S.currentProjectId) {
             // 当前是从项目库加载的，询问用户
-            var choice = confirm(
-                '当前画布来自项目"' + S.currentProjectName + '"。\n\n' +
-                '点击「确定」→ 覆盖保存到原项目\n' +
-                '点击「取消」→ 另存为新项目'
+            var choice = await cdConfirm(
+                '当前画布来自项目"' + S.currentProjectName + '"。\n\n确定 → 覆盖保存到原项目\n取消 → 另存为新项目',
+                { title: '保存方式', okText: '覆盖保存', cancelText: '另存为新的' }
             );
             if (choice) {
                 isOverwrite = true;
@@ -5087,9 +5399,9 @@
             S.currentProjectName = name;
 
             if (isOverwrite) {
-                alert('已覆盖保存到项目"' + name + '"！');
+                showToast('已覆盖保存到项目"' + name + '"', 'success');
             } else {
-                alert('已另存为新项目"' + name + '"！');
+                showToast('已另存为新项目"' + name + '"', 'success');
             }
             $('projectName').value = name;
             if ($('projectPage').classList.contains('active')) {
@@ -5147,14 +5459,134 @@
         });
     }
 
-    function deleteProjects(ids) {
+    async function deleteProjects(ids) {
         if (ids.length === 0) return;
-        if (!confirm('确定删除选中的 ' + ids.length + ' 个项目吗？此操作不可恢复。')) return;
+        var ok = await cdConfirm('确定删除选中的 ' + ids.length + ' 个项目吗？此操作不可恢复。', { title: '删除项目', danger: true, okText: '确认删除' });
+        if (!ok) return;
         dbDeleteMultiple(STORE_PROJECTS, ids).then(function () {
             _selectedProjectIds.clear();
             triggerProjectRefresh();
         }).catch(function (err) {
             alert('删除失败：' + err.message);
+        });
+    }
+
+    // ===========================
+    //  分类管理弹窗
+    // ===========================
+    function manageCategoriesDialog() {
+        loadProjectCategories().then(async function () {
+            if (_projectCategories.length <= 1) {
+                alert('当前只有默认分类，请先新建分类');
+                return;
+            }
+
+            var lines = ['当前分类列表：\n'];
+            _projectCategories.forEach(function (cat, i) {
+                lines.push((i + 1) + '. ' + cat.name + (cat.id === 'default' ? '（默认，不可删除）' : ''));
+            });
+            lines.push('\n请选择操作：');
+            lines.push('输入 "删除 序号" 删除分类（如：删除 3）');
+            lines.push('输入 "重命名 序号 新名称" 重命名（如：重命名 2 我的收藏）');
+            lines.push('输入 "取消" 或留空退出');
+
+            var input = await cdPrompt(lines.join('\n'), { title: '分类管理', placeholder: '如：删除 3 或 重命名 2 新名称' });
+            if (!input || !input.trim()) return;
+            input = input.trim();
+
+            // 解析删除命令
+            var deleteMatch = input.match(/^删除\s*(\d+)$/);
+            if (deleteMatch) {
+                var delIdx = parseInt(deleteMatch[1]) - 1;
+                if (delIdx < 0 || delIdx >= _projectCategories.length) {
+                    alert('序号不存在');
+                    return;
+                }
+                var delCat = _projectCategories[delIdx];
+                if (delCat.id === 'default') {
+                    alert('默认分类不可删除');
+                    return;
+                }
+
+                // 检查该分类下是否有项目
+                dbGetAll(STORE_PROJECTS).then(async function (projects) {
+                    var catProjects = projects.filter(function (p) {
+                        return p.category === delCat.id;
+                    });
+
+                    var msg = '确定删除分类「' + delCat.name + '」吗？';
+                    if (catProjects.length > 0) {
+                        msg += '\n\n该分类下有 ' + catProjects.length + ' 个项目，删除分类后这些项目将被移到「默认分类」。';
+                    }
+
+                    var delOk = await cdConfirm(msg, { title: '删除分类', danger: true, okText: '删除' });
+                    if (!delOk) return;
+
+                    // 将该分类下的项目移到默认分类
+                    var movePromises = [];
+                    catProjects.forEach(function (proj) {
+                        proj.category = 'default';
+                        movePromises.push(dbPut(STORE_PROJECTS, proj));
+                    });
+
+                    Promise.all(movePromises).then(function () {
+                        // 删除分类
+                        return dbDelete(STORE_CATEGORIES, delCat.id);
+                    }).then(function () {
+                        // 从内存中移除
+                        _projectCategories = _projectCategories.filter(function (c) {
+                            return c.id !== delCat.id;
+                        });
+                        updateProjectCategoryUI();
+                        alert('分类「' + delCat.name + '」已删除' +
+                            (catProjects.length > 0 ? '，' + catProjects.length + ' 个项目已移至默认分类' : ''));
+
+                        // 如果项目库页面是打开的，刷新列表
+                        if ($('projectPage').classList.contains('active')) {
+                            triggerProjectRefresh();
+                        }
+                    }).catch(function (err) {
+                        alert('删除失败：' + err.message);
+                    });
+                });
+                return;
+            }
+
+            // 解析重命名命令
+            var renameMatch = input.match(/^重命名\s*(\d+)\s+(.+)$/);
+            if (renameMatch) {
+                var renIdx = parseInt(renameMatch[1]) - 1;
+                var newName = renameMatch[2].trim();
+                if (renIdx < 0 || renIdx >= _projectCategories.length) {
+                    alert('序号不存在');
+                    return;
+                }
+                if (!newName) {
+                    alert('名称不能为空');
+                    return;
+                }
+                var renCat = _projectCategories[renIdx];
+                if (renCat.id === 'default') {
+                    alert('默认分类不可重命名');
+                    return;
+                }
+
+                renCat.name = newName;
+                dbPut(STORE_CATEGORIES, renCat).then(function () {
+                    updateProjectCategoryUI();
+                    alert('分类已重命名为「' + newName + '」');
+                    if ($('projectPage').classList.contains('active')) {
+                        triggerProjectRefresh();
+                    }
+                }).catch(function (err) {
+                    alert('重命名失败：' + err.message);
+                });
+                return;
+            }
+
+            if (input !== '取消') {
+                alert('无法识别的命令。\n\n正确格式：\n  删除 序号\n  重命名 序号 新名称');
+            }
         });
     }
 
@@ -5368,22 +5800,22 @@
                 // 重命名
                 card.querySelector('.btn-rename').addEventListener('click', function (e) {
                     e.stopPropagation();
-                    var newName = prompt('请输入新的项目名称：', proj.name);
-                    if (newName === null || !newName.trim()) return;
-                    newName = newName.trim();
-                    dbGet(STORE_PROJECTS, proj.id).then(function (pd) {
-                        if (pd) {
-                            pd.name = newName;
-                            pd.updatedAt = Date.now();
-                            dbPut(STORE_PROJECTS, pd).then(function () {
-                                // 如果当前正在编辑的就是这个项目，同步更新
-                                if (S.currentProjectId === proj.id) {
-                                    S.currentProjectName = newName;
-                                    $('projectName').value = newName;
-                                }
-                                triggerProjectRefresh();
-                            });
-                        }
+                    cdPrompt('', { title: '重命名项目', defaultValue: proj.name, placeholder: '输入新的项目名称' }).then(function (newName) {
+                        if (newName === null || !newName.trim()) return;
+                        newName = newName.trim();
+                        dbGet(STORE_PROJECTS, proj.id).then(function (pd) {
+                            if (pd) {
+                                pd.name = newName;
+                                pd.updatedAt = Date.now();
+                                dbPut(STORE_PROJECTS, pd).then(function () {
+                                    if (S.currentProjectId === proj.id) {
+                                        S.currentProjectName = newName;
+                                        $('projectName').value = newName;
+                                    }
+                                    triggerProjectRefresh();
+                                });
+                            }
+                        });
                     });
                 });
 
@@ -6329,6 +6761,8 @@
             }
         }
         S.selectionClipboard = { w: w, h: h, data: data };
+        showToast('已复制 ' + w + '×' + h + ' 区域', 'success', 1500);
+
     }
 
     function pasteSelection() {
@@ -7301,6 +7735,7 @@
             }
             S.refImage = img;
             $('imageControls').style.display = 'block';
+            $('gridAlignBtn').style.display = '';
             renderBg();
             closeCropModal();
             return;
@@ -7321,12 +7756,14 @@
         if (result.img.complete) {
             S.refImage = result.img;
             $('imageControls').style.display = 'block';
+            $('gridAlignBtn').style.display = '';
             renderBg();
             closeCropModal();
         } else {
             result.img.onload = function () {
                 S.refImage = result.img;
                 $('imageControls').style.display = 'block';
+                $('gridAlignBtn').style.display = '';
                 renderBg();
                 closeCropModal();
             };
@@ -7603,6 +8040,21 @@
         $('cropApplyBtn').addEventListener('click', function () {
             applyCropAndSetRef(false);
         });
+
+        // 网格对齐弹窗事件
+        $('gridAlignClose').addEventListener('click', function () {
+            closeGridAlignModal();
+        });
+        $('gaCancel').addEventListener('click', function () {
+            closeGridAlignModal();
+        });
+        $('gridAlignModal').addEventListener('click', function (e) {
+            if (e.target === this) closeGridAlignModal();
+        });
+        $('gaApply').addEventListener('click', function () {
+            applyGridAlign();
+        });
+
     }
 
     function unbindCropEvents() {
@@ -7611,6 +8063,764 @@
         if (_cropMouseMove) window.removeEventListener('mousemove', _cropMouseMove);
         if (_cropMouseUp) window.removeEventListener('mouseup', _cropMouseUp);
         _cropBoundEvents = false;
+    }
+
+    // ===========================
+    //  网格对齐功能
+    // ===========================
+    var _ga = {
+        mode: 'image', // 'image' or 'grid'
+        imgOffX: 0,
+        imgOffY: 0,
+        gridOffX: 0,
+        gridOffY: 0,
+        imgScale: 100,
+        cellSizePx: 16.0,
+        gridOpacity: 60,
+        gridColor: 'red',
+        zoom: 1,
+        panX: 0,
+        panY: 0,
+        isPanning: false,
+        panStartX: 0,
+        panStartY: 0,
+        panStartPanX: 0,
+        panStartPanY: 0,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        dragStartOffX: 0,
+        dragStartOffY: 0,
+        boundEvents: false
+    };
+
+    function openGridAlignModal() {
+        if (!S.refImage) {
+            alert('请先上传参考底图');
+            return;
+        }
+        // 初始化对齐参数为当前值
+        _ga.imgOffX = S.gridAlignImgOffX;
+        _ga.imgOffY = S.gridAlignImgOffY;
+        _ga.gridOffX = S.gridAlignGridOffX;
+        _ga.gridOffY = S.gridAlignGridOffY;
+        _ga.imgScale = Math.round(S.gridAlignImgScale * 100);
+        _ga.zoom = 1;
+        _ga.panX = 0;
+        _ga.panY = 0;
+        _ga.mode = 'image';
+
+        // 尝试根据图片自动推算格子尺寸
+        if (_ga.cellSizePx === 16.0 && S.refImage) {
+            var iw = S.refImage.naturalWidth;
+            var ih = S.refImage.naturalHeight;
+            var totalW = S.gridW * S.cellSize;
+            var totalH = S.gridH * S.cellSize;
+            var baseScale = Math.min(totalW / iw, totalH / ih);
+            _ga.cellSizePx = S.cellSize;
+            _ga.imgScale = 100;
+        }
+
+        $('gaScaleSlider').value = _ga.imgScale;
+        $('gaScaleVal').textContent = _ga.imgScale + '%';
+        $('gaGridOpacitySlider').value = _ga.gridOpacity;
+        $('gaGridOpacityVal').textContent = _ga.gridOpacity + '%';
+        $('gaCellSizeSlider').value = Math.round(_ga.cellSizePx * 10);
+        $('gaCellSizeVal').textContent = _ga.cellSizePx.toFixed(1) + ' px';
+        $('gaCellSizeInput').value = _ga.cellSizePx.toFixed(1);
+
+        document.querySelectorAll('.ga-mode-btn').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.mode === _ga.mode);
+        });
+
+        $('gridAlignModal').classList.add('active');
+
+        setTimeout(function () {
+            renderGridAlignPreview();
+            bindGridAlignEvents();
+        }, 50);
+    }
+
+    function closeGridAlignModal() {
+        $('gridAlignModal').classList.remove('active');
+    }
+
+    function applyGridAlign() {
+        S.gridAlignImgOffX = _ga.imgOffX;
+        S.gridAlignImgOffY = _ga.imgOffY;
+        S.gridAlignGridOffX = _ga.gridOffX;
+        S.gridAlignGridOffY = _ga.gridOffY;
+        S.gridAlignImgScale = _ga.imgScale / 100;
+        closeGridAlignModal();
+        renderBg();
+    }
+
+    function updateGaOffsetInfo() {
+        $('gaOffsetInfo').textContent =
+            '图片偏移: (' + _ga.imgOffX + ', ' + _ga.imgOffY +
+            ') | 网格偏移: (' + _ga.gridOffX + ', ' + _ga.gridOffY +
+            ') | 格子: ' + _ga.cellSizePx.toFixed(1) + 'px';
+    }
+
+    function renderGridAlignPreview() {
+        var canvas = $('gaPreviewCanvas');
+        var wrap = $('gaPreviewWrap');
+        if (!canvas || !wrap || !S.refImage) return;
+
+        var cellPx = _ga.cellSizePx;
+        var totalW = S.gridW * cellPx;
+        var totalH = S.gridH * cellPx;
+
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var displayW = wrap.clientWidth || 700;
+        var displayH = wrap.clientHeight || 400;
+
+        canvas.width = displayW * dpr;
+        canvas.height = displayH * dpr;
+        canvas.style.width = displayW + 'px';
+        canvas.style.height = displayH + 'px';
+
+        var gc = canvas.getContext('2d');
+        gc.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        // 清除背景
+        gc.fillStyle = '#e8e4e0';
+        gc.fillRect(0, 0, displayW, displayH);
+
+        gc.save();
+
+        // 平移到中心 + 缩放
+        var centerX = displayW / 2 + _ga.panX;
+        var centerY = displayH / 2 + _ga.panY;
+        gc.translate(centerX, centerY);
+        gc.scale(_ga.zoom, _ga.zoom);
+        gc.translate(-totalW / 2, -totalH / 2);
+
+        // 绘制棋盘格背景
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                gc.fillStyle = (r + c) % 2 === 0 ? '#fdfdfd' : '#f0edeb';
+                gc.fillRect(c * cellPx, r * cellPx, cellPx, cellPx);
+            }
+        }
+
+        // 绘制底图
+        var iw = S.refImage.naturalWidth;
+        var ih = S.refImage.naturalHeight;
+        // 图片缩放：让图片按 imgScale 比例铺在网格区域上
+        var baseScale = Math.min(totalW / iw, totalH / ih);
+        var finalScale = baseScale * (_ga.imgScale / 100);
+        var dw = iw * finalScale;
+        var dh = ih * finalScale;
+        var dx = (totalW - dw) / 2 + _ga.imgOffX - _ga.gridOffX;
+        var dy = (totalH - dh) / 2 + _ga.imgOffY - _ga.gridOffY;
+
+        gc.globalAlpha = 0.88;
+        gc.drawImage(S.refImage, dx, dy, dw, dh);
+        gc.globalAlpha = 1;
+
+        // 绘制网格线
+        var colorMap = {
+            'red': 'rgba(220, 60, 60, ',
+            'blue': 'rgba(54, 119, 210, ',
+            'green': 'rgba(53, 227, 82, ',
+            'white': 'rgba(255, 255, 255, '
+        };
+        var colorBase = colorMap[_ga.gridColor] || colorMap['red'];
+        var opacity = _ga.gridOpacity / 100;
+
+        for (var gr = 0; gr <= S.gridH; gr++) {
+            var major = gr % 5 === 0;
+            gc.strokeStyle = colorBase + (major ? Math.min(1, opacity * 1.4) : opacity * 0.65) + ')';
+            gc.lineWidth = major ? 1.8 / _ga.zoom : 0.7 / _ga.zoom;
+            gc.beginPath();
+            gc.moveTo(0, gr * cellPx);
+            gc.lineTo(totalW, gr * cellPx);
+            gc.stroke();
+        }
+        for (var gc2 = 0; gc2 <= S.gridW; gc2++) {
+            var major2 = gc2 % 5 === 0;
+            gc.strokeStyle = colorBase + (major2 ? Math.min(1, opacity * 1.4) : opacity * 0.65) + ')';
+            gc.lineWidth = major2 ? 1.8 / _ga.zoom : 0.7 / _ga.zoom;
+            gc.beginPath();
+            gc.moveTo(gc2 * cellPx, 0);
+            gc.lineTo(gc2 * cellPx, totalH);
+            gc.stroke();
+        }
+
+        gc.restore();
+
+        updateGaOffsetInfo();
+    }
+
+    function bindGridAlignEvents() {
+        if (_ga.boundEvents) return;
+        _ga.boundEvents = true;
+
+        var wrap = $('gaPreviewWrap');
+        var canvas = $('gaPreviewCanvas');
+
+        // 模式切换
+        document.querySelectorAll('.ga-mode-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                _ga.mode = btn.dataset.mode;
+                document.querySelectorAll('.ga-mode-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.mode === _ga.mode);
+                });
+            });
+        });
+
+        // 网格格子间距滑块
+        $('gaCellSizeSlider').addEventListener('input', function () {
+            _ga.cellSizePx = parseInt(this.value) / 10;
+            $('gaCellSizeVal').textContent = _ga.cellSizePx.toFixed(1) + ' px';
+            $('gaCellSizeInput').value = _ga.cellSizePx.toFixed(1);
+            renderGridAlignPreview();
+        });
+
+        // 精确数字输入
+        $('gaCellSizeInput').addEventListener('change', function () {
+            var val = parseFloat(this.value);
+            if (isNaN(val) || val < 3) val = 3;
+            if (val > 50) val = 50;
+            _ga.cellSizePx = val;
+            this.value = val.toFixed(1);
+            $('gaCellSizeSlider').value = Math.round(val * 10);
+            $('gaCellSizeVal').textContent = val.toFixed(1) + ' px';
+            renderGridAlignPreview();
+        });
+
+        // 自动检测格子间距
+        $('gaAutoDetect').addEventListener('click', function () {
+            autoDetectCellSizePx();
+        });
+
+        // 图片缩放滑块
+        $('gaScaleSlider').addEventListener('input', function () {
+            _ga.imgScale = parseInt(this.value);
+            $('gaScaleVal').textContent = _ga.imgScale + '%';
+            renderGridAlignPreview();
+        });
+
+        // 网格透明度
+        $('gaGridOpacitySlider').addEventListener('input', function () {
+            _ga.gridOpacity = parseInt(this.value);
+            $('gaGridOpacityVal').textContent = _ga.gridOpacity + '%';
+            renderGridAlignPreview();
+        });
+
+        // 网格颜色
+        document.querySelectorAll('.ga-color-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                _ga.gridColor = btn.dataset.color;
+                document.querySelectorAll('.ga-color-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.color === _ga.gridColor);
+                });
+                renderGridAlignPreview();
+            });
+        });
+
+        // 微调按钮
+        $('gaImgUp').addEventListener('click', function () { _ga.imgOffY -= 1; renderGridAlignPreview(); });
+        $('gaImgDown').addEventListener('click', function () { _ga.imgOffY += 1; renderGridAlignPreview(); });
+        $('gaImgLeft').addEventListener('click', function () { _ga.imgOffX -= 1; renderGridAlignPreview(); });
+        $('gaImgRight').addEventListener('click', function () { _ga.imgOffX += 1; renderGridAlignPreview(); });
+
+        $('gaGridUp').addEventListener('click', function () { _ga.gridOffY -= 1; renderGridAlignPreview(); });
+        $('gaGridDown').addEventListener('click', function () { _ga.gridOffY += 1; renderGridAlignPreview(); });
+        $('gaGridLeft').addEventListener('click', function () { _ga.gridOffX -= 1; renderGridAlignPreview(); });
+        $('gaGridRight').addEventListener('click', function () { _ga.gridOffX += 1; renderGridAlignPreview(); });
+
+        // 重置
+        $('gaResetOffset').addEventListener('click', function () {
+            _ga.imgOffX = 0;
+            _ga.imgOffY = 0;
+            _ga.gridOffX = 0;
+            _ga.gridOffY = 0;
+            _ga.imgScale = 100;
+            _ga.cellSizePx = 16.0;
+            $('gaScaleSlider').value = 100;
+            $('gaScaleVal').textContent = '100%';
+            $('gaCellSizeSlider').value = 160;
+            $('gaCellSizeVal').textContent = '16.0 px';
+            $('gaCellSizeInput').value = '16.0';
+            renderGridAlignPreview();
+        });
+
+        // 缩放按钮
+        $('gaZoomIn').addEventListener('click', function () {
+            _ga.zoom = Math.min(_ga.zoom * 1.3, 10);
+            $('gaZoomVal').textContent = Math.round(_ga.zoom * 100) + '%';
+            renderGridAlignPreview();
+        });
+        $('gaZoomOut').addEventListener('click', function () {
+            _ga.zoom = Math.max(_ga.zoom / 1.3, 0.1);
+            $('gaZoomVal').textContent = Math.round(_ga.zoom * 100) + '%';
+            renderGridAlignPreview();
+        });
+        $('gaZoomFit').addEventListener('click', function () {
+            _ga.zoom = 1;
+            _ga.panX = 0;
+            _ga.panY = 0;
+            $('gaZoomVal').textContent = '100%';
+            renderGridAlignPreview();
+        });
+
+        // 滚轮缩放
+        wrap.addEventListener('wheel', function (e) {
+            e.preventDefault();
+            var d = e.deltaY > 0 ? 0.9 : 1.1;
+            _ga.zoom = Math.min(Math.max(_ga.zoom * d, 0.1), 10);
+            $('gaZoomVal').textContent = Math.round(_ga.zoom * 100) + '%';
+            renderGridAlignPreview();
+        }, { passive: false });
+
+        // 鼠标拖拽
+        canvas.addEventListener('mousedown', function (e) {
+            if (e.button === 1 || e.button === 2) {
+                // 中键或右键 = 平移视角
+                e.preventDefault();
+                _ga.isPanning = true;
+                _ga.panStartX = e.clientX;
+                _ga.panStartY = e.clientY;
+                _ga.panStartPanX = _ga.panX;
+                _ga.panStartPanY = _ga.panY;
+                wrap.style.cursor = 'grabbing';
+                return;
+            }
+            if (e.button === 0) {
+                // 左键 = 拖拽图片或网格
+                e.preventDefault();
+                _ga.isDragging = true;
+                _ga.dragStartX = e.clientX;
+                _ga.dragStartY = e.clientY;
+                if (_ga.mode === 'image') {
+                    _ga.dragStartOffX = _ga.imgOffX;
+                    _ga.dragStartOffY = _ga.imgOffY;
+                } else {
+                    _ga.dragStartOffX = _ga.gridOffX;
+                    _ga.dragStartOffY = _ga.gridOffY;
+                }
+                wrap.style.cursor = 'move';
+            }
+        });
+
+        window.addEventListener('mousemove', function (e) {
+            if (_ga.isPanning) {
+                _ga.panX = _ga.panStartPanX + (e.clientX - _ga.panStartX);
+                _ga.panY = _ga.panStartPanY + (e.clientY - _ga.panStartY);
+                renderGridAlignPreview();
+                return;
+            }
+            if (_ga.isDragging) {
+                var dx = (e.clientX - _ga.dragStartX) / _ga.zoom;
+                var dy = (e.clientY - _ga.dragStartY) / _ga.zoom;
+                if (_ga.mode === 'image') {
+                    _ga.imgOffX = Math.round(_ga.dragStartOffX + dx);
+                    _ga.imgOffY = Math.round(_ga.dragStartOffY + dy);
+                } else {
+                    _ga.gridOffX = Math.round(_ga.dragStartOffX + dx);
+                    _ga.gridOffY = Math.round(_ga.dragStartOffY + dy);
+                }
+                renderGridAlignPreview();
+            }
+        });
+
+        window.addEventListener('mouseup', function () {
+            if (_ga.isPanning) {
+                _ga.isPanning = false;
+                wrap.style.cursor = 'grab';
+            }
+            if (_ga.isDragging) {
+                _ga.isDragging = false;
+                wrap.style.cursor = 'grab';
+            }
+        });
+
+        // 阻止右键菜单
+        canvas.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+
+        // 触摸支持
+        var _gaTouchId = null;
+        canvas.addEventListener('touchstart', function (e) {
+            if (e.touches.length === 1) {
+                e.preventDefault();
+                var t = e.touches[0];
+                _gaTouchId = t.identifier;
+                _ga.isDragging = true;
+                _ga.dragStartX = t.clientX;
+                _ga.dragStartY = t.clientY;
+                if (_ga.mode === 'image') {
+                    _ga.dragStartOffX = _ga.imgOffX;
+                    _ga.dragStartOffY = _ga.imgOffY;
+                } else {
+                    _ga.dragStartOffX = _ga.gridOffX;
+                    _ga.dragStartOffY = _ga.gridOffY;
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', function (e) {
+            if (_ga.isDragging && e.touches.length === 1) {
+                e.preventDefault();
+                var t = e.touches[0];
+                var dx = (t.clientX - _ga.dragStartX) / _ga.zoom;
+                var dy = (t.clientY - _ga.dragStartY) / _ga.zoom;
+                if (_ga.mode === 'image') {
+                    _ga.imgOffX = Math.round(_ga.dragStartOffX + dx);
+                    _ga.imgOffY = Math.round(_ga.dragStartOffY + dy);
+                } else {
+                    _ga.gridOffX = Math.round(_ga.dragStartOffX + dx);
+                    _ga.gridOffY = Math.round(_ga.dragStartOffY + dy);
+                }
+                renderGridAlignPreview();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', function () {
+            _ga.isDragging = false;
+        });
+    }
+
+    function autoDetectCellSizePx() {
+        if (!S.refImage) { alert('请先上传底图'); return; }
+
+        var img = S.refImage;
+        var iw = img.naturalWidth;
+        var ih = img.naturalHeight;
+
+        // 把图片画到临时 canvas 上取像素
+        var tmp = document.createElement('canvas');
+        tmp.width = iw;
+        tmp.height = ih;
+        var tc = tmp.getContext('2d');
+        tc.drawImage(img, 0, 0, iw, ih);
+        var imgData = tc.getImageData(0, 0, iw, ih).data;
+
+        // 沿多行检测颜色变化，找格子边界
+        var rowsToScan = [
+            Math.floor(ih * 0.25),
+            Math.floor(ih * 0.4),
+            Math.floor(ih * 0.5),
+            Math.floor(ih * 0.6),
+            Math.floor(ih * 0.75)
+        ];
+
+        var allGaps = [];
+        var threshold = 25;
+
+        rowsToScan.forEach(function (scanRow) {
+            if (scanRow >= ih) return;
+            var changes = [];
+            var offset = scanRow * iw * 4;
+            var prevR = imgData[offset], prevG = imgData[offset + 1], prevB = imgData[offset + 2];
+
+            for (var x = 1; x < iw; x++) {
+                var i = offset + x * 4;
+                var r = imgData[i], g = imgData[i + 1], b = imgData[i + 2];
+                var diff = Math.abs(r - prevR) + Math.abs(g - prevG) + Math.abs(b - prevB);
+                if (diff > threshold) {
+                    changes.push(x);
+                }
+                prevR = r; prevG = g; prevB = b;
+            }
+
+            // 计算相邻变化间距
+            for (var j = 1; j < changes.length; j++) {
+                var gap = changes[j] - changes[j - 1];
+                if (gap >= 4 && gap <= 100) {
+                    allGaps.push(gap);
+                }
+            }
+        });
+
+        if (allGaps.length < 3) {
+            alert('未能自动检测到格子边界，请手动调整');
+            return;
+        }
+
+        // 统计众数
+        var gapCounts = {};
+        allGaps.forEach(function (g) {
+            gapCounts[g] = (gapCounts[g] || 0) + 1;
+        });
+
+        var bestGap = allGaps[0];
+        var bestCount = 0;
+        Object.entries(gapCounts).forEach(function (entry) {
+            if (entry[1] > bestCount) {
+                bestCount = parseInt(entry[1]);
+                bestGap = parseInt(entry[0]);
+            }
+        });
+
+        // 图片中的格子像素大小 = bestGap
+        // 但预览中图片被缩放了，需要换算到预览坐标系
+        var cellPx = _ga.cellSizePx;
+        var totalW = S.gridW * cellPx;
+        var totalH = S.gridH * cellPx;
+        var baseScale = Math.min(totalW / iw, totalH / ih);
+        var finalScale = baseScale * (_ga.imgScale / 100);
+
+        // 在预览中，图片中的 bestGap 像素 = bestGap * finalScale 预览像素
+        // 我们需要 cellPx = bestGap * finalScale
+        var detectedCellPx = bestGap * finalScale;
+
+        // 限制范围
+        detectedCellPx = Math.max(3, Math.min(50, detectedCellPx));
+
+        _ga.cellSizePx = Math.round(detectedCellPx * 10) / 10;
+        $('gaCellSizeSlider').value = Math.round(_ga.cellSizePx * 10);
+        $('gaCellSizeVal').textContent = _ga.cellSizePx.toFixed(1) + ' px';
+        $('gaCellSizeInput').value = _ga.cellSizePx.toFixed(1);
+
+        renderGridAlignPreview();
+
+        alert('检测到图片中每格约 ' + bestGap + ' 像素\n已自动调整网格间距为 ' + _ga.cellSizePx.toFixed(1) + ' px\n\n如不准确，请手动微调');
+    }
+
+    // ===========================
+    //  自定义弹窗（替代 alert/confirm/prompt）
+    // ===========================
+    function showCustomAlert(message, title) {
+        return new Promise(function (resolve) {
+            var overlay = $('customDialogOverlay');
+            var dialog = $('customDialog');
+            var titleEl = $('customDialogTitle');
+            var bodyEl = $('customDialogBody');
+            var confirmBtn = $('customDialogConfirm');
+            var cancelBtn = $('customDialogCancel');
+
+            titleEl.textContent = title || '提示';
+            bodyEl.textContent = message;
+            cancelBtn.style.display = 'none';
+            confirmBtn.textContent = '好的';
+
+            overlay.classList.add('active');
+
+            function close() {
+                overlay.classList.remove('active');
+                confirmBtn.removeEventListener('click', onConfirm);
+                resolve();
+            }
+
+            function onConfirm() { close(); }
+            confirmBtn.addEventListener('click', onConfirm);
+
+            overlay.addEventListener('click', function handler(e) {
+                if (e.target === overlay) {
+                    overlay.removeEventListener('click', handler);
+                    close();
+                }
+            });
+        });
+    }
+
+    function showCustomConfirm(message, title) {
+        return new Promise(function (resolve) {
+            var overlay = $('customDialogOverlay');
+            var titleEl = $('customDialogTitle');
+            var bodyEl = $('customDialogBody');
+            var confirmBtn = $('customDialogConfirm');
+            var cancelBtn = $('customDialogCancel');
+
+            titleEl.textContent = title || '确认';
+            bodyEl.textContent = message;
+            cancelBtn.style.display = '';
+            confirmBtn.textContent = '确定';
+            cancelBtn.textContent = '取消';
+
+            overlay.classList.add('active');
+
+            function close(result) {
+                overlay.classList.remove('active');
+                confirmBtn.removeEventListener('click', onConfirm);
+                cancelBtn.removeEventListener('click', onCancel);
+                resolve(result);
+            }
+
+            function onConfirm() { close(true); }
+            function onCancel() { close(false); }
+
+            confirmBtn.addEventListener('click', onConfirm);
+            cancelBtn.addEventListener('click', onCancel);
+        });
+    }
+
+    // ===========================
+    //  Toast 轻量提示
+    // ===========================
+    function showToast(message, type, duration) {
+        type = type || 'info'; // 'success' | 'error' | 'info'
+        duration = duration || 2500;
+
+        var container = $('toastContainer');
+        if (!container) return;
+
+        var toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(function () {
+            toast.classList.add('fade-out');
+            setTimeout(function () {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 300);
+        }, duration);
+    }
+
+    // ===========================
+    //  自定义弹窗系统
+    // ===========================
+    function _cdReset() {
+        var ov = $('cdOverlay');
+        var icon = $('cdIcon');
+        var title = $('cdTitle');
+        var body = $('cdBody');
+        var inputWrap = $('cdInputWrap');
+        var input = $('cdInput');
+        var cancelBtn = $('cdCancel');
+        var okBtn = $('cdOk');
+
+        icon.className = 'cd-icon cd-icon-info';
+        icon.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+        title.textContent = '提示';
+        body.textContent = '';
+        inputWrap.classList.remove('active');
+        input.value = '';
+        input.placeholder = '';
+        input.type = 'text';
+        cancelBtn.style.display = '';
+        cancelBtn.textContent = '取消';
+        okBtn.textContent = '确定';
+        okBtn.className = 'btn btn-apply cd-btn-ok';
+
+        // 移除旧事件
+        var newOk = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOk, okBtn);
+        var newCancel = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+        return {
+            ov: ov,
+            icon: $('cdIcon'),
+            title: title,
+            body: body,
+            inputWrap: inputWrap,
+            input: input,
+            cancel: $('cdCancel'),
+            ok: $('cdOk')
+        };
+    }
+
+    // alert 替代
+    function cdAlert(message, opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            var d = _cdReset();
+            d.title.textContent = opts.title || '提示';
+            d.body.textContent = message;
+            d.cancel.style.display = 'none';
+            d.ok.textContent = opts.okText || '好的';
+
+            if (opts.type === 'success') {
+                d.icon.className = 'cd-icon cd-icon-success';
+                d.icon.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            } else if (opts.type === 'error') {
+                d.icon.className = 'cd-icon cd-icon-danger';
+                d.icon.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+            } else if (opts.type === 'warn') {
+                d.icon.className = 'cd-icon cd-icon-warn';
+                d.icon.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2L2 20h20L12 2z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+            }
+
+            d.ov.classList.add('active');
+
+            d.ok.addEventListener('click', function () {
+                d.ov.classList.remove('active');
+                resolve();
+            });
+        });
+    }
+
+    // confirm 替代
+    function cdConfirm(message, opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            var d = _cdReset();
+            d.title.textContent = opts.title || '确认';
+            d.body.textContent = message;
+            d.ok.textContent = opts.okText || '确定';
+            d.cancel.textContent = opts.cancelText || '取消';
+
+            if (opts.danger) {
+                d.icon.className = 'cd-icon cd-icon-danger';
+                d.icon.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+                d.ok.classList.add('cd-btn-danger');
+            } else if (opts.type === 'warn') {
+                d.icon.className = 'cd-icon cd-icon-warn';
+                d.icon.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2L2 20h20L12 2z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+            }
+
+            d.ov.classList.add('active');
+
+            d.ok.addEventListener('click', function () {
+                d.ov.classList.remove('active');
+                resolve(true);
+            });
+
+            d.cancel.addEventListener('click', function () {
+                d.ov.classList.remove('active');
+                resolve(false);
+            });
+        });
+    }
+
+    // prompt 替代
+    function cdPrompt(message, opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            var d = _cdReset();
+            d.title.textContent = opts.title || '请输入';
+            d.body.textContent = message;
+            d.inputWrap.classList.add('active');
+            d.input.value = opts.defaultValue || '';
+            d.input.placeholder = opts.placeholder || '';
+            if (opts.inputType) d.input.type = opts.inputType;
+            d.ok.textContent = opts.okText || '确定';
+            d.cancel.textContent = opts.cancelText || '取消';
+
+            d.ov.classList.add('active');
+
+            // 自动聚焦输入框
+            setTimeout(function () { d.input.focus(); d.input.select(); }, 100);
+
+            // 回车确认
+            d.input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    d.ov.classList.remove('active');
+                    resolve(d.input.value);
+                }
+                if (e.key === 'Escape') {
+                    d.ov.classList.remove('active');
+                    resolve(null);
+                }
+            });
+
+            d.ok.addEventListener('click', function () {
+                d.ov.classList.remove('active');
+                resolve(d.input.value);
+            });
+
+            d.cancel.addEventListener('click', function () {
+                d.ov.classList.remove('active');
+                resolve(null);
+            });
+        });
     }
 
     // ===========================

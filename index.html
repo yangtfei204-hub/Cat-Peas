@@ -258,6 +258,16 @@
                         <button class="btn btn-preset" data-w="78" data-h="78">78×78</button>
                         <button class="btn btn-preset" data-w="104" data-h="104">104×104</button>
                     </div>
+                    <div style="display:flex;gap:4px;margin-top:8px;">
+                        <button class="btn btn-full" id="cropCanvasBtn" style="margin-top:0;">
+                            <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 1v14h14M1 5h14v14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            裁剪画板
+                        </button>
+                        <button class="btn btn-full" id="expandCanvasBtn" style="margin-top:0;">
+                            <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 2v16M2 10h16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><rect x="4" y="4" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1" fill="none" stroke-dasharray="2 2" opacity="0.4"/></svg>
+                            扩展画板
+                        </button>
+                    </div>
                 </section>
 
                 <!-- 缩放控制 -->
@@ -543,6 +553,14 @@
                             <span class="toggle-slider"></span>
                             <span>自动调整画布到检测尺寸</span>
                         </label>
+                        <button class="btn btn-full btn-accent" id="gridAlignBtn" style="display:none;margin-top:8px;">
+                            <svg viewBox="0 0 20 20" width="14" height="14">
+                                <rect x="2" y="2" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                                <path d="M2 7h16M2 12h16M7 2v16M12 2v16" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+                                <path d="M10 6v8M6 10h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                            </svg>
+                            网格对齐调整（对照图纸填色）
+                        </button>
                         <button class="btn btn-full btn-remove" id="removeImage">
                             <svg viewBox="0 0 20 20" width="14" height="14"><path d="M6 4V3a1 1 0 011-1h6a1 1 0 011 1v1M3 4h14M5 4v12a2 2 0 002 2h6a2 2 0 002-2V4M8 8v6M12 8v6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             移除参考图
@@ -596,6 +614,7 @@
                             <option value="default">默认分类</option>
                         </select>
                         <button class="btn btn-sm" id="addProjectCategory">新建</button>
+                        <button class="btn btn-sm" id="manageCategoryBtn" title="管理分类">管理</button>
                     </div>
                     <button class="btn btn-full btn-apply" id="saveToProject" style="margin-top:8px;">
                         <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 3h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 3v5h6V3M7 14h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -656,6 +675,11 @@
                     <svg viewBox="0 0 20 20" width="14" height="14"><path d="M14 5H6l4-3 4 3zM6 15h8l-4 3-4-3zM3 10h14" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <span>垂直镜像</span>
                 </button>
+                <button class="sel-btn" id="selConfirm" title="确认放置，完成移动" style="background:linear-gradient(135deg,var(--pink-lighter),var(--iris-lighter));border-color:var(--iris);">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>确认放置</span>
+                </button>
+                <span class="sel-divider"></span>
                 <button class="sel-btn sel-btn-cancel" id="selCancel" title="取消选区 (Esc)">
                     <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
                     <span>取消</span>
@@ -731,6 +755,8 @@
                     <span>色板</span>
                 </button>
             </div>
+            <!-- 工具切换提示 -->
+            <div class="tool-hint-bar" id="toolHintBar"></div>
         </div>
 
         <!-- ===== 右侧色板面板 ===== -->
@@ -1504,25 +1530,21 @@
             <div class="help-modal-body">
                 <!-- 导航标签 -->
                 <div class="help-tabs">
-                    <button class="help-tab active" data-tab="basic">
+                    <button class="help-tab active" data-tab="quick">
                         <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                        基础操作
+                        快速上手
                     </button>
                     <button class="help-tab" data-tab="tools">
                         <svg viewBox="0 0 16 16" width="12" height="12"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        绘图工具
-                    </button>
-                    <button class="help-tab" data-tab="advanced">
-                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 14l8 4 8-4M2 10l8 4 8-4M10 2l8 4-8 4-8-4z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        进阶功能
+                        工具详解
                     </button>
                     <button class="help-tab" data-tab="image">
                         <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="5" cy="5" r="1.5" fill="currentColor" opacity="0.4"/><path d="M1 11l3-3 2 2 3-3 6 6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
                         图片转换
                     </button>
-                    <button class="help-tab" data-tab="export">
-                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 10V2M5 6l3-4 3 4M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        导出与保存
+                    <button class="help-tab" data-tab="project">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 4a1.5 1.5 0 011.5-1.5h3L8 4h5.5A1.5 1.5 0 0115 5.5v7a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 011 12.5V4z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                        保存与导出
                     </button>
                     <button class="help-tab" data-tab="shortcut">
                         <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="4" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M4 7h2M7 7h2M10 7h2M3 10h10" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/></svg>
@@ -1530,257 +1552,191 @@
                     </button>
                 </div>
 
-                <!-- 基础操作 -->
-                <div class="help-content active" data-content="basic">
+                <!-- ========== 快速上手 ========== -->
+                <div class="help-content active" data-content="quick">
                     <div class="help-block">
                         <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="9" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-                            设置画布尺寸
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            三步完成第一幅拼豆图纸
                         </h4>
-                        <p>在左侧「功能控制」面板的「画布尺寸」区域，输入宽和高的格数（范围 4 ~ 200），然后点击「应用」按钮。你也可以点击下方的预设尺寸按钮快速切换到常用规格。</p>
-                        <p>常用尺寸参考：小板 52x52（入门首选）、中板 78x78、大板 104x104。注意：改变尺寸时会保留已有图案中在新尺寸范围内的部分内容。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="6" cy="6" r="2.5" fill="#e8b4b8"/><circle cx="11" cy="6" r="2.5" fill="#b8a9c9"/><circle cx="6" cy="11" r="2.5" fill="#a0c4dc"/><circle cx="11" cy="11" r="2.5" fill="#a0c9a0"/></svg>
-                            选择颜色
-                        </h4>
-                        <p>在右侧「色板与统计」面板中，点击色板上的颜色方块选中该颜色。色板按色系分组（黄橙、绿色、蓝青等），点击分组标题可以展开或折叠。当前选中的颜色会显示在面板最顶部的「当前画笔色」区域。</p>
-                        <p>你也可以按键盘数字键 1~9 快速选择前 9 个颜色，或者使用吸色工具从画布上直接取色。点击「当前画笔色」右侧的关闭按钮可以取消选色，进入纯观察模式。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            绘制与擦除
-                        </h4>
-                        <p>选中颜色后，使用画笔工具在画布上点击或拖动即可填充格子。使用橡皮工具可以擦除已填的颜色，恢复为空白。</p>
-                        <p>你可以调整画笔大小（1x1 到 5x5），也可以使用快捷键 [ 和 ] 缩小或放大画笔。所有操作都支持撤销（Ctrl+Z）和重做（Ctrl+Y），最多可回退 80 步。</p>
+                        <p><strong>① 选尺寸</strong> — 左侧面板顶部输入宽×高格数，点击「应用」。常用尺寸：小板 52×52、中板 78×78、大板 104×104。也可点击预设按钮一键切换。</p>
+                        <p><strong>② 选颜色</strong> — 右侧面板点击色板上的色块选中颜色，当前画笔色会显示在最顶部。按数字键 1~9 可快速选前 9 种颜色。</p>
+                        <p><strong>③ 画格子</strong> — 在画布上点击或拖动即可涂色。画错了用橡皮擦（E 键），或 Ctrl+Z 撤销。完成后在左侧底部「图纸导出」区域导出 PNG 图纸。</p>
                     </div>
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 8h4M8 6v4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
-                            缩放与平移
+                            画布导航
                         </h4>
-                        <p>鼠标滚轮可缩放画布；按住鼠标中键或切换到抓手工具（H键）后拖拽可平移视角；点击「适应」按钮让画布自动居中并适配屏幕大小；按 Home 键可快速回到画布中心位置。</p>
-                        <p>移动端支持双指捏合缩放和单指拖拽平移（使用抓手工具时）。右下角的小地图会在放大时显示，你可以点击或拖拽小地图快速跳转到画布的任意位置。</p>
+                        <p>· <strong>缩放</strong>：鼠标滚轮，或点击左侧的 +/- 按钮。移动端双指捏合。</p>
+                        <p>· <strong>平移</strong>：按住鼠标中键拖拽；或切换到抓手工具（H 键）后左键拖拽。移动端在抓手模式下单指拖拽。</p>
+                        <p>· <strong>回到中心</strong>：点击「适应」按钮，或按 Home 键。</p>
+                        <p>· <strong>小地图</strong>：画布放大后右下角自动显示缩略图，点击可快速跳转位置。</p>
                     </div>
                     <div class="help-block">
                         <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" opacity="0.3"/></svg>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 4C4 4 1 8 1 8s3 4 7 4 7-4 7-4-3-4-7-4z" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
                             显示选项
                         </h4>
-                        <p>在「显示选项」区域可以开关以下功能：网格线（方便定位格子）、坐标标尺（行列编号）、色号数字（每格显示色号缩写）、仿真豆子预览（模拟真实拼豆效果）、分板线（超过一块板时显示切割参考线）、中心参考线（显示十字中心线辅助对称设计）。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 14V2M2 8h12M8 2l-2 2M8 2l2 2M8 14l-2-2M8 14l2-2" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            坐标状态栏
-                        </h4>
-                        <p>画布下方的状态栏会实时显示鼠标所在的行列坐标和当前格子的颜色信息，方便你在大画布中精确定位。</p>
-                    </div>
-                </div>
-
-                <!-- 绘图工具 -->
-                <div class="help-content" data-content="tools">
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-                            画笔工具（B 键）
-                        </h4>
-                        <p>最基础的绘图工具。选中颜色后，在画布上点击或拖动填充格子。支持 1x1 到 5x5 的画笔大小，用 [ ] 键快速调整。拖动时会自动补全路径上的格子，不会出现断线。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M13 14H6l-3-3a0.7 0.7 0 010-1l7-7a0.7 0.7 0 011 0l3 3a0.7 0.7 0 010 1L9 12" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-                            橡皮工具（E 键）
-                        </h4>
-                        <p>擦除已填色的格子，恢复为空白。同样支持画笔大小设置，可以快速擦除大面积区域。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 14l-3-3 6-6 3 3L5 14zM12 5l-3-3 1.5-1.5 3 3L12 5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-                            吸色工具（I 键）
-                        </h4>
-                        <p>点击画布上已填色的格子，自动将该颜色设为当前画笔色，方便快速切换到画布上已使用的颜色。吸色后会自动切回画笔工具。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 14l-3-3 6-6 3 3L5 14z" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="12" cy="4" r="3" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-                            吸底工具
-                        </h4>
-                        <p>需先上传参考底图。点击画布上某个位置，自动采样该位置底图的颜色，并在色板中匹配最接近的颜色设为画笔色。适合对照底图逐格上色，比手动对比选色更准确高效。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 12l3-8 6 6-3 2z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M14 13c1 0 1.5-.7 1.5-1.5S14 9 14 9s-1.5 1.5-1.5 2.5S13 13 14 13z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="0.8"/></svg>
-                            油漆桶 / 填充工具（F 键）
-                        </h4>
-                        <p>点击画布上某个格子，将与该格子颜色相同且相邻连通的所有格子一次性填充为当前选中色。适合快速填充封闭区域内的大面积同色区域。只影响连通的同色区域，不会扩散到不同颜色的格子。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v12M2 8c0-2 3-4 6-4s6 2 6 4-3 4-6 4-6-2-6-4z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-                            全局换色工具（G 键）
-                        </h4>
-                        <p>点击画布上某个颜色的格子，会将整个画布上所有该颜色的格子全部替换为当前选中色。适合批量更换某个颜色方案。鼠标悬停时会预览高亮将被替换的所有格子，确认后再点击执行。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.3" fill="none" stroke-dasharray="2.5 1.5"/></svg>
-                            框选工具（M 键）
-                        </h4>
-                        <p>在画布上拖拽创建矩形选区。选中后可以进行以下操作：</p>
-                        <p>-- 移动：在选区内拖拽可移动选区内容，也可用方向键逐格微调位置</p>
-                        <p>-- 复制粘贴：Ctrl+C 复制选区，Ctrl+V 粘贴到当前选区位置</p>
-                        <p>-- 删除：按 Delete 键清空选区内容</p>
-                        <p>-- 镜像翻转：选区浮动工具栏中提供水平镜像和垂直镜像按钮</p>
-                        <p>-- 取消选区：按 Esc 键或点击工具栏的取消按钮</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M13 8V5a1 1 0 00-2 0V8M11 8V3.5a1 1 0 00-2 0V8M9 8V4.5a1 1 0 00-2 0v5M7 9V7a1 1 0 00-2 0v3.5a5 5 0 0010 0V7a1 1 0 00-2 0" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
-                            抓手工具（H 键）
-                        </h4>
-                        <p>选中抓手后，拖拽画布平移视角，方便查看画布不同区域。也可以按住鼠标中键在任何工具下临时使用抓手功能。移动端在使用抓手工具时，单指拖拽即可平移。</p>
-                    </div>
-                </div>
-
-                <!-- 进阶功能 -->
-                <div class="help-content" data-content="advanced">
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.3" fill="currentColor" opacity="0.15"/></svg>
-                            画笔大小
-                        </h4>
-                        <p>画笔和橡皮工具支持 1x1、2x2、3x3、5x5 四种尺寸。点击绘图工具区域下方的画笔大小按钮切换，或使用快捷键 [ 缩小、] 放大。大画笔适合快速填充大面积区域。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/></svg>
-                            对称绘制
-                        </h4>
-                        <p>在「图案变换」区域可以开启对称绘制模式，支持三种模式：</p>
-                        <p>-- 水平对称：以画布垂直中心线为轴，左右对称绘制</p>
-                        <p>-- 垂直对称：以画布水平中心线为轴，上下对称绘制</p>
-                        <p>-- 四向对称：同时在上下左右四个方向对称绘制</p>
-                        <p>拼豆图案中大量使用对称设计，配合中心参考线使用效果更佳。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 12V4l-3 4 3 4zm6-8v8l3-4-3-4zM8 2v12" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            图案变换
-                        </h4>
-                        <p>提供水平镜像、垂直镜像、旋转 90 度三种全局变换操作，一键调整整个画布的图案方向。还有整体偏移功能，可以把画布上的所有内容整体向上/下/左/右移动一格。</p>
+                        <p>在左侧「显示选项」区域可以开关：网格线、坐标标尺、色号数字、仿真豆子预览、分板线（超板时显示切割线）、中心参考线（辅助对称设计）。</p>
                     </div>
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 12l6 3 6-3M2 9l6 3 6-3M8 2l6 3-6 3-6-3z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            图层功能
+                            图层
                         </h4>
-                        <p>画布支持两个图层：轮廓层（底层）和填色层（上层）。你可以先在轮廓层画好线条和外形，再切换到填色层填充颜色，两层内容会自动叠加显示。</p>
-                        <p>每个图层可以独立控制显示和隐藏，方便单独检查某一层的内容。「合并图层」会将两层的内容合并到填色层中。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                            自定义颜色
-                        </h4>
-                        <p>在右侧「自定义颜色」区域，可以添加不在默认色板中的颜色。输入编号（如 U01）、名称、选择颜色，点击添加。支持创建多个分组来分类管理自定义颜色。</p>
-                        <p>可以关闭默认 Mard 色板，只使用自定义颜色创建完全个性化的色板。也支持导出/导入自定义色板文件。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="9" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
-                            辅助拼豆模式
-                        </h4>
-                        <p>点击顶部导航栏的方块图标进入辅助拼豆模式。该模式下画布会变为只读，你可以选中某个颜色使其高亮显示，非选中色会被半透明遮罩覆盖，帮助你在实际拼豆时快速定位需要放置的区域。</p>
-                        <p>辅助模式还提供计时功能和连续色块计数（纵向/横向），以数字标注每段连续同色区域的长度，大大提升实际操作效率。</p>
+                        <p>画布有两层：轮廓层（底）和填色层（上）。可以先在轮廓层画线稿，再切到填色层涂颜色。每层可独立显示/隐藏。「合并图层」会将内容合并到填色层。</p>
                     </div>
                 </div>
 
-                <!-- 图片转换 -->
+                <!-- ========== 工具详解 ========== -->
+                <div class="help-content" data-content="tools">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            画笔 (B) · 橡皮 (E)
+                        </h4>
+                        <p>画笔涂色、橡皮擦除。支持 1×1 到 5×5 四种笔刷大小，用 [ ] 键调整。拖动绘制时会自动补全路径，不会断线。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 14l-3-3 6-6 3 3L5 14zM12 5l-3-3 1.5-1.5 3 3L12 5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            吸色 (I) · 吸底
+                        </h4>
+                        <p><strong>吸色</strong>：点击画布上已填色的格子，把该颜色设为画笔色，然后自动切回画笔。</p>
+                        <p><strong>吸底</strong>：需先上传参考底图。点击画布某位置，自动采样底图颜色并匹配最接近的色板色。比手动对比选色更快更准。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 12l3-8 6 6-3 2z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M14 13c1 0 1.5-.7 1.5-1.5S14 9 14 9s-1.5 1.5-1.5 2.5S13 13 14 13z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="0.8"/></svg>
+                            填充 (F) · 换色 (G)
+                        </h4>
+                        <p><strong>填充</strong>：点击某格子，将与它相同颜色且相邻连通的区域一次性填满当前选中色。适合快速填充封闭区域。</p>
+                        <p><strong>换色</strong>：点击某颜色的格子，将整个画布上所有该颜色全部替换为当前选中色。鼠标悬停时可预览哪些格子会被替换。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.3" fill="none" stroke-dasharray="2.5 1.5"/></svg>
+                            框选 (M)
+                        </h4>
+                        <p>拖拽创建矩形选区后可进行：</p>
+                        <p>· 在选区内拖拽移动内容，或用方向键逐格微调</p>
+                        <p>· Ctrl+C 复制 → Ctrl+V 粘贴 · Delete 删除选区内容</p>
+                        <p>· 工具栏提供水平镜像、垂直镜像按钮</p>
+                        <p>· 移动完毕后点击「确认放置」或 Esc 取消</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/></svg>
+                            对称绘制 · 图案变换
+                        </h4>
+                        <p><strong>对称模式</strong>（在「图案变换」区域）：水平对称、垂直对称、四向对称。配合中心参考线使用效果更佳。</p>
+                        <p><strong>变换操作</strong>：水平镜像、垂直镜像、旋转 90°，一键变换整个画布。还有上下左右整体偏移功能。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 1v14h14M1 5h14v14" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            裁剪与扩展画板
+                        </h4>
+                        <p><strong>裁剪</strong>：自动检测内容边界，去除空白边缘。支持自动裁剪、自定义范围、带边距裁剪三种模式。</p>
+                        <p><strong>扩展</strong>：向指定方向扩展画板格数。支持单方向、四周均匀、自定义四个方向分别设置。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                            自定义颜色
+                        </h4>
+                        <p>在右侧「自定义颜色」区域添加不在默认色板中的颜色。输入编号、名称、选择色值即可添加。支持创建多个分组分类管理。可以关闭默认色板只使用自定义颜色，也可以导出/导入色板文件。</p>
+                    </div>
+                </div>
+
+                <!-- ========== 图片转换 ========== -->
                 <div class="help-content" data-content="image">
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v8M5 6l3-4 3 4M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             上传参考底图
                         </h4>
-                        <p>点击「上传参考底图」选择一张图片，图片会显示在画布底层作为参考。可以拖动滑块调整底图透明度和色块透明度——降低色块透明度可以透视底图，方便比对颜色差异。</p>
+                        <p>点击「上传参考底图」选择图片，先进入裁剪弹窗可框选需要的区域，也可跳过使用整图。勾选「自动扩展画板」可让画布自动适应图片比例。</p>
+                        <p>上传后可调整底图透明度和色块透明度——降低色块透明度可透视底图，方便手动比对上色。</p>
                     </div>
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><path d="M9 1L2 10h4l-1 5 7-9H8l1-5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             一键转换为拼豆图纸
                         </h4>
-                        <p>上传底图后点击「一键转换」，系统会打开预览弹窗，你可以在弹窗中调整以下参数：</p>
-                        <p>-- 最大用色数：限制转换结果使用的颜色种类数量（建议 16~24 色），减少用色可以降低购买成本和制作复杂度</p>
-                        <p>-- 抖动算法：选择「无抖动」得到锐利清晰的色块效果，选择「Floyd-Steinberg」可以通过颜色混合模拟渐变效果，适合照片或包含渐变的图像</p>
-                        <p>-- 屏蔽背景色：自动检测图片四角的颜色作为背景色，转换时跳过背景区域</p>
-                        <p>调整参数后点击「刷新预览」即可实时查看效果，满意后点击「应用到画布」。</p>
+                        <p>点击后打开预览弹窗，可调整参数实时查看效果：</p>
+                        <p>· <strong>最大用色数</strong>：限制颜色种类（建议 16~24），减少用色可降低成本和复杂度</p>
+                        <p>· <strong>抖动算法</strong>：「无抖动」锐利清晰；「Floyd-Steinberg」通过颜色混合模拟渐变，适合照片</p>
+                        <p>· <strong>屏蔽背景色</strong>：自动检测四角颜色作为背景，转换时跳过</p>
+                        <p>满意后点击「应用到画布」。转换后建议手动微调关键部位（眼睛、嘴巴等）。</p>
                     </div>
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="8" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="1" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="8" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
-                            识别色块图
+                            识别色块图 · 网格对齐
                         </h4>
-                        <p>如果上传的图片本身就是色块图纸（如其他软件生成的拼豆图纸截图），使用「识别色块图」功能可以自动检测格子大小并匹配颜色。该功能会保持原图的格数不变，只进行颜色匹配。</p>
-                        <p>可勾选「自动调整画布到检测尺寸」让画布大小自动匹配图片的格子数。</p>
+                        <p><strong>识别色块图</strong>：如果上传的图片本身就是格子图纸（其他软件生成的截图），此功能可自动检测格子大小并匹配颜色，保持原图格数不变。</p>
+                        <p><strong>网格对齐</strong>：上传底图后可打开此功能，拖拽调整图片和网格的相对位置，让编辑器网格线与底图格子线精确对齐，方便对照填色。</p>
                     </div>
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 2a6 6 0 11-6 6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M4 4l-2 4h4z" fill="currentColor" opacity="0.3"/></svg>
                             转换效果优化建议
                         </h4>
-                        <p>-- 简单卡通图案、像素画、扁平插画的转换效果最佳</p>
-                        <p>-- 照片、渐变图像建议使用 Floyd-Steinberg 抖动算法，并适当增加用色数</p>
-                        <p>-- 纯色背景的图片开启「屏蔽背景色」可以获得更干净的结果</p>
-                        <p>-- 转换后建议手动微调边缘和细节，特别是眼睛、嘴巴等关键部位</p>
-                        <p>-- 大尺寸画布（78x78 以上）可以保留更多细节，但制作难度和用豆量也更大</p>
+                        <p>· 简单卡通、像素画、扁平插画效果最佳</p>
+                        <p>· 照片和渐变图像建议用 Floyd-Steinberg 抖动，并适当增加用色数</p>
+                        <p>· 纯色背景图片开启「屏蔽背景色」效果更干净</p>
+                        <p>· 大画布（78×78 以上）保留更多细节，但用豆量也更大</p>
                     </div>
                 </div>
 
-                <!-- 导出与保存 -->
-                <div class="help-content" data-content="export">
+                <!-- ========== 保存与导出 ========== -->
+                <div class="help-content" data-content="project">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 4a1.5 1.5 0 011.5-1.5h3L8 4h5.5A1.5 1.5 0 0115 5.5v7a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 011 12.5V4z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            项目库
+                        </h4>
+                        <p>输入项目名称后点击「保存到项目库」，数据存储在浏览器本地。支持分类管理、覆盖保存、搜索筛选和排序。</p>
+                        <p>点击顶部的文件夹图标打开项目库页面，可以查看所有已保存的项目、上传自定义预览图、重命名、删除和批量导出。</p>
+                        <p>系统每 30 秒自动保存画布数据，下次打开时可恢复未保存的内容。</p>
+                    </div>
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 11l2-3 1.5 1.5 2.5-3 3 4.5H2z" fill="currentColor" opacity="0.2"/></svg>
-                            导出色块图纸 PNG
+                            导出图纸
                         </h4>
-                        <p>导出带有色号标注、坐标标尺和完整用料清单的标准图纸。图纸中包含隐形数据水印，可以通过「导入图纸图片」功能读取嵌入数据还原编辑。导出的 PNG 文件使用 2 倍分辨率，打印清晰。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="1.5" fill="currentColor" opacity="0.3"/></svg>
-                            导出仿真豆子 PNG
-                        </h4>
-                        <p>以模拟拼豆实物效果的方式导出图纸，每个格子显示为带有光泽感的圆形豆子，可以直观预览成品效果。适合分享到社交媒体或作为完成参考。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
-                            导出分板切割图纸
-                        </h4>
-                        <p>当画布尺寸大于一块板时，可以将图纸按指定板尺寸（26格半板、52格标准板等）分割为多张子图纸分别导出。每张子图纸独立标注板号、行列范围和该板的用料清单，方便逐板制作。</p>
-                    </div>
-                    <div class="help-block">
-                        <h4>
-                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 4a2 2 0 012-2h3l1.5 1.5H14a1 1 0 011 1V12a2 2 0 01-2 2H4a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-                            项目库
-                        </h4>
-                        <p>点击「保存到项目库」可将当前画布保存到浏览器本地项目库中。每次保存需要输入项目名称，同一项目可以反复覆盖保存。项目库支持分类管理、搜索筛选、排序和批量操作。</p>
-                        <p>可通过「导出项目 JSON」将项目备份为 JSON 文件，在不同设备间传输或长期保存。也可「导入项目 JSON」恢复数据。系统每 30 秒会自动保存画布数据，下次打开时会提示恢复。</p>
+                        <p><strong>色块图纸 PNG</strong>：带色号标注、坐标标尺和用料清单的标准图纸，图中嵌入了隐形数据可用于还原编辑。</p>
+                        <p><strong>仿真豆子 PNG</strong>：模拟拼豆实物效果，每格显示为圆形豆子，适合预览成品和分享。</p>
+                        <p><strong>分板切割图纸</strong>：画布大于一块板时，按指定板尺寸（26/29/52格）分割为多张子图纸分别导出，每张独立标注板号和用料。</p>
                     </div>
                     <div class="help-block">
                         <h4>
                             <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v8M5 6l3-4 3 4M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            导入图纸图片
+                            导入与备份
                         </h4>
-                        <p>上传由 Cat Peas 导出的原始 PNG 图纸，系统会自动从图片的隐形像素数据中提取画布信息并还原。</p>
-                        <p>重要提示：图片必须是原始导出的 PNG 文件，未经任何压缩或格式转换。以下操作会破坏嵌入数据导致无法还原：微信/QQ 发送图片（会压缩）、截图、另存为 JPG、用图片编辑软件打开后重新保存等。建议通过网盘、邮件附件等方式传输原始 PNG 文件。</p>
+                        <p><strong>导入图纸图片</strong>：上传由 Cat Peas 导出的原始 PNG 图纸，自动从隐形像素数据中还原画布。注意：图片必须是未经压缩的原始文件，微信/QQ 传输、截图、转 JPG 都会破坏数据。</p>
+                        <p><strong>导出/导入 JSON</strong>：项目数据的完整备份，可在不同设备间传输。「导出全部」可一次性备份整个项目库。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="9" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                            辅助拼豆模式
+                        </h4>
+                        <p>点击顶部方块图标进入。画布变为只读，选中某颜色后该颜色高亮显示，其余颜色被半透明遮罩覆盖，帮助你在实际拼豆时快速定位。</p>
+                        <p>提供计时功能和连续色块计数（纵向/横向），每段连续同色区域标注数字，大幅提升拼豆效率。可缩小为悬浮小窗拖拽到任意位置。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="5" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="11" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            主题与自定义
+                        </h4>
+                        <p>点击顶部太阳图标切换预设主题（雾霾粉紫、海洋蓝、森林绿、落日橘、樱花和风、暗夜模式）。点击三圆图标可自定义配色和编写自定义 CSS。所有设置自动保存在浏览器中。</p>
                     </div>
                 </div>
 
-                <!-- 快捷键 -->
+                <!-- ========== 快捷键 ========== -->
                 <div class="help-content" data-content="shortcut">
                     <div class="help-shortcut-list">
                         <div class="help-shortcut-item">
@@ -1797,7 +1753,7 @@
                         </div>
                         <div class="help-shortcut-item">
                             <span class="help-key">F</span>
-                            <span class="help-key-desc">油漆桶 / 填充工具（连通区域填充）</span>
+                            <span class="help-key-desc">油漆桶 / 填充工具</span>
                         </div>
                         <div class="help-shortcut-item">
                             <span class="help-key">G</span>
@@ -1812,12 +1768,8 @@
                             <span class="help-key-desc">框选工具</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">[</span>
-                            <span class="help-key-desc">缩小画笔大小</span>
-                        </div>
-                        <div class="help-shortcut-item">
-                            <span class="help-key">]</span>
-                            <span class="help-key-desc">放大画笔大小</span>
+                            <span class="help-key">[</span> <span class="help-key">]</span>
+                            <span class="help-key-desc">缩小 / 放大画笔</span>
                         </div>
                         <div class="help-shortcut-item">
                             <span class="help-key">1</span> ~ <span class="help-key">9</span>
@@ -1828,23 +1780,23 @@
                             <span class="help-key-desc">画布居中适应屏幕</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">Ctrl</span> + <span class="help-key">Z</span>
+                            <span class="help-key">Ctrl</span>+<span class="help-key">Z</span>
                             <span class="help-key-desc">撤销（最多 80 步）</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">Ctrl</span> + <span class="help-key">Y</span>
+                            <span class="help-key">Ctrl</span>+<span class="help-key">Y</span>
                             <span class="help-key-desc">重做</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">Ctrl</span> + <span class="help-key">S</span>
+                            <span class="help-key">Ctrl</span>+<span class="help-key">S</span>
                             <span class="help-key-desc">保存到项目库</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">Ctrl</span> + <span class="help-key">C</span>
-                            <span class="help-key-desc">复制选区（需先框选）</span>
+                            <span class="help-key">Ctrl</span>+<span class="help-key">C</span>
+                            <span class="help-key-desc">复制选区</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">Ctrl</span> + <span class="help-key">V</span>
+                            <span class="help-key">Ctrl</span>+<span class="help-key">V</span>
                             <span class="help-key-desc">粘贴选区</span>
                         </div>
                         <div class="help-shortcut-item">
@@ -1856,15 +1808,15 @@
                             <span class="help-key-desc">取消选区</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">方向键</span>
+                            <span class="help-key">↑↓←→</span>
                             <span class="help-key-desc">逐格移动选区内容</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">鼠标滚轮</span>
+                            <span class="help-key">滚轮</span>
                             <span class="help-key-desc">缩放画布</span>
                         </div>
                         <div class="help-shortcut-item">
-                            <span class="help-key">鼠标中键拖拽</span>
+                            <span class="help-key">中键拖拽</span>
                             <span class="help-key-desc">平移画布（任意工具下）</span>
                         </div>
                         <div class="help-shortcut-item">
@@ -1884,6 +1836,138 @@
             </div>
         </div>
     </div>
+
+    <!-- 网格对齐弹窗 -->
+    <div class="grid-align-modal" id="gridAlignModal">
+        <div class="grid-align-inner">
+            <div class="grid-align-header">
+                <svg viewBox="0 0 20 20" width="16" height="16">
+                    <rect x="2" y="2" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                    <path d="M2 7h16M2 12h16M7 2v16M12 2v16" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+                </svg>
+                <span>网格对齐调整</span>
+                <button class="grid-align-close" id="gridAlignClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="grid-align-body">
+                <div class="grid-align-info">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M8 5v3M8 10h.01" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                    拖拽调整图片或网格位置，使编辑器网格线与图纸上的格子线对齐。对齐后点击确认，即可在编辑器中对照底图逐格填色。
+                </div>
+                <div class="grid-align-controls">
+                    <div class="grid-align-mode-row">
+                        <label class="grid-align-mode-label">拖拽模式：</label>
+                        <div class="grid-align-mode-btns">
+                            <button class="btn btn-sm ga-mode-btn active" id="gaModeImg" data-mode="image">
+                                <svg viewBox="0 0 16 16" width="12" height="12"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 11l3-3 2 2 3-3 4 5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/></svg>
+                                移动图片
+                            </button>
+                            <button class="btn btn-sm ga-mode-btn" id="gaModeGrid" data-mode="grid">
+                                <svg viewBox="0 0 16 16" width="12" height="12"><path d="M1 5h14M1 10h14M5 1v14M10 1v14" stroke="currentColor" stroke-width="1" opacity="0.5"/></svg>
+                                移动网格
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid-align-slider-row">
+                        <label>网格格子间距：<strong id="gaCellSizeVal">16.0 px</strong></label>
+                        <input type="range" id="gaCellSizeSlider" min="30" max="500" value="160" step="1" class="slider">
+                    </div>
+                    <div class="grid-align-slider-row">
+                        <label>精确格子间距：</label>
+                        <input type="number" id="gaCellSizeInput" value="16.0" min="3" max="50" step="0.1" class="custom-input" style="width:70px;text-align:center;">
+                        <span style="font-size:10px;color:var(--text-muted);">px（支持小数）</span>
+                        <button class="btn btn-sm" id="gaAutoDetect">自动检测</button>
+                    </div>
+                    <div class="grid-align-slider-row">
+                        <label>图片缩放：<strong id="gaScaleVal">100%</strong></label>
+                        <input type="range" id="gaScaleSlider" min="20" max="500" value="100" class="slider">
+                    </div>
+                    <div class="grid-align-slider-row">
+                        <label>网格线透明度：<strong id="gaGridOpacityVal">60%</strong></label>
+                        <input type="range" id="gaGridOpacitySlider" min="10" max="100" value="60" class="slider">
+                    </div>
+                    <div class="grid-align-slider-row">
+                        <label>网格线颜色：</label>
+                        <div class="ga-grid-color-btns">
+                            <button class="btn btn-sm ga-color-btn active" data-color="red" style="color:#e54b4f;">红色</button>
+                            <button class="btn btn-sm ga-color-btn" data-color="blue" style="color:#3677d2;">蓝色</button>
+                            <button class="btn btn-sm ga-color-btn" data-color="green" style="color:#35e352;">绿色</button>
+                            <button class="btn btn-sm ga-color-btn" data-color="white" style="color:#888;">白色</button>
+                        </div>
+                    </div>
+                    <div class="grid-align-offset-row">
+                        <div class="ga-offset-group">
+                            <label>图片偏移微调：</label>
+                            <div class="ga-offset-btns">
+                                <button class="btn btn-sm" id="gaImgUp" title="图片上移1px">↑</button>
+                                <button class="btn btn-sm" id="gaImgDown" title="图片下移1px">↓</button>
+                                <button class="btn btn-sm" id="gaImgLeft" title="图片左移1px">←</button>
+                                <button class="btn btn-sm" id="gaImgRight" title="图片右移1px">→</button>
+                            </div>
+                        </div>
+                        <div class="ga-offset-group">
+                            <label>网格偏移微调：</label>
+                            <div class="ga-offset-btns">
+                                <button class="btn btn-sm" id="gaGridUp" title="网格上移1px">↑</button>
+                                <button class="btn btn-sm" id="gaGridDown" title="网格下移1px">↓</button>
+                                <button class="btn btn-sm" id="gaGridLeft" title="网格左移1px">←</button>
+                                <button class="btn btn-sm" id="gaGridRight" title="网格右移1px">→</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid-align-offset-row">
+                        <span class="ga-offset-info" id="gaOffsetInfo">图片偏移: (0, 0) | 网格偏移: (0, 0)</span>
+                        <button class="btn btn-sm" id="gaResetOffset">重置全部偏移</button>
+                    </div>
+                </div>
+                <div class="grid-align-preview-wrap" id="gaPreviewWrap">
+                    <canvas id="gaPreviewCanvas"></canvas>
+                </div>
+                <div class="grid-align-zoom-bar">
+                    <button class="btn btn-sm" id="gaZoomOut">−</button>
+                    <span id="gaZoomVal">100%</span>
+                    <button class="btn btn-sm" id="gaZoomIn">+</button>
+                    <button class="btn btn-sm" id="gaZoomFit">适应</button>
+                    <span class="ga-hint">滚轮缩放 · 右键/中键拖拽平移</span>
+                </div>
+            </div>
+            <div class="grid-align-footer">
+                <button class="btn" id="gaCancel">取消</button>
+                <button class="btn btn-apply" id="gaApply">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    确认对齐，开始填色
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义弹窗系统（替代 alert/confirm/prompt） -->
+    <div class="cd-overlay" id="cdOverlay">
+        <div class="cd-box" id="cdBox">
+            <div class="cd-header" id="cdHeader">
+                <div class="cd-icon cd-icon-info" id="cdIcon">
+                    <svg viewBox="0 0 24 24" width="22" height="22">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <span class="cd-title" id="cdTitle">提示</span>
+            </div>
+            <div class="cd-body" id="cdBody">消息内容</div>
+            <div class="cd-input-wrap" id="cdInputWrap">
+                <input type="text" class="cd-input" id="cdInput" placeholder="">
+            </div>
+            <div class="cd-footer" id="cdFooter">
+                <button class="btn cd-btn-cancel" id="cdCancel">取消</button>
+                <button class="btn btn-apply cd-btn-ok" id="cdOk">确定</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Toast 提示 -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <script src="palette.js"></script>
     <script src="app.js"></script>
