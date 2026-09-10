@@ -566,6 +566,34 @@
                             </svg>
                             网格对齐调整（对照图纸填色）
                         </button>
+                        <div id="bgMoveControls" style="display:none;margin-top:8px;">
+                            <label class="brush-size-label">
+                                <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2v12M2 8h12M8 2l-2 2M8 2l2 2M8 14l-2-2M8 14l2-2M2 8l2-2M2 8l2 2M14 8l-2-2M14 8l-2 2" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                底图位置微调
+                            </label>
+                            <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                                <div class="shift-btns" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;width:100px;">
+                                    <span></span>
+                                    <button class="btn btn-sm" id="bgMoveUp" title="上移" style="padding:4px;">↑</button>
+                                    <span></span>
+                                    <button class="btn btn-sm" id="bgMoveLeft" title="左移" style="padding:4px;">←</button>
+                                    <button class="btn btn-sm" id="bgMoveReset" title="重置" style="padding:4px;font-size:8px;">●</button>
+                                    <button class="btn btn-sm" id="bgMoveRight" title="右移" style="padding:4px;">→</button>
+                                    <span></span>
+                                    <button class="btn btn-sm" id="bgMoveDown" title="下移" style="padding:4px;">↓</button>
+                                    <span></span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:2px;">
+                                    <label style="font-size:10px;color:var(--text-muted);">步长：</label>
+                                    <select id="bgMoveStep" class="custom-input" style="padding:3px 4px;font-size:10px;width:60px;">
+                                        <option value="1">1px</option>
+                                        <option value="5" selected>5px</option>
+                                        <option value="10">10px</option>
+                                        <option value="20">20px</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                         <button class="btn btn-full btn-remove" id="removeImage">
                             <svg viewBox="0 0 20 20" width="14" height="14"><path d="M6 4V3a1 1 0 011-1h6a1 1 0 011 1v1M3 4h14M5 4v12a2 2 0 002 2h6a2 2 0 002-2V4M8 8v6M12 8v6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             移除参考图
@@ -1875,7 +1903,7 @@
         </div>
     </div>
 
-    <!-- 网格对齐弹窗 -->
+    <!-- 网格对齐弹窗（新版两点标定） -->
     <div class="grid-align-modal" id="gridAlignModal">
         <div class="grid-align-inner">
             <div class="grid-align-header">
@@ -1889,94 +1917,114 @@
                 </button>
             </div>
             <div class="grid-align-body">
-                <div class="grid-align-info">
-                    <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M8 5v3M8 10h.01" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
-                    拖拽调整图片或网格位置，使编辑器网格线与图纸上的格子线对齐。对齐后点击确认，即可在编辑器中对照底图逐格填色。
+                <!-- 步骤提示 -->
+                <div class="ga-step-info" id="gaStepInfo">
+                    <div class="ga-step-badge" id="gaStepBadge">步骤 1/3</div>
+                    <div class="ga-step-text" id="gaStepText">请在图片上点击【左上角第一个格子的角点】</div>
                 </div>
-                <div class="grid-align-controls">
-                    <div class="grid-align-mode-row">
-                        <label class="grid-align-mode-label">拖拽模式：</label>
-                        <div class="grid-align-mode-btns">
-                            <button class="btn btn-sm ga-mode-btn active" id="gaModeImg" data-mode="image">
-                                <svg viewBox="0 0 16 16" width="12" height="12"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 11l3-3 2 2 3-3 4 5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/></svg>
-                                移动图片
-                            </button>
-                            <button class="btn btn-sm ga-mode-btn" id="gaModeGrid" data-mode="grid">
-                                <svg viewBox="0 0 16 16" width="12" height="12"><path d="M1 5h14M1 10h14M5 1v14M10 1v14" stroke="currentColor" stroke-width="1" opacity="0.5"/></svg>
-                                移动网格
-                            </button>
+
+                <!-- 模式切换：两点标定 / 手动调整 -->
+                <div class="ga-mode-tabs">
+                    <button class="ga-tab active" id="gaTabAuto" data-tab="auto">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="4" cy="4" r="2" fill="currentColor"/><circle cx="12" cy="4" r="2" fill="currentColor"/><path d="M4 4h8" stroke="currentColor" stroke-width="1" stroke-dasharray="2 1"/></svg>
+                        两点标定（推荐）
+                    </button>
+                    <button class="ga-tab" id="gaTabManual" data-tab="manual">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 8h12M8 2v12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                        手动调整
+                    </button>
+                </div>
+
+                <!-- 两点标定模式 -->
+                <div class="ga-auto-panel" id="gaAutoPanel">
+                    <div class="ga-points-display" id="gaPointsDisplay">
+                        <div class="ga-point-item" id="gaPoint1Info">
+                            <span class="ga-point-dot" style="background:#e54b4f;">1</span>
+                            <span class="ga-point-label">未标记</span>
+                            <button class="btn btn-sm ga-point-clear" id="gaClearPoint1" style="display:none;">清除</button>
+                        </div>
+                        <div class="ga-point-item" id="gaPoint2Info">
+                            <span class="ga-point-dot" style="background:#3677d2;">2</span>
+                            <span class="ga-point-label">未标记</span>
+                            <button class="btn btn-sm ga-point-clear" id="gaClearPoint2" style="display:none;">清除</button>
                         </div>
                     </div>
-                    <div class="grid-align-slider-row">
-                        <label>网格格子间距：<strong id="gaCellSizeVal">16.0 px</strong></label>
-                        <input type="range" id="gaCellSizeSlider" min="30" max="500" value="160" step="1" class="slider">
-                        <div class="ga-nudge-btns">
-                            <button class="btn btn-sm ga-nudge-btn" id="gaCellDec1" title="-1.0px">−1</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaCellDec01" title="-0.1px">−.1</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaCellInc01" title="+0.1px">+.1</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaCellInc1" title="+1.0px">+1</button>
-                        </div>
+                    <div class="ga-grid-count-row" id="gaGridCountRow" style="display:none;">
+                        <label>两点之间横跨多少格？</label>
+                        <input type="number" id="gaGridCount" value="52" min="2" max="200" class="custom-input" style="width:60px;text-align:center;">
+                        <button class="btn btn-apply btn-sm" id="gaCalcGrid">计算并预览</button>
                     </div>
-                    <div class="grid-align-slider-row">
-                        <label>精确格子间距：</label>
-                        <input type="number" id="gaCellSizeInput" value="16.0" min="3" max="50" step="0.1" class="custom-input" style="width:70px;text-align:center;">
-                        <span style="font-size:10px;color:var(--text-muted);">px（支持小数）</span>
-                        <button class="btn btn-sm" id="gaAutoDetect">自动检测</button>
-                    </div>
-                    <div class="grid-align-slider-row">
-                        <label>图片缩放：<strong id="gaScaleVal">100%</strong></label>
-                        <input type="range" id="gaScaleSlider" min="20" max="500" value="100" class="slider">
-                        <div class="ga-nudge-btns">
-                            <button class="btn btn-sm ga-nudge-btn" id="gaScaleDec5" title="-5%">−5</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaScaleDec1" title="-1%">−1</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaScaleInc1" title="+1%">+1</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaScaleInc5" title="+5%">+5</button>
-                        </div>
-                    </div>
-                    <div class="grid-align-slider-row">
-                        <label>网格线透明度：<strong id="gaGridOpacityVal">60%</strong></label>
-                        <input type="range" id="gaGridOpacitySlider" min="10" max="100" value="60" class="slider">
-                        <div class="ga-nudge-btns">
-                            <button class="btn btn-sm ga-nudge-btn" id="gaOpacityDec5" title="-5%">−5</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaOpacityDec1" title="-1%">−1</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaOpacityInc1" title="+1%">+1</button>
-                            <button class="btn btn-sm ga-nudge-btn" id="gaOpacityInc5" title="+5%">+5</button>
-                        </div>
-                    </div>
-                    <div class="grid-align-slider-row">
-                        <label>网格线颜色：</label>
-                        <div class="ga-grid-color-btns">
-                            <button class="btn btn-sm ga-color-btn active" data-color="red" style="color:#e54b4f;">红色</button>
-                            <button class="btn btn-sm ga-color-btn" data-color="blue" style="color:#3677d2;">蓝色</button>
-                            <button class="btn btn-sm ga-color-btn" data-color="green" style="color:#35e352;">绿色</button>
-                            <button class="btn btn-sm ga-color-btn" data-color="white" style="color:#888;">白色</button>
-                        </div>
-                    </div>
-                    <div class="grid-align-offset-row">
-                        <div class="ga-offset-group">
-                            <label>图片偏移微调：</label>
-                            <div class="ga-offset-btns">
-                                <button class="btn btn-sm" id="gaImgUp" title="图片上移1px">↑</button>
-                                <button class="btn btn-sm" id="gaImgDown" title="图片下移1px">↓</button>
-                                <button class="btn btn-sm" id="gaImgLeft" title="图片左移1px">←</button>
-                                <button class="btn btn-sm" id="gaImgRight" title="图片右移1px">→</button>
-                            </div>
-                        </div>
-                        <div class="ga-offset-group">
-                            <label>网格偏移微调：</label>
-                            <div class="ga-offset-btns">
-                                <button class="btn btn-sm" id="gaGridUp" title="网格上移1px">↑</button>
-                                <button class="btn btn-sm" id="gaGridDown" title="网格下移1px">↓</button>
-                                <button class="btn btn-sm" id="gaGridLeft" title="网格左移1px">←</button>
-                                <button class="btn btn-sm" id="gaGridRight" title="网格右移1px">→</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid-align-offset-row">
-                        <span class="ga-offset-info" id="gaOffsetInfo">图片偏移: (0, 0) | 网格偏移: (0, 0)</span>
-                        <button class="btn btn-sm" id="gaResetOffset">重置全部偏移</button>
+                    <div class="ga-auto-result" id="gaAutoResult" style="display:none;">
+                        <span>检测到每格约 <strong id="gaDetectedPx">--</strong> 像素</span>
+                        <button class="btn btn-sm" id="gaAutoReset">重新标记</button>
                     </div>
                 </div>
+
+                <!-- 手动调整面板 -->
+                <div class="ga-manual-panel" id="gaManualPanel" style="display:none;">
+                    <div class="grid-align-controls">
+                        <div class="grid-align-slider-row">
+                            <label>网格格子间距：<strong id="gaCellSizeVal">16.0 px</strong></label>
+                            <input type="range" id="gaCellSizeSlider" min="30" max="500" value="160" step="1" class="slider">
+                            <div class="ga-nudge-btns">
+                                <button class="btn btn-sm ga-nudge-btn" id="gaCellDec1" title="-1.0px">−1</button>
+                                <button class="btn btn-sm ga-nudge-btn" id="gaCellDec01" title="-0.1px">−.1</button>
+                                <button class="btn btn-sm ga-nudge-btn" id="gaCellInc01" title="+0.1px">+.1</button>
+                                <button class="btn btn-sm ga-nudge-btn" id="gaCellInc1" title="+1.0px">+1</button>
+                            </div>
+                        </div>
+                        <div class="grid-align-slider-row">
+                            <label>精确格子间距：</label>
+                            <input type="number" id="gaCellSizeInput" value="16.0" min="3" max="50" step="0.1" class="custom-input" style="width:70px;text-align:center;">
+                            <span style="font-size:10px;color:var(--text-muted);">px</span>
+                            <button class="btn btn-sm" id="gaAutoDetect">自动检测</button>
+                        </div>
+                        <div class="grid-align-slider-row">
+                            <label>图片缩放：<strong id="gaScaleVal">100%</strong></label>
+                            <input type="range" id="gaScaleSlider" min="20" max="500" value="100" class="slider">
+                        </div>
+                        <div class="grid-align-offset-row">
+                            <div class="ga-offset-group">
+                                <label>图片偏移：</label>
+                                <div class="ga-offset-btns">
+                                    <button class="btn btn-sm" id="gaImgUp">↑</button>
+                                    <button class="btn btn-sm" id="gaImgDown">↓</button>
+                                    <button class="btn btn-sm" id="gaImgLeft">←</button>
+                                    <button class="btn btn-sm" id="gaImgRight">→</button>
+                                </div>
+                            </div>
+                            <div class="ga-offset-group">
+                                <label>网格偏移：</label>
+                                <div class="ga-offset-btns">
+                                    <button class="btn btn-sm" id="gaGridUp">↑</button>
+                                    <button class="btn btn-sm" id="gaGridDown">↓</button>
+                                    <button class="btn btn-sm" id="gaGridLeft">←</button>
+                                    <button class="btn btn-sm" id="gaGridRight">→</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid-align-offset-row">
+                            <span class="ga-offset-info" id="gaOffsetInfo">图片偏移: (0, 0) | 网格偏移: (0, 0)</span>
+                            <button class="btn btn-sm" id="gaResetOffset">重置全部</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 通用控制：网格线外观 -->
+                <div class="ga-grid-style-row">
+                    <label style="font-size:10px;font-weight:600;color:var(--text-secondary);">网格线：</label>
+                    <div class="ga-grid-color-btns">
+                        <button class="btn btn-sm ga-color-btn active" data-color="red" style="color:#e54b4f;">红</button>
+                        <button class="btn btn-sm ga-color-btn" data-color="blue" style="color:#3677d2;">蓝</button>
+                        <button class="btn btn-sm ga-color-btn" data-color="green" style="color:#35e352;">绿</button>
+                        <button class="btn btn-sm ga-color-btn" data-color="white" style="color:#888;">白</button>
+                    </div>
+                    <label style="font-size:10px;color:var(--text-muted);margin-left:8px;">透明度</label>
+                    <input type="range" id="gaGridOpacitySlider" min="10" max="100" value="60" class="slider" style="width:80px;">
+                    <strong id="gaGridOpacityVal" style="font-size:10px;color:var(--iris-dark);min-width:28px;">60%</strong>
+                </div>
+
+                <!-- 预览区域 -->
                 <div class="grid-align-preview-wrap" id="gaPreviewWrap">
                     <canvas id="gaPreviewCanvas"></canvas>
                 </div>
@@ -1985,14 +2033,14 @@
                     <span id="gaZoomVal">100%</span>
                     <button class="btn btn-sm" id="gaZoomIn">+</button>
                     <button class="btn btn-sm" id="gaZoomFit">适应</button>
-                    <span class="ga-hint">滚轮缩放 · 右键/中键拖拽平移</span>
+                    <span class="ga-hint">滚轮缩放 · 右键拖拽平移 · 左键标点/拖图</span>
                 </div>
             </div>
             <div class="grid-align-footer">
                 <button class="btn" id="gaCancel">取消</button>
                 <button class="btn btn-apply" id="gaApply">
                     <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    确认对齐，开始填色
+                    确认对齐
                 </button>
             </div>
         </div>

@@ -6493,3 +6493,214 @@ body {
         flex-wrap: wrap;
     }
 }
+
+/* 移动端网格对齐简化 */
+@media (max-width: 960px) {
+    .grid-align-controls .grid-align-slider-row:nth-child(n+4) {
+        display: none;
+    }
+
+    .grid-align-controls .grid-align-offset-row {
+        display: none;
+    }
+
+    /* 但展开时显示全部 */
+    .grid-align-controls.show-all .grid-align-slider-row,
+    .grid-align-controls.show-all .grid-align-offset-row {
+        display: flex !important;
+    }
+}
+
+/* ========================================
+   网格对齐 - 两点标定模式
+   ======================================== */
+.ga-step-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, var(--pink-lighter), var(--iris-lighter));
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
+.ga-step-badge {
+    padding: 3px 10px;
+    background: var(--iris-dark);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.ga-step-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+.ga-mode-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    border: 1px solid var(--border-light);
+}
+
+.ga-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--font-base);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-radius: var(--radius-xs);
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.ga-tab:hover {
+    color: var(--text-secondary);
+    background: var(--bg-card);
+}
+
+.ga-tab.active {
+    background: var(--bg-card);
+    color: var(--iris-dark);
+    box-shadow: var(--shadow-sm);
+}
+
+.ga-tab svg {
+    flex-shrink: 0;
+}
+
+.ga-auto-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ga-points-display {
+    display: flex;
+    gap: 8px;
+}
+
+.ga-point-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.ga-point-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ga-point-label {
+    flex: 1;
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ga-point-clear {
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+}
+
+.ga-grid-count-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--iris-lighter);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--iris-light);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.ga-grid-count-row label {
+    flex-shrink: 0;
+}
+
+.ga-auto-result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #e8f5e9, #f0f8f0);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--success);
+    font-size: 12px;
+    color: var(--text);
+}
+
+.ga-auto-result strong {
+    color: var(--iris-dark);
+    font-size: 14px;
+}
+
+.ga-auto-result .btn {
+    margin-left: auto;
+}
+
+.ga-grid-style-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 960px) {
+    .ga-mode-tabs {
+        flex-direction: row;
+    }
+
+    .ga-tab {
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+
+    .ga-points-display {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .ga-grid-count-row {
+        flex-wrap: wrap;
+    }
+
+    .ga-grid-style-row {
+        flex-wrap: wrap;
+    }
+}

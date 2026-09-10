@@ -232,6 +232,7 @@
         selectionDragging: false,
         selectionDragStart: null,
         selectionStartCell: null,
+        selectionBackup: null,
         selectionDrawing: false,
         currentProjectId: null,
         currentProjectName: '',
@@ -2722,7 +2723,7 @@
             if ((e.ctrlKey || e.metaKey) && e.key === 'c' && S.selection) { e.preventDefault(); copySelection(); }
             if ((e.ctrlKey || e.metaKey) && e.key === 'v' && S.selectionClipboard) { e.preventDefault(); pasteSelection(); }
             if (e.key === 'Delete' && S.selection) { e.preventDefault(); deleteSelection(); }
-            if (e.key === 'Escape' && S.selection) { e.preventDefault(); clearSelection(); }
+            if (e.key === 'Escape' && S.selection) { e.preventDefault(); cancelSelection(); }
             // 方向键移动选区
             if (S.selection && !e.ctrlKey && !e.metaKey) {
                 if (e.key === 'ArrowUp') { e.preventDefault(); moveSelectionBy(-1, 0); pushHistory(); }
@@ -2818,6 +2819,33 @@
         $('gridAlignBtn').addEventListener('click', function () {
             openGridAlignModal();
         });
+        // 底图位置微调
+        $('bgMoveUp').addEventListener('click', function () {
+            var step = parseInt($('bgMoveStep').value) || 5;
+            S.gridAlignImgOffY -= step;
+            renderBg();
+        });
+        $('bgMoveDown').addEventListener('click', function () {
+            var step = parseInt($('bgMoveStep').value) || 5;
+            S.gridAlignImgOffY += step;
+            renderBg();
+        });
+        $('bgMoveLeft').addEventListener('click', function () {
+            var step = parseInt($('bgMoveStep').value) || 5;
+            S.gridAlignImgOffX -= step;
+            renderBg();
+        });
+        $('bgMoveRight').addEventListener('click', function () {
+            var step = parseInt($('bgMoveStep').value) || 5;
+            S.gridAlignImgOffX += step;
+            renderBg();
+        });
+        $('bgMoveReset').addEventListener('click', function () {
+            S.gridAlignImgOffX = 0;
+            S.gridAlignImgOffY = 0;
+            renderBg();
+        });
+
         $('removeImage').addEventListener('click', () => {
             S.refImage = null;
             S.gridAlignImgOffX = 0;
@@ -2827,6 +2855,7 @@
             S.gridAlignImgScale = 1;
             $('imageControls').style.display = 'none';
             $('gridAlignBtn').style.display = 'none';
+            if ($('bgMoveControls')) $('bgMoveControls').style.display = 'none';
             $('imageInput').value = '';
             renderBg();
             syncControlDrawerImageControls();
@@ -3292,11 +3321,12 @@
         $('selFlipV').addEventListener('click', function () { flipSelectionV(); });
         $('selConfirm').addEventListener('click', function () {
             if (S.selection) {
+                S.selectionBackup = null;
                 pushHistory('移动选区');
                 clearSelection();
             }
         });
-        $('selCancel').addEventListener('click', function () { clearSelection(); });
+        $('selCancel').addEventListener('click', function () { cancelSelection(); });
         $('selMoveMode').addEventListener('click', function () {
             if (S.selection) alert('在选区上拖拽即可移动选区内容，也可用方向键微调位置。');
         });
@@ -3486,6 +3516,16 @@
         if (S.tool === 'select') {
             if (S.selection && isInsideSelection(cell.row, cell.col)) {
                 // 在选区内点击：开始拖拽移动
+                // 首次拖拽时保存备份，用于取消时恢复
+                if (!S.selectionBackup) {
+                    S.selectionBackup = {
+                        grid: S.grid.map(function (row) { return row.slice(); }),
+                        layerGrids: S.layers.map(function (layer) {
+                            return layer.grid ? layer.grid.map(function (row) { return row.slice(); }) : null;
+                        }),
+                        selection: { r1: S.selection.r1, c1: S.selection.c1, r2: S.selection.r2, c2: S.selection.c2 }
+                    };
+                }
                 S.selectionDragging = true;
                 S.selectionDragStart = { row: cell.row, col: cell.col };
             } else {
@@ -3617,6 +3657,15 @@
         // 框选工具
         if (S.tool === 'select') {
             if (S.selection && isInsideSelection(cell.row, cell.col)) {
+                if (!S.selectionBackup) {
+                    S.selectionBackup = {
+                        grid: S.grid.map(function (row) { return row.slice(); }),
+                        layerGrids: S.layers.map(function (layer) {
+                            return layer.grid ? layer.grid.map(function (row) { return row.slice(); }) : null;
+                        }),
+                        selection: { r1: S.selection.r1, c1: S.selection.c1, r2: S.selection.r2, c2: S.selection.c2 }
+                    };
+                }
                 S.selectionDragging = true;
                 S.selectionDragStart = { row: cell.row, col: cell.col };
             } else {
@@ -7232,6 +7281,25 @@
         renderMain();
     }
 
+    function cancelSelection() {
+        // 如果有备份，恢复到移动之前的状态
+        if (S.selectionBackup) {
+            S.grid = S.selectionBackup.grid;
+            for (var i = 0; i < S.layers.length && i < S.selectionBackup.layerGrids.length; i++) {
+                if (S.selectionBackup.layerGrids[i]) {
+                    S.layers[i].grid = S.selectionBackup.layerGrids[i];
+                }
+            }
+            S.selectionBackup = null;
+        }
+        S.selection = null;
+        S.selectionDrawing = false;
+        S.selectionDragging = false;
+        S.selectionStartCell = null;
+        $('selectionToolbar').classList.remove('active');
+        render();
+    }
+
     function updateSelectionUI() {
         if (!S.selection) {
             $('selectionToolbar').classList.remove('active');
@@ -7968,7 +8036,7 @@
             mobLayerList.appendChild(div);
         }
 
-        // 点击图层项 = 选中
+        // 点击图层项 = 选中（包括点击名字也选中）
         mobLayerList.querySelectorAll('.layer-item').forEach(function (item) {
             item.addEventListener('click', function (e) {
                 if (e.target.closest('.layer-vis-btn') ||
@@ -8016,21 +8084,38 @@
             });
         });
 
-        // 点击图层名重命名（移动端用 cdPrompt 代替双击）
+        // 长按图层名重命名（移动端用长按触发，普通点击选中图层）
         mobLayerList.querySelectorAll('.layer-name').forEach(function (nameEl) {
-            nameEl.addEventListener('click', function (e) {
-                e.stopPropagation();
+            var _longPressTimer = null;
+            var _longPressed = false;
+            nameEl.addEventListener('touchstart', function (e) {
+                _longPressed = false;
                 var item = nameEl.closest('.layer-item');
                 var idx = parseInt(item.dataset.layer);
                 var currentName = S.layers[idx].name;
-                cdPrompt('', { title: '重命名图层', defaultValue: currentName, placeholder: '请输入图层名称' }).then(function (newName) {
-                    if (newName === null) return;
-                    newName = newName.trim() || currentName;
-                    S.layers[idx].name = newName;
+                _longPressTimer = setTimeout(function () {
+                    _longPressed = true;
+                    // 先选中该图层
+                    S.activeLayer = idx;
                     updateLayerUI();
                     syncControlDrawerLayerUI();
-                });
+                    // 再弹出重命名
+                    cdPrompt('', { title: '重命名图层', defaultValue: currentName, placeholder: '请输入图层名称' }).then(function (newName) {
+                        if (newName === null) return;
+                        newName = newName.trim() || currentName;
+                        S.layers[idx].name = newName;
+                        updateLayerUI();
+                        syncControlDrawerLayerUI();
+                    });
+                }, 600);
+            }, { passive: true });
+            nameEl.addEventListener('touchend', function () {
+                clearTimeout(_longPressTimer);
             });
+            nameEl.addEventListener('touchmove', function () {
+                clearTimeout(_longPressTimer);
+            });
+            // 移动端普通点击名字不再阻止冒泡，让它冒泡到 layer-item 的 click 事件来选中图层
         });
     }
 
@@ -8844,6 +8929,7 @@
             S.refImage = img;
             $('imageControls').style.display = 'block';
             $('gridAlignBtn').style.display = '';
+            if ($('bgMoveControls')) $('bgMoveControls').style.display = 'block';
             renderBg();
             syncControlDrawerImageControls();
             closeCropModal();
@@ -8874,6 +8960,7 @@
                 S.refImage = result.img;
                 $('imageControls').style.display = 'block';
                 $('gridAlignBtn').style.display = '';
+                if ($('bgMoveControls')) $('bgMoveControls').style.display = 'block';
                 renderBg();
                 syncControlDrawerImageControls();
                 closeCropModal();
@@ -9180,7 +9267,7 @@
     //  网格对齐功能
     // ===========================
     var _ga = {
-        mode: 'image', // 'image' or 'grid'
+        mode: 'auto', // 'auto' (两点标定) or 'manual'
         imgOffX: 0,
         imgOffY: 0,
         gridOffX: 0,
@@ -9202,7 +9289,12 @@
         dragStartY: 0,
         dragStartOffX: 0,
         dragStartOffY: 0,
-        boundEvents: false
+        boundEvents: false,
+        // 两点标定
+        step: 0, // 0=等待第1点, 1=等待第2点, 2=等待格数, 3=已完成
+        point1: null, // {x, y} 图片像素坐标
+        point2: null,
+        gridCount: 52
     };
 
     function openGridAlignModal() {
@@ -9210,7 +9302,6 @@
             alert('请先上传参考底图');
             return;
         }
-        // 初始化对齐参数为当前值
         _ga.imgOffX = S.gridAlignImgOffX;
         _ga.imgOffY = S.gridAlignImgOffY;
         _ga.gridOffX = S.gridAlignGridOffX;
@@ -9219,30 +9310,22 @@
         _ga.zoom = 1;
         _ga.panX = 0;
         _ga.panY = 0;
-        _ga.mode = 'image';
+        _ga.cellSizePx = S.cellSize;
 
-        // 尝试根据图片自动推算格子尺寸
-        if (_ga.cellSizePx === 16.0 && S.refImage) {
-            var iw = S.refImage.naturalWidth;
-            var ih = S.refImage.naturalHeight;
-            var totalW = S.gridW * S.cellSize;
-            var totalH = S.gridH * S.cellSize;
-            var baseScale = Math.min(totalW / iw, totalH / ih);
-            _ga.cellSizePx = S.cellSize;
-            _ga.imgScale = 100;
-        }
+        // 重置两点标定状态
+        _ga.step = 0;
+        _ga.point1 = null;
+        _ga.point2 = null;
+        _ga.mode = 'auto';
 
-        $('gaScaleSlider').value = _ga.imgScale;
-        $('gaScaleVal').textContent = _ga.imgScale + '%';
-        $('gaGridOpacitySlider').value = _ga.gridOpacity;
-        $('gaGridOpacityVal').textContent = _ga.gridOpacity + '%';
-        $('gaCellSizeSlider').value = Math.round(_ga.cellSizePx * 10);
-        $('gaCellSizeVal').textContent = _ga.cellSizePx.toFixed(1) + ' px';
-        $('gaCellSizeInput').value = _ga.cellSizePx.toFixed(1);
-
-        document.querySelectorAll('.ga-mode-btn').forEach(function (b) {
-            b.classList.toggle('active', b.dataset.mode === _ga.mode);
-        });
+        // 同步 UI
+        if ($('gaScaleSlider')) $('gaScaleSlider').value = _ga.imgScale;
+        if ($('gaScaleVal')) $('gaScaleVal').textContent = _ga.imgScale + '%';
+        if ($('gaGridOpacitySlider')) $('gaGridOpacitySlider').value = _ga.gridOpacity;
+        if ($('gaGridOpacityVal')) $('gaGridOpacityVal').textContent = _ga.gridOpacity + '%';
+        syncGaCellSizeUI();
+        updateGaStepUI();
+        switchGaTab('auto');
 
         $('gridAlignModal').classList.add('active');
 
@@ -9252,18 +9335,236 @@
         }, 50);
     }
 
+    function switchGaTab(tab) {
+        _ga.mode = tab;
+        var autoTab = $('gaTabAuto');
+        var manualTab = $('gaTabManual');
+        var autoPanel = $('gaAutoPanel');
+        var manualPanel = $('gaManualPanel');
+        if (autoTab) autoTab.classList.toggle('active', tab === 'auto');
+        if (manualTab) manualTab.classList.toggle('active', tab === 'manual');
+        if (autoPanel) autoPanel.style.display = tab === 'auto' ? '' : 'none';
+        if (manualPanel) manualPanel.style.display = tab === 'manual' ? '' : 'none';
+
+        if (tab === 'auto') {
+            updateGaStepUI();
+        } else {
+            if ($('gaStepInfo')) $('gaStepInfo').style.display = 'none';
+        }
+    }
+
+    function updateGaStepUI() {
+        var badge = $('gaStepBadge');
+        var text = $('gaStepText');
+        var info = $('gaStepInfo');
+        var countRow = $('gaGridCountRow');
+        var resultRow = $('gaAutoResult');
+        var p1Info = $('gaPoint1Info');
+        var p2Info = $('gaPoint2Info');
+
+        if (!badge || !text) return;
+        if (info) info.style.display = '';
+
+        if (_ga.step === 0) {
+            badge.textContent = '步骤 1/3';
+            text.textContent = '请在图片上点击第一个参考角点（建议点在格子的交叉线上）';
+            if (countRow) countRow.style.display = 'none';
+            if (resultRow) resultRow.style.display = 'none';
+        } else if (_ga.step === 1) {
+            badge.textContent = '步骤 2/3';
+            text.textContent = '请点击同一水平线上的第二个参考角点（尽量远一些，越远越精确）';
+            if (countRow) countRow.style.display = 'none';
+            if (resultRow) resultRow.style.display = 'none';
+        } else if (_ga.step === 2) {
+            badge.textContent = '步骤 3/3';
+            text.textContent = '输入两个标记点之间横跨了多少个格子，然后点击"计算并预览"';
+            if (countRow) countRow.style.display = '';
+            if (resultRow) resultRow.style.display = 'none';
+        } else if (_ga.step === 3) {
+            badge.textContent = '✓ 已完成';
+            badge.style.background = 'var(--success)';
+            text.textContent = '网格已对齐，可以微调位置或直接确认';
+            if (countRow) countRow.style.display = 'none';
+            if (resultRow) resultRow.style.display = '';
+        }
+
+        // 更新点信息
+        if (p1Info) {
+            var label1 = p1Info.querySelector('.ga-point-label');
+            var clear1 = $('gaClearPoint1');
+            if (_ga.point1) {
+                label1.textContent = '(' + Math.round(_ga.point1.x) + ', ' + Math.round(_ga.point1.y) + ')';
+                if (clear1) clear1.style.display = '';
+            } else {
+                label1.textContent = '未标记';
+                if (clear1) clear1.style.display = 'none';
+            }
+        }
+        if (p2Info) {
+            var label2 = p2Info.querySelector('.ga-point-label');
+            var clear2 = $('gaClearPoint2');
+            if (_ga.point2) {
+                label2.textContent = '(' + Math.round(_ga.point2.x) + ', ' + Math.round(_ga.point2.y) + ')';
+                if (clear2) clear2.style.display = '';
+            } else {
+                label2.textContent = '未标记';
+                if (clear2) clear2.style.display = 'none';
+            }
+        }
+    }
+
+    function gaClickOnPreview(clientX, clientY) {
+        if (_ga.mode !== 'auto' || _ga.step > 1) return;
+
+        var canvas = $('gaPreviewCanvas');
+        var rect = canvas.getBoundingClientRect();
+        var canvasX = clientX - rect.left;
+        var canvasY = clientY - rect.top;
+
+        // 转换为图片像素坐标
+        var displayW = canvas.clientWidth;
+        var displayH = canvas.clientHeight;
+        var cellPx = _ga.cellSizePx;
+        var totalW = S.gridW * cellPx;
+        var totalH = S.gridH * cellPx;
+        var centerX = displayW / 2 + _ga.panX;
+        var centerY = displayH / 2 + _ga.panY;
+
+        // 从屏幕坐标反推到网格坐标系
+        var gridX = (canvasX - centerX) / _ga.zoom + totalW / 2;
+        var gridY = (canvasY - centerY) / _ga.zoom + totalH / 2;
+
+        // 从网格坐标系转到图片像素坐标
+        var iw = S.refImage.naturalWidth;
+        var ih = S.refImage.naturalHeight;
+        var baseScale = Math.min(totalW / iw, totalH / ih);
+        var finalScale = baseScale * (_ga.imgScale / 100);
+        var dw = iw * finalScale;
+        var dh = ih * finalScale;
+        var dx = (totalW - dw) / 2 + _ga.imgOffX - _ga.gridOffX;
+        var dy = (totalH - dh) / 2 + _ga.imgOffY - _ga.gridOffY;
+
+        var imgPxX = (gridX - dx) / finalScale;
+        var imgPxY = (gridY - dy) / finalScale;
+
+        // 检查是否在图片范围内
+        if (imgPxX < 0 || imgPxX > iw || imgPxY < 0 || imgPxY > ih) {
+            showToast('请点击图片区域内', 'error', 1500);
+            return;
+        }
+
+        if (_ga.step === 0) {
+            _ga.point1 = { x: imgPxX, y: imgPxY };
+            _ga.step = 1;
+        } else if (_ga.step === 1) {
+            _ga.point2 = { x: imgPxX, y: imgPxY };
+            _ga.step = 2;
+            // 自动估算格数
+            var dist = Math.sqrt(Math.pow(_ga.point2.x - _ga.point1.x, 2) + Math.pow(_ga.point2.y - _ga.point1.y, 2));
+            var guessCell = detectCellSize(null, S.refImage.naturalWidth, S.refImage.naturalHeight);
+            if (guessCell > 1) {
+                var guessCount = Math.round(dist / guessCell);
+                if (guessCount >= 2 && guessCount <= 200) {
+                    $('gaGridCount').value = guessCount;
+                }
+            }
+        }
+
+        updateGaStepUI();
+        renderGridAlignPreview();
+    }
+
+    function gaCalcFromPoints() {
+        if (!_ga.point1 || !_ga.point2) return;
+
+        var count = parseInt($('gaGridCount').value) || 52;
+        if (count < 2 || count > 200) {
+            showToast('格数须在 2~200 之间', 'error');
+            return;
+        }
+
+        _ga.gridCount = count;
+
+        // 计算两点在图片上的水平距离（像素）
+        var distX = Math.abs(_ga.point2.x - _ga.point1.x);
+        var distY = Math.abs(_ga.point2.y - _ga.point1.y);
+        var dist = Math.sqrt(distX * distX + distY * distY);
+
+        // 每格对应的图片像素数
+        var cellInImgPx = dist / count;
+
+        // 计算需要的缩放：让图片中的格子大小 = 画板的 cellSize
+        // 当前图片的基础缩放 baseScale 下，图片中 cellInImgPx 个像素 = cellInImgPx * baseScale * (imgScale/100) 画板像素
+        // 我们希望这个值 = S.cellSize
+        var cellPx = _ga.cellSizePx;
+        var totalW = S.gridW * cellPx;
+        var totalH = S.gridH * cellPx;
+        var iw = S.refImage.naturalWidth;
+        var ih = S.refImage.naturalHeight;
+        var baseScale = Math.min(totalW / iw, totalH / ih);
+
+        // 需要的 imgScale = S.cellSize / (cellInImgPx * baseScale) * 100
+        var neededScale = cellPx / (cellInImgPx * baseScale) * 100;
+        _ga.imgScale = Math.round(neededScale);
+
+        // 计算偏移：让 point1 对齐到最近的网格交叉点
+        var finalScale2 = baseScale * (_ga.imgScale / 100);
+        var dw = iw * finalScale2;
+        var dh = ih * finalScale2;
+
+        // point1 在当前缩放下的画板坐标
+        var p1InGrid = {
+            x: _ga.point1.x * finalScale2 + (totalW - dw) / 2,
+            y: _ga.point1.y * finalScale2 + (totalH - dh) / 2
+        };
+
+        // 找 point1 最近的网格交叉点
+        var nearestGridX = Math.round(p1InGrid.x / cellPx) * cellPx;
+        var nearestGridY = Math.round(p1InGrid.y / cellPx) * cellPx;
+
+        // 需要的偏移
+        _ga.imgOffX = Math.round(nearestGridX - p1InGrid.x);
+        _ga.imgOffY = Math.round(nearestGridY - p1InGrid.y);
+        _ga.gridOffX = 0;
+        _ga.gridOffY = 0;
+
+        // 更新 UI
+        if ($('gaScaleSlider')) $('gaScaleSlider').value = _ga.imgScale;
+        if ($('gaScaleVal')) $('gaScaleVal').textContent = _ga.imgScale + '%';
+        if ($('gaDetectedPx')) $('gaDetectedPx').textContent = cellInImgPx.toFixed(1);
+        syncGaCellSizeUI();
+
+        _ga.step = 3;
+        updateGaStepUI();
+        renderGridAlignPreview();
+
+        showToast('网格已自动对齐！如需微调可切换到手动模式', 'success', 3000);
+    }
+
+    function gaResetPoints() {
+        _ga.step = 0;
+        _ga.point1 = null;
+        _ga.point2 = null;
+        if ($('gaStepBadge')) $('gaStepBadge').style.background = '';
+        updateGaStepUI();
+        renderGridAlignPreview();
+    }
+
     function closeGridAlignModal() {
         $('gridAlignModal').classList.remove('active');
     }
 
     function applyGridAlign() {
-        S.gridAlignImgOffX = _ga.imgOffX;
-        S.gridAlignImgOffY = _ga.imgOffY;
-        S.gridAlignGridOffX = _ga.gridOffX;
-        S.gridAlignGridOffY = _ga.gridOffY;
-        S.gridAlignImgScale = _ga.imgScale / 100;
+        // 将预览坐标系的参数转换为主画板坐标系
+        var cellRatio = _ga.cellSizePx / S.cellSize;
+        S.gridAlignImgScale = (_ga.imgScale / 100) / cellRatio;
+        S.gridAlignImgOffX = Math.round(_ga.imgOffX / cellRatio);
+        S.gridAlignImgOffY = Math.round(_ga.imgOffY / cellRatio);
+        S.gridAlignGridOffX = Math.round(_ga.gridOffX / cellRatio);
+        S.gridAlignGridOffY = Math.round(_ga.gridOffY / cellRatio);
         closeGridAlignModal();
         renderBg();
+        showToast('网格对齐已应用', 'success');
     }
 
     function updateGaOffsetInfo() {
@@ -9361,6 +9662,69 @@
 
         gc.restore();
 
+        // 绘制两点标定的标记点
+        if (_ga.mode === 'auto' && (_ga.point1 || _ga.point2)) {
+            gc.save();
+            gc.translate(centerX, centerY);
+            gc.scale(_ga.zoom, _ga.zoom);
+            gc.translate(-totalW / 2, -totalH / 2);
+
+            var iw2 = S.refImage.naturalWidth;
+            var ih2 = S.refImage.naturalHeight;
+            var baseScale2 = Math.min(totalW / iw2, totalH / ih2);
+            var finalScale2 = baseScale2 * (_ga.imgScale / 100);
+            var dw2 = iw2 * finalScale2;
+            var dh2 = ih2 * finalScale2;
+            var dx2 = (totalW - dw2) / 2 + _ga.imgOffX - _ga.gridOffX;
+            var dy2 = (totalH - dh2) / 2 + _ga.imgOffY - _ga.gridOffY;
+
+            function drawCrossPoint(px, py, color) {
+                var sx = dx2 + px * finalScale2;
+                var sy = dy2 + py * finalScale2;
+                var armLen = 12 / _ga.zoom;
+                gc.strokeStyle = color;
+                gc.lineWidth = 2 / _ga.zoom;
+                gc.beginPath();
+                gc.moveTo(sx - armLen, sy);
+                gc.lineTo(sx + armLen, sy);
+                gc.stroke();
+                gc.beginPath();
+                gc.moveTo(sx, sy - armLen);
+                gc.lineTo(sx, sy + armLen);
+                gc.stroke();
+                gc.fillStyle = color;
+                gc.beginPath();
+                gc.arc(sx, sy, 4 / _ga.zoom, 0, Math.PI * 2);
+                gc.fill();
+                gc.strokeStyle = '#fff';
+                gc.lineWidth = 1.5 / _ga.zoom;
+                gc.beginPath();
+                gc.arc(sx, sy, 4 / _ga.zoom, 0, Math.PI * 2);
+                gc.stroke();
+            }
+
+            if (_ga.point1) drawCrossPoint(_ga.point1.x, _ga.point1.y, '#e54b4f');
+            if (_ga.point2) drawCrossPoint(_ga.point2.x, _ga.point2.y, '#3677d2');
+
+            // 两点之间画虚线
+            if (_ga.point1 && _ga.point2) {
+                var sx1 = dx2 + _ga.point1.x * finalScale2;
+                var sy1 = dy2 + _ga.point1.y * finalScale2;
+                var sx2 = dx2 + _ga.point2.x * finalScale2;
+                var sy2 = dy2 + _ga.point2.y * finalScale2;
+                gc.strokeStyle = 'rgba(255,255,255,0.8)';
+                gc.lineWidth = 1.5 / _ga.zoom;
+                gc.setLineDash([6 / _ga.zoom, 4 / _ga.zoom]);
+                gc.beginPath();
+                gc.moveTo(sx1, sy1);
+                gc.lineTo(sx2, sy2);
+                gc.stroke();
+                gc.setLineDash([]);
+            }
+
+            gc.restore();
+        }
+
         updateGaOffsetInfo();
     }
 
@@ -9372,10 +9736,43 @@
 
     function bindGridAlignEvents() {
         if (_ga.boundEvents) return;
+
+        // 两点标定模式切换
+        if ($('gaTabAuto')) $('gaTabAuto').addEventListener('click', function () { switchGaTab('auto'); });
+        if ($('gaTabManual')) $('gaTabManual').addEventListener('click', function () { switchGaTab('manual'); });
+
+        // 两点标定事件
+        if ($('gaCalcGrid')) $('gaCalcGrid').addEventListener('click', function () { gaCalcFromPoints(); });
+        if ($('gaAutoReset')) $('gaAutoReset').addEventListener('click', function () { gaResetPoints(); });
+        if ($('gaClearPoint1')) $('gaClearPoint1').addEventListener('click', function () {
+            _ga.point1 = null;
+            _ga.step = 0;
+            updateGaStepUI();
+            renderGridAlignPreview();
+        });
+        if ($('gaClearPoint2')) $('gaClearPoint2').addEventListener('click', function () {
+            _ga.point2 = null;
+            _ga.step = 1;
+            updateGaStepUI();
+            renderGridAlignPreview();
+        });
+
         _ga.boundEvents = true;
 
         var wrap = $('gaPreviewWrap');
         var canvas = $('gaPreviewCanvas');
+
+        // 展开全部控制项
+        var showAllBtn = $('gaShowAllControls');
+        if (showAllBtn) {
+            showAllBtn.addEventListener('click', function () {
+                var controls = document.querySelector('.grid-align-controls');
+                if (controls) {
+                    controls.classList.toggle('show-all');
+                    showAllBtn.textContent = controls.classList.contains('show-all') ? '收起高级选项 ▲' : '显示全部控制项 ▼';
+                }
+            });
+        }
 
         // 模式切换
         document.querySelectorAll('.ga-mode-btn').forEach(function (btn) {
@@ -9410,6 +9807,22 @@
         // 自动检测格子间距
         $('gaAutoDetect').addEventListener('click', function () {
             autoDetectCellSizePx();
+        });
+
+        // 一键自动对齐
+        $('gaAutoAlign').addEventListener('click', function () {
+            // 先自动检测格子间距
+            autoDetectCellSizePx();
+            // 然后重置偏移
+            _ga.imgOffX = 0;
+            _ga.imgOffY = 0;
+            _ga.gridOffX = 0;
+            _ga.gridOffY = 0;
+            _ga.imgScale = 100;
+            $('gaScaleSlider').value = 100;
+            $('gaScaleVal').textContent = '100%';
+            renderGridAlignPreview();
+            showToast('已自动检测并对齐，如不精确请手动微调', 'info', 3000);
         });
 
         // 图片缩放滑块
@@ -9581,8 +9994,13 @@
                 return;
             }
             if (e.button === 0) {
-                // 左键 = 拖拽图片或网格
                 e.preventDefault();
+                // 如果是两点标定模式且还在等待点击
+                if (_ga.mode === 'auto' && _ga.step <= 1) {
+                    gaClickOnPreview(e.clientX, e.clientY);
+                    return;
+                }
+                // 左键 = 拖拽图片或网格
                 _ga.isDragging = true;
                 _ga.dragStartX = e.clientX;
                 _ga.dragStartY = e.clientY;
@@ -9662,6 +10080,11 @@
                 e.stopPropagation();
                 var t = e.touches[0];
                 _gaTouchId = t.identifier;
+                // 如果是两点标定模式且还在等待点击
+                if (_ga.mode === 'auto' && _ga.step <= 1) {
+                    gaClickOnPreview(t.clientX, t.clientY);
+                    return;
+                }
                 _ga.isDragging = true;
                 _ga.dragStartX = t.clientX;
                 _ga.dragStartY = t.clientY;
