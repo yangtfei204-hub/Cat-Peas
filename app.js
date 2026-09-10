@@ -4,7 +4,7 @@
     'use strict';
 
     // 版本号 —— 每次功能更新后递增此值，将触发用户重新确认免责声明和查看使用说明
-    var APP_VERSION = '1.5.0';
+    var APP_VERSION = '1.6.0';
 
     // ===========================
     //  IndexedDB 项目库管理
@@ -224,6 +224,7 @@
         assistTimerSeconds: 0,
         assistTimerInterval: null,
         assistMiniMode: false,
+        assistMarked: null, // 已标记拼完的格子，二维数组 [row][col] = true/false
         showSplitLine: false,
         splitSize: 52,
         // 选区状态
@@ -663,6 +664,11 @@
         }
         // 初始化图层
         initLayers();
+        // 初始化辅助标记
+        S.assistMarked = [];
+        for (var r = 0; r < S.gridH; r++) {
+            S.assistMarked[r] = new Array(S.gridW).fill(false);
+        }
     }
 
     function initLayers() {
@@ -1374,7 +1380,38 @@
     //  辅助拼豆模式 - 渲染覆盖层
     // ===========================
     function renderAssistOverlay() {
-        if (!S.assistMode || S.assistHighlightIdx < 0) return;
+        if (!S.assistMode) return;
+
+        // 即使没有选中高亮颜色，也要绘制已标记的对勾
+        if (S.assistHighlightIdx < 0) {
+            const cs = S.cellSize;
+            if (S.assistMarked) {
+                for (let r = 0; r < S.gridH; r++) {
+                    if (!S.assistMarked[r]) continue;
+                    for (let c = 0; c < S.gridW; c++) {
+                        if (!S.assistMarked[r][c]) continue;
+                        if (S.grid[r][c] === null) continue;
+                        const x = c * cs;
+                        const y = r * cs;
+                        ctx.fillStyle = 'rgba(120, 200, 120, 0.35)';
+                        ctx.fillRect(x, y, cs, cs);
+                        var checkSize = Math.max(4, cs * 0.4);
+                        var cx2 = x + cs / 2;
+                        var cy2 = y + cs / 2;
+                        ctx.strokeStyle = 'rgba(60, 160, 60, 0.8)';
+                        ctx.lineWidth = Math.max(1, cs * 0.12);
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(cx2 - checkSize * 0.45, cy2);
+                        ctx.lineTo(cx2 - checkSize * 0.1, cy2 + checkSize * 0.35);
+                        ctx.lineTo(cx2 + checkSize * 0.45, cy2 - checkSize * 0.35);
+                        ctx.stroke();
+                    }
+                }
+            }
+            return;
+        }
 
         const cs = S.cellSize;
         const w = S.gridW * cs;
@@ -1450,6 +1487,35 @@
                     var cx2 = midC * cs + cs / 2;
                     var cy2 = r * cs + cs / 2;
                     drawAssistNumber(cx2, cy2, len, cs);
+                }
+            }
+        }
+
+        // 绘制已标记的对勾
+        if (S.assistMarked) {
+            for (let r = 0; r < S.gridH; r++) {
+                if (!S.assistMarked[r]) continue;
+                for (let c = 0; c < S.gridW; c++) {
+                    if (!S.assistMarked[r][c]) continue;
+                    if (S.grid[r][c] === null) continue;
+                    const x = c * cs;
+                    const y = r * cs;
+                    // 半透明绿色覆盖
+                    ctx.fillStyle = 'rgba(120, 200, 120, 0.35)';
+                    ctx.fillRect(x, y, cs, cs);
+                    // 画对勾
+                    var checkSize = Math.max(4, cs * 0.4);
+                    var cx2 = x + cs / 2;
+                    var cy2 = y + cs / 2;
+                    ctx.strokeStyle = 'rgba(60, 160, 60, 0.8)';
+                    ctx.lineWidth = Math.max(1, cs * 0.12);
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(cx2 - checkSize * 0.45, cy2);
+                    ctx.lineTo(cx2 - checkSize * 0.1, cy2 + checkSize * 0.35);
+                    ctx.lineTo(cx2 + checkSize * 0.45, cy2 - checkSize * 0.35);
+                    ctx.stroke();
                 }
             }
         }
@@ -3140,6 +3206,28 @@
         });
 
     
+        // 标记已拼按钮
+        if ($('assistMarkAllColor')) {
+            $('assistMarkAllColor').addEventListener('click', function () {
+                if (S.assistHighlightIdx < 0) {
+                    cdAlert('请先选择一个颜色', { type: 'warn', title: '标记已拼' });
+                    return;
+                }
+                markAllColorAssist(S.assistHighlightIdx);
+                showToast('已标记该颜色全部已拼', 'success', 1500);
+            });
+        }
+
+        if ($('assistClearMarks')) {
+            $('assistClearMarks').addEventListener('click', function () {
+                cdConfirm('确定清除所有已拼标记吗？', { title: '清除标记', danger: true, okText: '清除' }).then(function (ok) {
+                    if (!ok) return;
+                    clearAllAssistMarks();
+                    showToast('已清除所有标记', 'success', 1500);
+                });
+            });
+        }
+
         // 辅助拼豆 - 缩小/展开小窗
         $('assistPanelMinimize').addEventListener('click', function () {
             minimizeAssistPanel();
@@ -3506,7 +3594,7 @@
     // Mouse drawing
     function onMouseDown(e) {
         if (e.button !== 0) return;
-        if (S.assistMode) { showAssistDrawBlock(); return; }
+        if (S.assistMode) { handleAssistMark(e); return; }
         e.preventDefault();
         if (S.tool === 'hand') return;
         var cell = cellFromMouse(e);
@@ -3641,7 +3729,7 @@
         if (e.touches.length !== 1) return;
         if (_pinchActive) return;
         if (_pinchJustEnded) return;
-        if (S.assistMode) { showAssistDrawBlock(); return; }
+        if (S.assistMode) { handleAssistMarkTouch(e); return; }
         e.preventDefault();
 
         if (S.tool === 'hand') {
@@ -4082,6 +4170,11 @@
                     }
                 }
             }
+        }
+        // 重新初始化辅助标记
+        S.assistMarked = [];
+        for (var asr = 0; asr < S.gridH; asr++) {
+            S.assistMarked[asr] = new Array(S.gridW).fill(false);
         }
         S.currentProjectId = null;
         S.currentProjectName = '';
@@ -6878,6 +6971,14 @@
             panel.classList.add('active');
             btn.classList.add('active');
             buildAssistColorGrid();
+            // 初始化标记数组（如果尚未初始化或尺寸不匹配）
+            if (!S.assistMarked || S.assistMarked.length !== S.gridH) {
+                S.assistMarked = [];
+                for (var ar = 0; ar < S.gridH; ar++) {
+                    S.assistMarked[ar] = new Array(S.gridW).fill(false);
+                }
+            }
+            updateAssistProgress();
         } else {
             panel.classList.remove('active');
             $('assistMini').classList.remove('active');
@@ -6949,6 +7050,7 @@
                 // 同步小窗信息
                 updateAssistMiniInfo();
                 renderMain();
+                updateAssistProgress();
             });
 
             grid.appendChild(div);
@@ -7023,8 +7125,102 @@
         // 同步小窗信息
         updateAssistMiniInfo();
         renderMain();
+        updateAssistProgress();
     }
 
+    function handleAssistMark(e) {
+        var cell = cellFromMouse(e);
+        if (!cell) return;
+        toggleAssistMark(cell.row, cell.col);
+    }
+
+    function handleAssistMarkTouch(e) {
+        if (e.touches.length !== 1) return;
+        e.preventDefault();
+        var cell = cellFromTouch(e);
+        if (!cell) return;
+        toggleAssistMark(cell.row, cell.col);
+    }
+
+    function toggleAssistMark(row, col) {
+        if (!S.assistMarked) {
+            S.assistMarked = [];
+            for (var r = 0; r < S.gridH; r++) {
+                S.assistMarked[r] = new Array(S.gridW).fill(false);
+            }
+        }
+        if (row < 0 || row >= S.gridH || col < 0 || col >= S.gridW) return;
+        // 只标记有颜色的格子
+        if (S.grid[row][col] === null) return;
+        S.assistMarked[row][col] = !S.assistMarked[row][col];
+        renderMain();
+        updateAssistProgress();
+    }
+
+    function clearAllAssistMarks() {
+        if (!S.assistMarked) return;
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                S.assistMarked[r][c] = false;
+            }
+        }
+        renderMain();
+        updateAssistProgress();
+    }
+
+    function markAllColorAssist(colorIdx) {
+        if (!S.assistMarked || colorIdx < 0) return;
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                if (S.grid[r][c] === colorIdx) {
+                    S.assistMarked[r][c] = true;
+                }
+            }
+        }
+        renderMain();
+        updateAssistProgress();
+    }
+
+    function updateAssistProgress() {
+        if (!S.assistMode) return;
+        var hi = S.assistHighlightIdx;
+        if (hi < 0) {
+            // 没有选颜色时显示总进度
+            var totalCells = 0;
+            var markedCells = 0;
+            for (var r = 0; r < S.gridH; r++) {
+                for (var c = 0; c < S.gridW; c++) {
+                    if (S.grid[r][c] !== null) {
+                        totalCells++;
+                        if (S.assistMarked && S.assistMarked[r] && S.assistMarked[r][c]) {
+                            markedCells++;
+                        }
+                    }
+                }
+            }
+            var pct = totalCells > 0 ? Math.round(markedCells / totalCells * 100) : 0;
+            $('assistProgressBar').style.width = pct + '%';
+            $('assistProgressText').textContent = '总进度：' + markedCells + ' / ' + totalCells + ' 颗 (' + pct + '%)';
+            return;
+        }
+        // 选了颜色时显示该颜色进度
+        var colorTotal = 0;
+        var colorMarked = 0;
+        for (var r2 = 0; r2 < S.gridH; r2++) {
+            for (var c2 = 0; c2 < S.gridW; c2++) {
+                if (S.grid[r2][c2] === hi) {
+                    colorTotal++;
+                    if (S.assistMarked && S.assistMarked[r2] && S.assistMarked[r2][c2]) {
+                        colorMarked++;
+                    }
+                }
+            }
+        }
+        var pct2 = colorTotal > 0 ? Math.round(colorMarked / colorTotal * 100) : 0;
+        $('assistProgressBar').style.width = pct2 + '%';
+        var color = PALETTE[hi];
+        $('assistProgressText').textContent = (color ? color.id + ' ' + color.name + ' · ' : '') + colorMarked + ' / ' + colorTotal + ' 颗 (' + pct2 + '%)';
+    }
 
     var _assistBlockTimer = null;
     function showAssistDrawBlock() {
@@ -9298,6 +9494,7 @@
         point2: null,
         gridCount: 52,
         dragTarget: 'image' // 'image' or 'grid' — 拖拽的是图片还是网格
+        offsetStep: 1 // 偏移步长
     };
 
     function openGridAlignModal() {
@@ -9744,6 +9941,27 @@
     function bindGridAlignEvents() {
         if (_ga.boundEvents) return;
 
+
+        // 拖拽目标切换
+        document.querySelectorAll('.ga-drag-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                _ga.dragTarget = btn.dataset.target;
+                document.querySelectorAll('.ga-drag-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.target === _ga.dragTarget);
+                });
+            });
+        });
+
+        // 偏移步长切换
+        document.querySelectorAll('.ga-step-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                _ga.offsetStep = parseInt(btn.dataset.step) || 1;
+                document.querySelectorAll('.ga-step-btn').forEach(function (b) {
+                    b.classList.toggle('active', parseInt(b.dataset.step) === _ga.offsetStep);
+                });
+            });
+        });
+
         // 两点标定模式切换
         if ($('gaTabAuto')) $('gaTabAuto').addEventListener('click', function () { switchGaTab('auto'); });
         if ($('gaTabManual')) $('gaTabManual').addEventListener('click', function () { switchGaTab('manual'); });
@@ -9858,15 +10076,15 @@
         });
 
         // 微调按钮
-        $('gaImgUp').addEventListener('click', function () { _ga.imgOffY -= 1; renderGridAlignPreview(); });
-        $('gaImgDown').addEventListener('click', function () { _ga.imgOffY += 1; renderGridAlignPreview(); });
-        $('gaImgLeft').addEventListener('click', function () { _ga.imgOffX -= 1; renderGridAlignPreview(); });
-        $('gaImgRight').addEventListener('click', function () { _ga.imgOffX += 1; renderGridAlignPreview(); });
+        $('gaImgUp').addEventListener('click', function () { _ga.imgOffY -= _ga.offsetStep; renderGridAlignPreview(); });
+        $('gaImgDown').addEventListener('click', function () { _ga.imgOffY += _ga.offsetStep; renderGridAlignPreview(); });
+        $('gaImgLeft').addEventListener('click', function () { _ga.imgOffX -= _ga.offsetStep; renderGridAlignPreview(); });
+        $('gaImgRight').addEventListener('click', function () { _ga.imgOffX += _ga.offsetStep; renderGridAlignPreview(); });
 
-        $('gaGridUp').addEventListener('click', function () { _ga.gridOffY -= 1; renderGridAlignPreview(); });
-        $('gaGridDown').addEventListener('click', function () { _ga.gridOffY += 1; renderGridAlignPreview(); });
-        $('gaGridLeft').addEventListener('click', function () { _ga.gridOffX -= 1; renderGridAlignPreview(); });
-        $('gaGridRight').addEventListener('click', function () { _ga.gridOffX += 1; renderGridAlignPreview(); });
+        $('gaGridUp').addEventListener('click', function () { _ga.gridOffY -= _ga.offsetStep; renderGridAlignPreview(); });
+        $('gaGridDown').addEventListener('click', function () { _ga.gridOffY += _ga.offsetStep; renderGridAlignPreview(); });
+        $('gaGridLeft').addEventListener('click', function () { _ga.gridOffX -= _ga.offsetStep; renderGridAlignPreview(); });
+        $('gaGridRight').addEventListener('click', function () { _ga.gridOffX += _ga.offsetStep; renderGridAlignPreview(); });
 
         // 格子间距微调
         $('gaCellDec1').addEventListener('click', function () {

@@ -6704,3 +6704,70 @@ body {
         flex-wrap: wrap;
     }
 }
+
+
+/* ========================================
+   网格对齐 - 手动调整优化
+   ======================================== */
+.ga-drag-target-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.ga-drag-target-btns {
+    display: flex;
+    gap: 4px;
+}
+
+.ga-drag-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px !important;
+    padding: 5px 10px !important;
+}
+
+.ga-drag-btn.active {
+    background: linear-gradient(135deg, var(--pink-lighter), var(--iris-lighter));
+    border-color: var(--iris);
+    color: var(--iris-dark);
+}
+
+.ga-offset-step-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ga-offset-step-btns {
+    display: flex;
+    gap: 3px;
+}
+
+.ga-step-btn {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+    min-width: 32px;
+}
+
+.ga-step-btn.active {
+    background: linear-gradient(135deg, var(--pink-lighter), var(--iris-lighter));
+    border-color: var(--iris);
+    color: var(--iris-dark);
+}
+
+@media (max-width: 960px) {
+    .ga-drag-target-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .ga-offset-step-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}

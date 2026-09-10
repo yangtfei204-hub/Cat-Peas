@@ -1025,6 +1025,18 @@
                     <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                     取消高亮（显示全部）
                 </button>
+                <div class="assist-mark-actions" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+                    <label class="assist-color-label">标记已拼进度：</label>
+                    <p class="size-note" style="margin-bottom:6px;">点击画布上的格子可标记/取消标记已拼完。</p>
+                    <button class="btn btn-sm btn-full" id="assistMarkAllColor" style="margin-top:0;">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        标记当前颜色全部已拼
+                    </button>
+                    <button class="btn btn-sm btn-full btn-remove" id="assistClearMarks" style="margin-top:0;">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        清除所有标记
+                    </button>
+                </div>
             </div>
             <!-- 进度 -->
             <div class="assist-progress">
@@ -1740,7 +1752,9 @@
                             识别色块图 · 网格对齐
                         </h4>
                         <p><strong>识别色块图</strong>：如果上传的图片本身就是格子图纸（其他软件生成的截图），此功能可自动检测格子大小并匹配颜色，保持原图格数不变。</p>
-                        <p><strong>网格对齐</strong>：上传底图后可打开此功能，拖拽调整图片和网格的相对位置，让编辑器网格线与底图格子线精确对齐，方便对照填色。</p>
+                        <p><strong>网格对齐</strong>（两种模式）：</p>
+                        <p>· <strong>两点标定（推荐）</strong>：在图片上点两个已知间距的格子角点，输入两点间的格数，系统自动计算缩放和偏移。操作简单、精度高。</p>
+                        <p>· <strong>手动调整</strong>：拖拽图片或网格调整位置，支持1/5/10像素三档步长，格子间距支持0.1px精度微调。可选择拖拽对象是图片还是网格。</p>
                     </div>
                     <div class="help-block">
                         <h4>
@@ -1790,8 +1804,13 @@
                             <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="9" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
                             辅助拼豆模式
                         </h4>
-                        <p>点击顶部方块图标进入。画布变为只读，选中某颜色后该颜色高亮显示，其余颜色被半透明遮罩覆盖，帮助你在实际拼豆时快速定位。</p>
-                        <p>提供计时功能和连续色块计数（纵向/横向），每段连续同色区域标注数字，大幅提升拼豆效率。可缩小为悬浮小窗拖拽到任意位置。</p>
+                        <p>点击顶部方块图标进入。画布变为标记模式，选中某颜色后该颜色高亮显示，其余颜色被半透明遮罩覆盖，帮助你在实际拼豆时快速定位。</p>
+                        <p>· <strong>标记已拼</strong>：在辅助模式下直接点击画布上的格子，即可标记该格为"已拼完"（显示绿色对勾）。再次点击取消标记。</p>
+                        <p>· <strong>批量标记</strong>：选中某颜色后点击"标记当前颜色全部已拼"，一键标记该颜色所有格子。</p>
+                        <p>· <strong>进度追踪</strong>：底部进度条实时显示已拼进度百分比，选中颜色时显示该颜色的进度，未选中时显示总进度。</p>
+                        <p>· <strong>连续计数</strong>：每段连续同色区域标注数字（支持纵向/横向切换），大幅提升拼豆效率。</p>
+                        <p>· <strong>计时器</strong>：内置计时功能，记录拼豆用时。</p>
+                        <p>· <strong>悬浮小窗</strong>：可缩小为悬浮小窗拖拽到任意位置，上下箭头快速切换颜色。</p>
                     </div>
                     <div class="help-block">
                         <h4>
@@ -1963,6 +1982,20 @@
                 <!-- 手动调整面板 -->
                 <div class="ga-manual-panel" id="gaManualPanel" style="display:none;">
                     <div class="grid-align-controls">
+                        <!-- 拖拽目标切换 -->
+                        <div class="ga-drag-target-row">
+                            <label style="font-size:10px;font-weight:600;color:var(--text-secondary);">拖拽对象：</label>
+                            <div class="ga-drag-target-btns">
+                                <button class="btn btn-sm ga-drag-btn active" data-target="image">
+                                    <svg viewBox="0 0 16 16" width="12" height="12"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="6" cy="6" r="1.5" fill="currentColor" opacity="0.4"/><path d="M2 11l3-3 2 2 3-3 4 5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/></svg>
+                                    拖拽图片
+                                </button>
+                                <button class="btn btn-sm ga-drag-btn" data-target="grid">
+                                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="currentColor" stroke-width="1" opacity="0.5"/><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                                    拖拽网格
+                                </button>
+                            </div>
+                        </div>
                         <div class="grid-align-slider-row">
                             <label>网格格子间距：<strong id="gaCellSizeVal">16.0 px</strong></label>
                             <input type="range" id="gaCellSizeSlider" min="30" max="500" value="160" step="1" class="slider">
@@ -1982,6 +2015,15 @@
                         <div class="grid-align-slider-row">
                             <label>图片缩放：<strong id="gaScaleVal">100%</strong></label>
                             <input type="range" id="gaScaleSlider" min="20" max="500" value="100" class="slider">
+                        </div>
+                        <!-- 偏移微调 - 支持步长选择 -->
+                        <div class="ga-offset-step-row">
+                            <label style="font-size:10px;font-weight:600;color:var(--text-secondary);">偏移步长：</label>
+                            <div class="ga-offset-step-btns">
+                                <button class="btn btn-sm ga-step-btn active" data-step="1">1px</button>
+                                <button class="btn btn-sm ga-step-btn" data-step="5">5px</button>
+                                <button class="btn btn-sm ga-step-btn" data-step="10">10px</button>
+                            </div>
                         </div>
                         <div class="grid-align-offset-row">
                             <div class="ga-offset-group">
