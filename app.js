@@ -9493,7 +9493,7 @@
         point1: null, // {x, y} 图片像素坐标
         point2: null,
         gridCount: 52,
-        dragTarget: 'image' // 'image' or 'grid' — 拖拽的是图片还是网格
+        dragTarget: 'image', // 'image' or 'grid' — 拖拽的是图片还是网格
         offsetStep: 1 // 偏移步长
     };
 
