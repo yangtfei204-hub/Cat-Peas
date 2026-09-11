@@ -1869,6 +1869,7 @@
             }
         }
 
+        updateDrawerHandle();
         syncDrawerSelection();
     }
 
@@ -8167,8 +8168,8 @@
         var mobBgMoveStep = container.querySelector('[data-original-id="bgMoveStep"]');
 
         function getMobBgStep() {
-            if (mobBgMoveStep) return parseInt(mobBgMoveStep.value) || 5;
-            return parseInt($('bgMoveStep').value) || 5;
+            if (mobBgMoveStep) return parseFloat(mobBgMoveStep.value) || 5;
+            return parseFloat($('bgMoveStep').value) || 5;
         }
 
         if (mobBgMoveUp) mobBgMoveUp.addEventListener('click', function () {
@@ -9604,15 +9605,13 @@
             alert('请先上传参考底图');
             return;
         }
-        // 预览使用固定的 cellSize，从主画板参数反推回预览参数
         _ga.cellSizePx = S.cellSize;
-        var scaleRatio = 1; // 因为初始时 cellSizePx === S.cellSize，比例为 1
-        _ga.imgOffX = Math.round(S.gridAlignImgOffX / scaleRatio);
-        _ga.imgOffY = Math.round(S.gridAlignImgOffY / scaleRatio);
-        _ga.gridOffX = Math.round(S.gridAlignGridOffX / scaleRatio);
-        _ga.gridOffY = Math.round(S.gridAlignGridOffY / scaleRatio);
-        // 反推 imgScale：gridAlignImgScale = (cellSizePx/S.cellSize) * (imgScale/100)
-        // 当 cellSizePx === S.cellSize 时，imgScale = gridAlignImgScale * 100
+        // 反推预览参数（初始时 cellSizePx === S.cellSize，比例为1）
+        var reverseRatio = _ga.cellSizePx / S.cellSize; // = 1
+        _ga.imgOffX = S.gridAlignImgOffX * reverseRatio;
+        _ga.imgOffY = S.gridAlignImgOffY * reverseRatio;
+        _ga.gridOffX = S.gridAlignGridOffX * reverseRatio;
+        _ga.gridOffY = S.gridAlignGridOffY * reverseRatio;
         _ga.imgScale = Math.round(S.gridAlignImgScale * (S.cellSize / _ga.cellSizePx) * 100);
         if (_ga.imgScale <= 0 || isNaN(_ga.imgScale)) _ga.imgScale = 100;
         _ga.zoom = 1;
@@ -9867,31 +9866,16 @@
 
     function applyGridAlign() {
         // 将预览坐标系的参数转换为主画板坐标系
-        // 预览中：totalW = gridW * _ga.cellSizePx，主画板中：totalW = gridW * S.cellSize
-        // 偏移量需要按比例转换
-        var previewTotalW = S.gridW * _ga.cellSizePx;
-        var previewTotalH = S.gridH * _ga.cellSizePx;
-        var mainTotalW = S.gridW * S.cellSize;
-        var mainTotalH = S.gridH * S.cellSize;
-        var scaleRatio = mainTotalW / previewTotalW; // 主画板 / 预览
+        var scaleRatio = S.cellSize / _ga.cellSizePx; // 主画板cellSize / 预览cellSize
 
-        // 图片缩放：在预览中 imgScale 是相对于预览的 baseScale
-        // 预览的 baseScale = min(previewTotalW/imgW, previewTotalH/imgH)
-        // 主画板的 baseScale = min(mainTotalW/imgW, mainTotalH/imgH)
-        // 由于 previewTotalW/mainTotalW = _ga.cellSizePx/S.cellSize（是常数比），
-        // 两个 baseScale 的比值也是 _ga.cellSizePx/S.cellSize
-        // 所以 finalScale 在预览中 = previewBaseScale * (imgScale/100)
-        //      finalScale 在主画板中 = mainBaseScale * gridAlignImgScale
-        //      需要 mainBaseScale * gridAlignImgScale = previewBaseScale * (imgScale/100)
-        //      gridAlignImgScale = (previewBaseScale / mainBaseScale) * (imgScale/100)
-        //                        = (_ga.cellSizePx / S.cellSize) * (imgScale/100)
+        // 图片缩放转换
         S.gridAlignImgScale = (_ga.cellSizePx / S.cellSize) * (_ga.imgScale / 100);
 
-        // 偏移量直接按比例缩放
-        S.gridAlignImgOffX = Math.round(_ga.imgOffX * scaleRatio);
-        S.gridAlignImgOffY = Math.round(_ga.imgOffY * scaleRatio);
-        S.gridAlignGridOffX = Math.round(_ga.gridOffX * scaleRatio);
-        S.gridAlignGridOffY = Math.round(_ga.gridOffY * scaleRatio);
+        // 偏移量按比例缩放，保留小数精度
+        S.gridAlignImgOffX = _ga.imgOffX * scaleRatio;
+        S.gridAlignImgOffY = _ga.imgOffY * scaleRatio;
+        S.gridAlignGridOffX = _ga.gridOffX * scaleRatio;
+        S.gridAlignGridOffY = _ga.gridOffY * scaleRatio;
         closeGridAlignModal();
         renderBg();
         showToast('网格对齐已应用', 'success');
