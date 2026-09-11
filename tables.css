@@ -387,3 +387,100 @@ body { overflow-y: auto; overflow-x: hidden; min-height: 100vh; }
     .tb-mode-btn { flex-direction: row; gap: 10px; padding: 12px; }
     .tb-mode-btn small { display: none; }
 }
+
+/* 空闲桌位紧凑区域 */
+.tb-idle-section {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.tb-idle-section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.tb-idle-compact-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tb-idle-mini-card {
+    padding: 10px 18px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    cursor: pointer;
+    font-family: var(--font-base);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.tb-idle-mini-card:hover {
+    border-color: var(--iris);
+    color: var(--iris-dark);
+    background: var(--iris-lighter);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+}
+
+.tb-idle-mini-card:active {
+    transform: translateY(0);
+}
+
+/* 历史记录删除按钮 */
+.tb-history-item {
+    position: relative;
+}
+
+.tb-history-del-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-xs);
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: var(--transition);
+    opacity: 0;
+}
+
+.tb-history-item:hover .tb-history-del-btn {
+    opacity: 1;
+}
+
+.tb-history-del-btn:hover {
+    background: var(--danger-light);
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+@media (max-width: 640px) {
+    .tb-history-del-btn {
+        opacity: 0.6;
+    }
+
+    .tb-idle-mini-card {
+        padding: 10px 14px;
+        font-size: 12px;
+    }
+}

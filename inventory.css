@@ -1066,3 +1066,212 @@ body {
 .inv-check-counters .inv-card-count-row {
     justify-content: center;
 }
+
+.inv-btn-sm {
+    padding: 4px 10px;
+    font-size: 10px;
+}
+
+/* ========================================
+   色板分组（添加弹窗）
+   ======================================== */
+.inv-palette-group-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 6px 4px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border-light);
+    transition: var(--transition);
+    margin-top: 4px;
+}
+
+.inv-palette-group-header:first-child {
+    margin-top: 0;
+}
+
+.inv-palette-group-header:hover {
+    background: var(--iris-lighter);
+    border-radius: var(--radius-xs);
+}
+
+.inv-palette-group-header.collapsed .inv-palette-group-arrow {
+    transform: rotate(-90deg);
+}
+
+.inv-palette-group-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.08);
+    flex-shrink: 0;
+}
+
+.inv-palette-group-title {
+    flex: 1;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+}
+
+.inv-palette-group-count {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 1px 6px;
+    background: var(--border-light);
+    border-radius: 8px;
+}
+
+.inv-palette-group-arrow {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.inv-palette-group-cells {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    padding: 4px 0 8px;
+    transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.2s ease;
+    max-height: 500px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.inv-palette-group-cells.inv-palette-group-collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+}
+
+@media (max-width: 640px) {
+    .inv-palette-group-cells {
+        grid-template-columns: repeat(7, 1fr);
+    }
+}
+
+/* ========================================
+   库存列表分组标题
+   ======================================== */
+.inv-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, var(--pink-lighter), var(--iris-lighter));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 6px;
+}
+
+.inv-group-header:first-child {
+    margin-top: 0;
+}
+
+.inv-group-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,0.08);
+    flex-shrink: 0;
+}
+
+.inv-group-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text);
+    flex: 1;
+}
+
+.inv-group-count {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 2px 8px;
+    background: var(--bg-card);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.inv-group-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.inv-group-badge-out {
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+.inv-group-badge-low {
+    background: #fef6e8;
+    color: #c08830;
+    border: 1px solid #e0a860;
+}
+
+[data-theme="dark"] .inv-group-badge-low {
+    background: #3a3428;
+    color: #d4a040;
+    border-color: #8a6d30;
+}
+
+@media (max-width: 640px) {
+    .inv-group-header {
+        padding: 8px 10px;
+    }
+
+    .inv-group-title {
+        font-size: 12px;
+    }
+
+    .inv-group-badge {
+        font-size: 8px;
+        padding: 1px 6px;
+    }
+}
+
+/* 库存列表分组折叠 */
+.inv-group-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.inv-group-header:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.inv-group-arrow {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.inv-group-header.collapsed .inv-group-arrow {
+    transform: rotate(-90deg);
+}
+
+.inv-stock-group-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.2s ease;
+    max-height: 5000px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.inv-stock-group-container.inv-stock-group-collapsed {
+    max-height: 0;
+    opacity: 0;
+    gap: 0;
+}

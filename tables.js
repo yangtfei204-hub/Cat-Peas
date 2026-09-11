@@ -105,7 +105,8 @@
         overtimeAutoSwitch: true,
         overtimeTopSort: true,
         defaultMode: 'up',
-        defaultDuration: 60
+        defaultDuration: 60,
+        autoClear: false
     };
     var currentModalTableId = null;
     var timerInterval = null;
@@ -214,9 +215,50 @@
             return a.sortOrder - b.sortOrder;
         });
 
+        // 分为活跃组和空闲组
+        var activeCards = [];
+        var idleCards = [];
         sorted.forEach(function (table) {
+            var s = sessions[table.id] || { status: 'idle' };
+            if (s.status === 'idle') {
+                idleCards.push(table);
+            } else {
+                activeCards.push(table);
+            }
+        });
+
+        // 先渲染活跃桌位
+        activeCards.forEach(function (table) {
             grid.appendChild(createTableCard(table));
         });
+
+        // 空闲桌位：如果数量较多（>3）且有活跃桌位，使用紧凑模式
+        if (idleCards.length > 3 && activeCards.length > 0) {
+            var idleSection = document.createElement('div');
+            idleSection.className = 'tb-idle-section';
+            idleSection.innerHTML = '<div class="tb-idle-section-title">' +
+                '<svg viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="8" r="3" fill="var(--border)" stroke="var(--text-muted)" stroke-width="1"/></svg>' +
+                '<span>空闲桌位 (' + idleCards.length + ')</span>' +
+                '</div>';
+            var idleGrid = document.createElement('div');
+            idleGrid.className = 'tb-idle-compact-grid';
+            idleCards.forEach(function (table) {
+                var miniCard = document.createElement('button');
+                miniCard.className = 'tb-idle-mini-card';
+                miniCard.textContent = table.name;
+                miniCard.addEventListener('click', function () {
+                    openStartModal(table.id);
+                });
+                idleGrid.appendChild(miniCard);
+            });
+            idleSection.appendChild(idleGrid);
+            grid.appendChild(idleSection);
+        } else {
+            // 空闲桌位少或没有活跃桌位，正常显示
+            idleCards.forEach(function (table) {
+                grid.appendChild(createTableCard(table));
+            });
+        }
 
         updateStatusBar();
     }
@@ -258,7 +300,10 @@
             } else {
                 timerLabel = '正计时';
             }
-            if (session.status === 'paused') timerLabel = '已暂停';
+            if (session.status === 'paused') {
+                var pausedSince = session.pauseStartTime ? (Date.now() - session.pauseStartTime) / 1000 : 0;
+                timerLabel = '已暂停' + (pausedSince > 60 ? ' ' + fmtTimer(pausedSince) : '');
+            }
             if (session.status === 'finished') timerLabel = '总用时';
 
             var timerHtml = '<div class="tb-card-timer">' +
@@ -334,6 +379,27 @@
         $('tbIdleCount').textContent = idle;
         $('tbTotalGuests').textContent = guests;
 
+        // 今日活跃桌位营收
+        var todayRev = 0;
+        tables.forEach(function (t) {
+            var s = sessions[t.id];
+            if (s && s.status !== 'idle' && s.price) todayRev += s.price;
+        });
+        $('tbTodayRevenue').textContent = todayRev.toFixed(0);
+
+        // 今日营收（从活跃桌位 + 历史记录汇总）
+        var todayRev = 0;
+        tables.forEach(function (t) {
+            var s = sessions[t.id];
+            if (s && s.status !== 'idle' && s.price) todayRev += s.price;
+        });
+        // 加上已结束但还没清台的
+        tables.forEach(function (t) {
+            var s = sessions[t.id];
+            if (s && s.status === 'finished' && s.price) todayRev += s.price;
+        });
+        $('tbTodayRevenue').textContent = todayRev.toFixed(0);
+
         var banner = $('tbOvertimeBanner');
         if (overtime > 0) {
             banner.classList.add('active');
@@ -363,6 +429,11 @@
                     if (ot && !s._wasOvertime) {
                         s._wasOvertime = true;
                         needRender = true;
+                        // 更新卡片样式而不是重建
+                        var card = document.querySelector('[data-table-id="' + t.id + '"]');
+                        if (card) {
+                            card.className = 'tb-card status-overtime';
+                        }
                     }
                 }
             });
@@ -378,6 +449,11 @@
     //  Actions
     // ===========================
     function startTable(tableId, mode, duration, guestCount, price, guestNote, pattern) {
+        var existing = sessions[tableId];
+        if (existing && existing.status === 'active') {
+            showToast('该桌位已在使用中', 'error');
+            return;
+        }
         var now = Date.now();
         sessions[tableId] = {
             status: 'active',
@@ -467,6 +543,11 @@
 
         dbPut(historyEntry);
         saveState();
+        // 自动清台
+        if (settings.autoClear) {
+            sessions[tableId] = { status: 'idle' };
+            saveState();
+        }
         renderGrid();
         showToast((table ? table.name : '') + ' 已结束', 'success');
     }
@@ -618,6 +699,8 @@
                 var modeLabel = r.timerMode === 'down' ? Math.round(r.timerDuration / 60) + '分钟套餐' : '正计时';
                 var overtimeHtml = r.overtime ? '<span class="tb-history-item-overtime">超时 ' + fmtTimer(r.overtimeSeconds) + '</span>' : '';
 
+
+                el.dataset.hid = r.id;
                 el.innerHTML =
                     '<div class="tb-history-item-top">' +
                         '<span class="tb-history-item-name">' + escapeHtml(r.tableName) + '</span>' +
@@ -631,9 +714,31 @@
                         (r.guestCount ? r.guestCount + '位  ' : '') +
                         (r.guestNote ? escapeHtml(r.guestNote) : '') +
                         (r.endNote ? '  [' + escapeHtml(r.endNote) + ']' : '') +
-                    '</div>';
+                    '</div>' +
+                    '<button class="tb-history-del-btn" data-hid="' + r.id + '" title="删除此记录">' +
+                        '<svg viewBox="0 0 16 16" width="11" height="11"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
+                    '</button>';
                 list.appendChild(el);
             });
+
+
+            // 绑定删除按钮
+            list.querySelectorAll('.tb-history-del-btn').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var hid = btn.dataset.hid;
+                    if (!confirm('确定删除这条记录吗？')) return;
+                    openDB().then(function (db) {
+                        var tx = db.transaction(STORE_HISTORY, 'readwrite');
+                        tx.objectStore(STORE_HISTORY).delete(hid);
+                        tx.oncomplete = function () {
+                            refreshHistory();
+                            showToast('已删除', 'success');
+                        };
+                    });
+                });
+            });
+
         });
     }
 
@@ -643,6 +748,7 @@
     function openSettings() {
         $('settingOvertimeSwitch').checked = settings.overtimeAutoSwitch;
         $('settingOvertimeTop').checked = settings.overtimeTopSort;
+        $('settingAutoClear').checked = settings.autoClear || false;
         $('settingDefaultMode').value = settings.defaultMode || 'up';
         $('settingDefaultDuration').value = settings.defaultDuration || 60;
         renderSettingsTableList();
@@ -806,6 +912,7 @@
         $('settingsSaveBtn').addEventListener('click', function () {
             settings.overtimeAutoSwitch = $('settingOvertimeSwitch').checked;
             settings.overtimeTopSort = $('settingOvertimeTop').checked;
+            settings.autoClear = $('settingAutoClear').checked;
             settings.defaultMode = $('settingDefaultMode').value;
             settings.defaultDuration = parseInt($('settingDefaultDuration').value) || 60;
             saveState();
@@ -859,6 +966,13 @@
             var pattern = $('patternInput').value.trim();
             startTable(currentModalTableId, mode, duration, guests, price, note, pattern);
             closeStartModal();
+        });
+
+
+        $('customDuration').addEventListener('input', function () {
+            document.querySelectorAll('.tb-dur-btn').forEach(function (b) {
+                b.classList.toggle('active', parseInt(b.dataset.min) === parseInt($('customDuration').value));
+            });
         });
 
         // Edit modal

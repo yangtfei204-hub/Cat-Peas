@@ -160,57 +160,121 @@
         }
 
         list.innerHTML = '';
-        items.forEach(function (item) {
-            var card = document.createElement('div');
-            card.className = 'inv-card' + (item.status === 'out' ? ' inv-card-out' : '') + (item.status === 'low' ? ' inv-card-low' : '');
 
-            var statusClass = item.status === 'ok' ? 'status-ok' : item.status === 'low' ? 'status-low' : 'status-out';
+        // 判断是否按字母分组显示（仅在按色号排序且无搜索筛选时分组）
+        var shouldGroup = (sort === 'id_asc' || sort === 'id_desc') && !search && filter === 'all';
 
-            card.innerHTML =
-                '<div class="inv-card-swatch" style="background:' + item.hex + '"></div>' +
-                '<div class="inv-card-info">' +
-                    '<div class="inv-card-top">' +
-                        '<span class="inv-card-id">' + escapeHtml(item.colorId) + '</span>' +
-                        '<span class="inv-card-name">' + escapeHtml(item.colorName) + '</span>' +
-                        '<div class="inv-card-status">' +
-                            '<select class="' + statusClass + '" data-id="' + item.id + '">' +
-                                '<option value="ok"' + (item.status === 'ok' ? ' selected' : '') + '>充足</option>' +
-                                '<option value="low"' + (item.status === 'low' ? ' selected' : '') + '>偏少</option>' +
-                                '<option value="out"' + (item.status === 'out' ? ' selected' : '') + '>缺货</option>' +
-                            '</select>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="inv-card-mid">' +
-                        '<div class="inv-card-count-row">' +
-                            '<span class="inv-count-label">盒</span>' +
-                            '<div class="inv-counter">' +
-                                '<button class="inv-counter-btn" data-action="box-dec" data-id="' + item.id + '">-</button>' +
-                                '<input type="number" class="inv-counter-input" value="' + item.boxCount + '" min="0" data-field="box" data-id="' + item.id + '">' +
-                                '<button class="inv-counter-btn" data-action="box-inc" data-id="' + item.id + '">+</button>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="inv-card-count-row">' +
-                            '<span class="inv-count-label">袋</span>' +
-                            '<div class="inv-counter">' +
-                                '<button class="inv-counter-btn" data-action="bag-dec" data-id="' + item.id + '">-</button>' +
-                                '<input type="number" class="inv-counter-input" value="' + item.bagCount + '" min="0" data-field="bag" data-id="' + item.id + '">' +
-                                '<button class="inv-counter-btn" data-action="bag-inc" data-id="' + item.id + '">+</button>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="inv-card-bottom">' +
-                        '<input type="text" class="inv-card-note" placeholder="备注..." value="' + escapeHtml(item.note || '') + '" data-id="' + item.id + '">' +
-                        '<span class="inv-card-time">' + formatTime(item.updatedAt) + '</span>' +
-                        '<button class="inv-card-del" data-id="' + item.id + '" title="删除">' +
-                            '<svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
-                        '</button>' +
-                    '</div>' +
-                '</div>';
+        if (shouldGroup) {
+            // 按首字母分组
+            var grouped = {};
+            items.forEach(function (item) {
+                var prefix = item.colorId.charAt(0).toUpperCase();
+                if (!grouped[prefix]) grouped[prefix] = [];
+                grouped[prefix].push(item);
+            });
 
-            list.appendChild(card);
-        });
+            var prefixKeys = Object.keys(grouped).sort();
+            if (sort === 'id_desc') prefixKeys.reverse();
+
+            prefixKeys.forEach(function (prefix) {
+                // 分组标题
+                var groupHeader = document.createElement('div');
+                groupHeader.className = 'inv-group-header';
+                var groupItems = grouped[prefix];
+                var groupOutCount = 0, groupLowCount = 0;
+                groupItems.forEach(function (gi) {
+                    if (gi.status === 'out') groupOutCount++;
+                    if (gi.status === 'low') groupLowCount++;
+                });
+                var badgeHtml = '';
+                if (groupOutCount > 0) badgeHtml += '<span class="inv-group-badge inv-group-badge-out">' + groupOutCount + ' 缺货</span>';
+                if (groupLowCount > 0) badgeHtml += '<span class="inv-group-badge inv-group-badge-low">' + groupLowCount + ' 偏少</span>';
+
+                groupHeader.innerHTML =
+                    '<span class="inv-group-dot" style="background:' + groupItems[0].hex + '"></span>' +
+                    '<span class="inv-group-title">' + (PALETTE_GROUP_NAMES[prefix] || prefix + ' 系列') + '</span>' +
+                    '<span class="inv-group-count">' + groupItems.length + ' 色</span>' +
+                    badgeHtml +
+                    '<svg class="inv-group-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+                groupHeader.addEventListener('click', function () {
+                    var container = groupHeader.nextElementSibling;
+                    if (container) {
+                        var collapsed = container.classList.toggle('inv-stock-group-collapsed');
+                        groupHeader.classList.toggle('collapsed', collapsed);
+                    }
+                });
+                groupHeader.classList.add('collapsed');
+                groupHeader.style.cursor = 'pointer';
+                list.appendChild(groupHeader);
+
+                // 色号卡片容器（默认折叠）
+                var groupContainer = document.createElement('div');
+                groupContainer.className = 'inv-stock-group-container inv-stock-group-collapsed';
+
+                groupItems.forEach(function (item) {
+                    groupContainer.appendChild(createStockCard(item));
+                });
+
+                list.appendChild(groupContainer);
+            });
+        } else {
+            items.forEach(function (item) {
+                list.appendChild(createStockCard(item));
+            });
+        }
 
         bindStockEvents();
+    }
+
+    function createStockCard(item) {
+        var card = document.createElement('div');
+        card.className = 'inv-card' + (item.status === 'out' ? ' inv-card-out' : '') + (item.status === 'low' ? ' inv-card-low' : '');
+
+        var statusClass = item.status === 'ok' ? 'status-ok' : item.status === 'low' ? 'status-low' : 'status-out';
+
+        card.innerHTML =
+            '<div class="inv-card-swatch" style="background:' + item.hex + '"></div>' +
+            '<div class="inv-card-info">' +
+                '<div class="inv-card-top">' +
+                    '<span class="inv-card-id">' + escapeHtml(item.colorId) + '</span>' +
+                    '<span class="inv-card-name">' + escapeHtml(item.colorName) + '</span>' +
+                    '<div class="inv-card-status">' +
+                        '<select class="' + statusClass + '" data-id="' + item.id + '">' +
+                            '<option value="ok"' + (item.status === 'ok' ? ' selected' : '') + '>充足</option>' +
+                            '<option value="low"' + (item.status === 'low' ? ' selected' : '') + '>偏少</option>' +
+                            '<option value="out"' + (item.status === 'out' ? ' selected' : '') + '>缺货</option>' +
+                        '</select>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="inv-card-mid">' +
+                    '<div class="inv-card-count-row">' +
+                        '<span class="inv-count-label">盒</span>' +
+                        '<div class="inv-counter">' +
+                            '<button class="inv-counter-btn" data-action="box-dec" data-id="' + item.id + '">-</button>' +
+                            '<input type="number" class="inv-counter-input" value="' + item.boxCount + '" min="0" data-field="box" data-id="' + item.id + '">' +
+                            '<button class="inv-counter-btn" data-action="box-inc" data-id="' + item.id + '">+</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="inv-card-count-row">' +
+                        '<span class="inv-count-label">袋</span>' +
+                        '<div class="inv-counter">' +
+                            '<button class="inv-counter-btn" data-action="bag-dec" data-id="' + item.id + '">-</button>' +
+                            '<input type="number" class="inv-counter-input" value="' + item.bagCount + '" min="0" data-field="bag" data-id="' + item.id + '">' +
+                            '<button class="inv-counter-btn" data-action="bag-inc" data-id="' + item.id + '">+</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="inv-card-bottom">' +
+                    '<input type="text" class="inv-card-note" placeholder="备注..." value="' + escapeHtml(item.note || '') + '" data-id="' + item.id + '">' +
+                    '<span class="inv-card-time">' + formatTime(item.updatedAt) + '</span>' +
+                    '<button class="inv-card-del" data-id="' + item.id + '" title="删除">' +
+                        '<svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
+                    '</button>' +
+                '</div>' +
+            '</div>';
+
+        return card;
     }
 
     function findItem(id) { return stockData.find(function (s) { return s.id === id; }); }
@@ -250,7 +314,7 @@
                 if (!item) return;
                 item.status = sel.value;
                 item.updatedAt = Date.now();
-                dbPut(STORE_STOCK, item).then(function () { renderStockList(); });
+                dbPut(STORE_STOCK, item).then(function () { renderStockList(); renderShortageList(); });
             });
         });
 
@@ -271,6 +335,7 @@
                 dbDelete(STORE_STOCK, id).then(function () {
                     stockData = stockData.filter(function (s) { return s.id !== id; });
                     renderStockList();
+                    renderShortageList();
                     showToast('已删除', 'success');
                 });
             });
@@ -321,9 +386,28 @@
             card.innerHTML = '<div class="inv-record-header">' +
                 '<span class="inv-record-date">' + formatDate(rec.timestamp) + '</span>' +
                 (rec.note ? '<span class="inv-record-note">' + escapeHtml(rec.note) + '</span>' : '') +
+                '<button class="inv-card-del inv-record-del" data-rid="' + rec.id + '" title="删除此记录" style="margin-left:auto;">' +
+                    '<svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
+                '</button>' +
                 '</div>' + changesHtml;
             list.appendChild(card);
         });
+
+
+        // 绑定删除事件
+        list.querySelectorAll('.inv-record-del').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var rid = btn.dataset.rid;
+                if (!confirm('确定删除这条盘点记录吗？')) return;
+                dbDelete(STORE_RECORDS, rid).then(function () {
+                    recordData = recordData.filter(function (r) { return r.id !== rid; });
+                    renderRecordList();
+                    showToast('已删除', 'success');
+                });
+            });
+        });
+
     }
 
     // ===========================
@@ -339,6 +423,11 @@
         $('shortageOutTotal').textContent = outItems.length;
         $('shortageLowTotal').textContent = lowItems.length;
         $('shortageTotalColors').textContent = stockData.length;
+
+        // 在缺货标题中附加盒袋合计
+        var outBoxSum = 0, outBagSum = 0, lowBoxSum = 0, lowBagSum = 0;
+        outItems.forEach(function (s) { outBoxSum += s.boxCount; outBagSum += s.bagCount; });
+        lowItems.forEach(function (s) { lowBoxSum += s.boxCount; lowBagSum += s.bagCount; });
 
         var list = $('shortageList');
         if (outItems.length === 0 && lowItems.length === 0) {
@@ -379,6 +468,12 @@
     function openAddModal() { buildAddPalette(); $('addModal').classList.add('active'); }
     function closeAddModal() { $('addModal').classList.remove('active'); }
 
+    var PALETTE_GROUP_NAMES = {
+        'A': 'A - 黄橙系', 'B': 'B - 绿色系', 'C': 'C - 蓝青系',
+        'D': 'D - 蓝紫系', 'E': 'E - 粉玫系', 'F': 'F - 红色系',
+        'G': 'G - 棕肤系', 'H': 'H - 黑白灰系', 'M': 'M - 大地系'
+    };
+
     function buildAddPalette() {
         var grid = $('addPaletteGrid');
         var searchVal = ($('paletteSearchInput').value || '').trim().toLowerCase();
@@ -386,27 +481,92 @@
         var existingIds = new Set();
         stockData.forEach(function (s) { existingIds.add(s.colorId); });
 
+        // 按首字母分组
+        var groups = {};
         MARD_PALETTE.forEach(function (c) {
             if (searchVal && c.id.toLowerCase().indexOf(searchVal) < 0 && c.name.toLowerCase().indexOf(searchVal) < 0) return;
-            var cell = document.createElement('div');
-            cell.className = 'inv-palette-cell' + (existingIds.has(c.id) ? ' added' : '');
-            cell.style.background = c.hex;
-            cell.title = c.id + ' ' + c.name;
-            var lum = luminance(c.hex);
-            var span = document.createElement('span');
-            span.className = 'inv-pcell-id';
-            span.textContent = c.id;
-            span.style.color = lum > 0.55 ? 'rgba(50,40,45,0.6)' : 'rgba(255,255,255,0.8)';
-            cell.appendChild(span);
-            cell.addEventListener('click', function () {
-                if (existingIds.has(c.id)) { showToast(c.id + ' 已在库存中', 'error'); return; }
-                addToStock(c.id, c.name, c.hex, 0, 0);
-                existingIds.add(c.id);
-                cell.classList.add('added');
-                showToast('已添加 ' + c.id + ' ' + c.name, 'success');
-            });
-            grid.appendChild(cell);
+            var prefix = c.id.charAt(0);
+            if (!groups[prefix]) groups[prefix] = [];
+            groups[prefix].push(c);
         });
+
+        var prefixes = Object.keys(groups).sort();
+
+        // 搜索时不分组，直接平铺
+        if (searchVal) {
+            prefixes.forEach(function (prefix) {
+                groups[prefix].forEach(function (c) {
+                    grid.appendChild(createPaletteCell(c, existingIds));
+                });
+            });
+            return;
+        }
+
+        prefixes.forEach(function (prefix) {
+            var items = groups[prefix];
+            var addedCount = 0;
+            items.forEach(function (c) { if (existingIds.has(c.id)) addedCount++; });
+
+            // 分组标题
+            var header = document.createElement('div');
+            header.className = 'inv-palette-group-header';
+            header.innerHTML =
+                '<span class="inv-palette-group-dot" style="background:' + items[0].hex + '"></span>' +
+                '<span class="inv-palette-group-title">' + (PALETTE_GROUP_NAMES[prefix] || prefix) + '</span>' +
+                '<span class="inv-palette-group-count">' + addedCount + '/' + items.length + '</span>' +
+                '<svg class="inv-palette-group-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+            header.addEventListener('click', function () {
+                var wrapper = header.nextElementSibling;
+                if (wrapper) {
+                    var collapsed = wrapper.classList.toggle('inv-palette-group-collapsed');
+                    header.classList.toggle('collapsed', collapsed);
+                }
+            });
+
+            header.classList.add('collapsed');
+            grid.appendChild(header);
+
+            // 色块容器（默认折叠）
+            var wrapper = document.createElement('div');
+            wrapper.className = 'inv-palette-group-cells inv-palette-group-collapsed';
+
+            items.forEach(function (c) {
+                wrapper.appendChild(createPaletteCell(c, existingIds));
+            });
+
+            grid.appendChild(wrapper);
+        });
+    }
+
+    function createPaletteCell(c, existingIds) {
+        var cell = document.createElement('div');
+        cell.className = 'inv-palette-cell' + (existingIds.has(c.id) ? ' added' : '');
+        cell.style.background = c.hex;
+        cell.title = c.id + ' ' + c.name;
+        var lum = luminance(c.hex);
+        var span = document.createElement('span');
+        span.className = 'inv-pcell-id';
+        span.textContent = c.id;
+        span.style.color = lum > 0.55 ? 'rgba(50,40,45,0.6)' : 'rgba(255,255,255,0.8)';
+        cell.appendChild(span);
+        cell.addEventListener('click', function () {
+            if (existingIds.has(c.id)) { showToast(c.id + ' 已在库存中', 'error'); return; }
+            addToStock(c.id, c.name, c.hex, 0, 0);
+            existingIds.add(c.id);
+            cell.classList.add('added');
+            // 更新分组标题的计数
+            var header = cell.closest('.inv-palette-group-cells');
+            if (header && header.previousElementSibling) {
+                var countEl = header.previousElementSibling.querySelector('.inv-palette-group-count');
+                if (countEl) {
+                    var parts = countEl.textContent.split('/');
+                    countEl.textContent = (parseInt(parts[0]) + 1) + '/' + parts[1];
+                }
+            }
+            showToast('已添加 ' + c.id + ' ' + c.name, 'success');
+        });
+        return cell;
     }
 
     function addToStock(colorId, colorName, hex, boxCount, bagCount) {
@@ -418,7 +578,14 @@
             note: '', updatedAt: Date.now()
         };
         stockData.push(item);
-        dbPut(STORE_STOCK, item).then(function () { renderStockList(); });
+        dbPut(STORE_STOCK, item).then(function () {
+            renderStockList();
+            // 滚动到列表底部看到新增的
+            var list = document.getElementById('stockList');
+            if (list && list.lastElementChild) {
+                list.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        });
     }
 
     function addManualColor() {
@@ -492,11 +659,15 @@
         var newBag = parseInt($('ckBagInput').value) || 0;
         var newStatus = $('ckStatusSel').value;
 
-        checkChanges.push({
-            colorId: item.colorId, colorName: item.colorName, hex: item.hex,
-            oldBoxCount: item.boxCount, newBoxCount: newBox,
-            oldBagCount: item.bagCount, newBagCount: newBag
-        });
+        // 只记录有变动的项
+        if (newBox !== item.boxCount || newBag !== item.bagCount || newStatus !== item.status) {
+            checkChanges.push({
+                colorId: item.colorId, colorName: item.colorName, hex: item.hex,
+                oldBoxCount: item.boxCount, newBoxCount: newBox,
+                oldBagCount: item.bagCount, newBagCount: newBag,
+                oldStatus: item.status, newStatus: newStatus
+            });
+        }
 
         item.boxCount = newBox; item.bagCount = newBag;
         item.status = newStatus; item.updatedAt = Date.now();
@@ -516,6 +687,8 @@
         $('checkModal').classList.remove('active');
         showToast('盘点完成！共 ' + checkItems.length + ' 个色号', 'success');
         renderStockList();
+        renderRecordList();
+        renderShortageList();
     }
 
     function abortCheck() {
@@ -527,6 +700,8 @@
         $('checkModal').classList.remove('active');
         showToast('盘点已中断，已盘点的数据已保存', 'success');
         renderStockList();
+        renderRecordList();
+        renderShortageList();
     }
 
     // ===========================
@@ -640,7 +815,11 @@
 
         document.querySelectorAll('.inv-tab').forEach(function (tab) { tab.addEventListener('click', function () { switchTab(tab.dataset.tab); }); });
 
-        $('stockSearch').addEventListener('input', renderStockList);
+        var _stockSearchTimer = null;
+        $('stockSearch').addEventListener('input', function () {
+            clearTimeout(_stockSearchTimer);
+            _stockSearchTimer = setTimeout(renderStockList, 200);
+        });
         $('stockFilter').addEventListener('change', renderStockList);
         $('stockSort').addEventListener('change', renderStockList);
         $('recordRange').addEventListener('change', renderRecordList);
@@ -657,6 +836,34 @@
         });
 
         $('paletteSearchInput').addEventListener('input', buildAddPalette);
+
+        $('addAllPaletteBtn').addEventListener('click', function () {
+            var existingIds = new Set();
+            stockData.forEach(function (s) { existingIds.add(s.colorId); });
+            var added = 0;
+            var promises = [];
+            MARD_PALETTE.forEach(function (c) {
+                if (existingIds.has(c.id)) return;
+                var item = {
+                    id: 'inv_' + c.id,
+                    colorId: c.id, colorName: c.name, hex: c.hex,
+                    boxCount: 0, bagCount: 0,
+                    status: 'out', note: '', updatedAt: Date.now()
+                };
+                stockData.push(item);
+                promises.push(dbPut(STORE_STOCK, item));
+                added++;
+            });
+            if (added === 0) {
+                showToast('所有色号已在库存中', 'error');
+                return;
+            }
+            Promise.all(promises).then(function () {
+                renderStockList();
+                buildAddPalette();
+                showToast('已添加 ' + added + ' 个色号', 'success');
+            });
+        });
         $('manualAddBtn').addEventListener('click', addManualColor);
         $('manualBoxDec').addEventListener('click', function () { var i=$('manualBoxCount'); var v=parseInt(i.value)||0; if(v>0) i.value=v-1; });
         $('manualBoxInc').addEventListener('click', function () { $('manualBoxCount').value=(parseInt($('manualBoxCount').value)||0)+1; });
@@ -666,8 +873,34 @@
         $('stockCheckBtn').addEventListener('click', startCheck);
         $('checkModalClose').addEventListener('click', function () { $('checkModal').classList.remove('active'); });
         $('checkConfirmBtn').addEventListener('click', confirmCheckItem);
+
+        // 盘点键盘快捷键
+        document.addEventListener('keydown', function (e) {
+            if (!document.getElementById('checkModal').classList.contains('active')) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                if (e.key === 'Enter') { e.preventDefault(); confirmCheckItem(); }
+                return;
+            }
+            if (e.key === 'Enter') { e.preventDefault(); confirmCheckItem(); }
+            if (e.key === 'Tab') { e.preventDefault(); checkIndex++; renderCheckCard(); }
+        });
+
         $('checkSkipBtn').addEventListener('click', function () { checkIndex++; renderCheckCard(); });
         $('checkAbortBtn').addEventListener('click', function () { if (confirm('确定中断盘点吗？')) abortCheck(); });
+
+        $('stockClearAllBtn').addEventListener('click', function () {
+            if (stockData.length === 0) { showToast('库存已经是空的', 'error'); return; }
+            if (!confirm('确定清空全部库存数据吗？共 ' + stockData.length + ' 个色号将被删除。此操作不可恢复。')) return;
+            if (!confirm('再次确认：清空后无法恢复，建议先导出备份。确定继续？')) return;
+            var promises = [];
+            stockData.forEach(function (s) { promises.push(dbDelete(STORE_STOCK, s.id)); });
+            Promise.all(promises).then(function () {
+                stockData = [];
+                renderStockList();
+                renderShortageList();
+                showToast('已清空全部库存', 'success');
+            });
+        });
 
         $('shortageCopyBtn').addEventListener('click', copyShortage);
         $('invExportBtn').addEventListener('click', exportData);

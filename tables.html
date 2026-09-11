@@ -54,6 +54,9 @@
         <div class="tb-status-item">
             <span>总人数: <strong id="tbTotalGuests">0</strong></span>
         </div>
+        <div class="tb-status-item">
+            <span>今日营收: <strong id="tbTodayRevenue">0</strong>元</span>
+        </div>
     </div>
 
     <!-- 超时提醒横幅 -->
@@ -302,6 +305,11 @@
                         <input type="checkbox" id="settingOvertimeTop" checked>
                         <span class="tb-toggle-slider"></span>
                         <span>超时桌位置顶高亮显示</span>
+                    </label>
+                    <label class="tb-toggle">
+                        <input type="checkbox" id="settingAutoClear">
+                        <span class="tb-toggle-slider"></span>
+                        <span>结束后自动清台（跳过已结束状态）</span>
                     </label>
                 </div>
 
