@@ -586,6 +586,7 @@
                                 <div style="display:flex;flex-direction:column;gap:2px;">
                                     <label style="font-size:10px;color:var(--text-muted);">步长：</label>
                                     <select id="bgMoveStep" class="custom-input" style="padding:3px 4px;font-size:10px;width:60px;">
+                                        <option value="0.5">0.5px</option>
                                         <option value="1">1px</option>
                                         <option value="5" selected>5px</option>
                                         <option value="10">10px</option>
@@ -1028,6 +1029,21 @@
                 <div class="assist-mark-actions" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
                     <label class="assist-color-label">标记已拼进度：</label>
                     <p class="size-note" style="margin-bottom:6px;">点击画布上的格子可标记/取消标记已拼完。</p>
+                    <div style="display:flex;gap:4px;">
+                        <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+                            <label class="assist-color-label" style="font-size:10px;margin-bottom:0;">按行/列标记：</label>
+                            <div style="display:flex;gap:3px;align-items:center;">
+                                <label style="font-size:10px;color:var(--text-muted);flex-shrink:0;">行号</label>
+                                <input type="number" id="assistMarkRow" min="0" class="custom-input" style="width:46px;text-align:center;padding:4px 2px;font-size:11px;" placeholder="0">
+                                <button class="btn btn-sm" id="assistMarkRowBtn" style="padding:4px 8px;font-size:10px;">标记行</button>
+                            </div>
+                            <div style="display:flex;gap:3px;align-items:center;">
+                                <label style="font-size:10px;color:var(--text-muted);flex-shrink:0;">列号</label>
+                                <input type="number" id="assistMarkCol" min="0" class="custom-input" style="width:46px;text-align:center;padding:4px 2px;font-size:11px;" placeholder="0">
+                                <button class="btn btn-sm" id="assistMarkColBtn" style="padding:4px 8px;font-size:10px;">标记列</button>
+                            </div>
+                        </div>
+                    </div>
                     <button class="btn btn-sm btn-full" id="assistMarkAllColor" style="margin-top:0;">
                         <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         标记当前颜色全部已拼
@@ -2020,6 +2036,7 @@
                         <div class="ga-offset-step-row">
                             <label style="font-size:10px;font-weight:600;color:var(--text-secondary);">偏移步长：</label>
                             <div class="ga-offset-step-btns">
+                                <button class="btn btn-sm ga-step-btn" data-step="0.5">0.5</button>
                                 <button class="btn btn-sm ga-step-btn active" data-step="1">1px</button>
                                 <button class="btn btn-sm ga-step-btn" data-step="5">5px</button>
                                 <button class="btn btn-sm ga-step-btn" data-step="10">10px</button>

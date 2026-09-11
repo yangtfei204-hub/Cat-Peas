@@ -2887,23 +2887,23 @@
         });
         // 底图位置微调
         $('bgMoveUp').addEventListener('click', function () {
-            var step = parseInt($('bgMoveStep').value) || 5;
-            S.gridAlignImgOffY -= step;
+            var step = parseFloat($('bgMoveStep').value) || 5;
+            S.gridAlignImgOffY = Math.round((S.gridAlignImgOffY - step) * 10) / 10;
             renderBg();
         });
         $('bgMoveDown').addEventListener('click', function () {
-            var step = parseInt($('bgMoveStep').value) || 5;
-            S.gridAlignImgOffY += step;
+            var step = parseFloat($('bgMoveStep').value) || 5;
+            S.gridAlignImgOffY = Math.round((S.gridAlignImgOffY + step) * 10) / 10;
             renderBg();
         });
         $('bgMoveLeft').addEventListener('click', function () {
-            var step = parseInt($('bgMoveStep').value) || 5;
-            S.gridAlignImgOffX -= step;
+            var step = parseFloat($('bgMoveStep').value) || 5;
+            S.gridAlignImgOffX = Math.round((S.gridAlignImgOffX - step) * 10) / 10;
             renderBg();
         });
         $('bgMoveRight').addEventListener('click', function () {
-            var step = parseInt($('bgMoveStep').value) || 5;
-            S.gridAlignImgOffX += step;
+            var step = parseFloat($('bgMoveStep').value) || 5;
+            S.gridAlignImgOffX = Math.round((S.gridAlignImgOffX + step) * 10) / 10;
             renderBg();
         });
         $('bgMoveReset').addEventListener('click', function () {
@@ -3225,6 +3225,64 @@
                     clearAllAssistMarks();
                     showToast('已清除所有标记', 'success', 1500);
                 });
+            });
+        }
+
+        // 标记整行
+        if ($('assistMarkRowBtn')) {
+            $('assistMarkRowBtn').addEventListener('click', function () {
+                var rowInput = $('assistMarkRow');
+                var row = parseInt(rowInput.value);
+                if (isNaN(row) || row < 0 || row >= S.gridH) {
+                    cdAlert('行号范围：0 ~ ' + (S.gridH - 1), { type: 'warn', title: '行号无效' });
+                    return;
+                }
+                if (!S.assistMarked) {
+                    S.assistMarked = [];
+                    for (var r = 0; r < S.gridH; r++) {
+                        S.assistMarked[r] = new Array(S.gridW).fill(false);
+                    }
+                }
+                var count = 0;
+                for (var c = 0; c < S.gridW; c++) {
+                    if (S.grid[row][c] !== null) {
+                        if (S.assistHighlightIdx >= 0 && S.grid[row][c] !== S.assistHighlightIdx) continue;
+                        S.assistMarked[row][c] = true;
+                        count++;
+                    }
+                }
+                renderMain();
+                updateAssistProgress();
+                showToast('已标记第 ' + row + ' 行（' + count + ' 格）', 'success', 1500);
+            });
+        }
+
+        // 标记整列
+        if ($('assistMarkColBtn')) {
+            $('assistMarkColBtn').addEventListener('click', function () {
+                var colInput = $('assistMarkCol');
+                var col = parseInt(colInput.value);
+                if (isNaN(col) || col < 0 || col >= S.gridW) {
+                    cdAlert('列号范围：0 ~ ' + (S.gridW - 1), { type: 'warn', title: '列号无效' });
+                    return;
+                }
+                if (!S.assistMarked) {
+                    S.assistMarked = [];
+                    for (var r = 0; r < S.gridH; r++) {
+                        S.assistMarked[r] = new Array(S.gridW).fill(false);
+                    }
+                }
+                var count = 0;
+                for (var r = 0; r < S.gridH; r++) {
+                    if (S.grid[r][col] !== null) {
+                        if (S.assistHighlightIdx >= 0 && S.grid[r][col] !== S.assistHighlightIdx) continue;
+                        S.assistMarked[r][col] = true;
+                        count++;
+                    }
+                }
+                renderMain();
+                updateAssistProgress();
+                showToast('已标记第 ' + col + ' 列（' + count + ' 格）', 'success', 1500);
             });
         }
 
@@ -7152,6 +7210,8 @@
         if (row < 0 || row >= S.gridH || col < 0 || col >= S.gridW) return;
         // 只标记有颜色的格子
         if (S.grid[row][col] === null) return;
+        // 如果选中了高亮颜色，只允许标记该颜色的格子
+        if (S.assistHighlightIdx >= 0 && S.grid[row][col] !== S.assistHighlightIdx) return;
         S.assistMarked[row][col] = !S.assistMarked[row][col];
         renderMain();
         updateAssistProgress();
@@ -8098,6 +8158,41 @@
             });
         }
 
+        // 底图位置微调
+        var mobBgMoveUp = container.querySelector('[data-original-id="bgMoveUp"]');
+        var mobBgMoveDown = container.querySelector('[data-original-id="bgMoveDown"]');
+        var mobBgMoveLeft = container.querySelector('[data-original-id="bgMoveLeft"]');
+        var mobBgMoveRight = container.querySelector('[data-original-id="bgMoveRight"]');
+        var mobBgMoveReset = container.querySelector('[data-original-id="bgMoveReset"]');
+        var mobBgMoveStep = container.querySelector('[data-original-id="bgMoveStep"]');
+
+        function getMobBgStep() {
+            if (mobBgMoveStep) return parseInt(mobBgMoveStep.value) || 5;
+            return parseInt($('bgMoveStep').value) || 5;
+        }
+
+        if (mobBgMoveUp) mobBgMoveUp.addEventListener('click', function () {
+            S.gridAlignImgOffY -= getMobBgStep();
+            renderBg();
+        });
+        if (mobBgMoveDown) mobBgMoveDown.addEventListener('click', function () {
+            S.gridAlignImgOffY += getMobBgStep();
+            renderBg();
+        });
+        if (mobBgMoveLeft) mobBgMoveLeft.addEventListener('click', function () {
+            S.gridAlignImgOffX -= getMobBgStep();
+            renderBg();
+        });
+        if (mobBgMoveRight) mobBgMoveRight.addEventListener('click', function () {
+            S.gridAlignImgOffX += getMobBgStep();
+            renderBg();
+        });
+        if (mobBgMoveReset) mobBgMoveReset.addEventListener('click', function () {
+            S.gridAlignImgOffX = 0;
+            S.gridAlignImgOffY = 0;
+            renderBg();
+        });
+
         // 同步项目分类下拉
         var mobProjectCategory = container.querySelector('[data-original-id="projectCategory"]');
         if (mobProjectCategory) {
@@ -8181,6 +8276,13 @@
         var mobGridAlign = container.querySelector('[data-original-id="gridAlignBtn"]');
         if (srcGridAlign && mobGridAlign) {
             mobGridAlign.style.display = srcGridAlign.style.display;
+        }
+
+        // 同步底图位置微调控制区域
+        var srcBgMoveControls = $('bgMoveControls');
+        var mobBgMoveControls = container.querySelector('[data-original-id="bgMoveControls"]');
+        if (srcBgMoveControls && mobBgMoveControls) {
+            mobBgMoveControls.style.display = srcBgMoveControls.style.display;
         }
 
         // 同步识别提示
@@ -9502,15 +9604,20 @@
             alert('请先上传参考底图');
             return;
         }
-        _ga.imgOffX = S.gridAlignImgOffX;
-        _ga.imgOffY = S.gridAlignImgOffY;
-        _ga.gridOffX = S.gridAlignGridOffX;
-        _ga.gridOffY = S.gridAlignGridOffY;
-        _ga.imgScale = Math.round(S.gridAlignImgScale * 100);
+        // 预览使用固定的 cellSize，从主画板参数反推回预览参数
+        _ga.cellSizePx = S.cellSize;
+        var scaleRatio = 1; // 因为初始时 cellSizePx === S.cellSize，比例为 1
+        _ga.imgOffX = Math.round(S.gridAlignImgOffX / scaleRatio);
+        _ga.imgOffY = Math.round(S.gridAlignImgOffY / scaleRatio);
+        _ga.gridOffX = Math.round(S.gridAlignGridOffX / scaleRatio);
+        _ga.gridOffY = Math.round(S.gridAlignGridOffY / scaleRatio);
+        // 反推 imgScale：gridAlignImgScale = (cellSizePx/S.cellSize) * (imgScale/100)
+        // 当 cellSizePx === S.cellSize 时，imgScale = gridAlignImgScale * 100
+        _ga.imgScale = Math.round(S.gridAlignImgScale * (S.cellSize / _ga.cellSizePx) * 100);
+        if (_ga.imgScale <= 0 || isNaN(_ga.imgScale)) _ga.imgScale = 100;
         _ga.zoom = 1;
         _ga.panX = 0;
         _ga.panY = 0;
-        _ga.cellSizePx = S.cellSize;
 
         // 重置两点标定状态
         _ga.step = 0;
@@ -9760,21 +9867,41 @@
 
     function applyGridAlign() {
         // 将预览坐标系的参数转换为主画板坐标系
-        var cellRatio = _ga.cellSizePx / S.cellSize;
-        S.gridAlignImgScale = (_ga.imgScale / 100) / cellRatio;
-        S.gridAlignImgOffX = Math.round(_ga.imgOffX / cellRatio);
-        S.gridAlignImgOffY = Math.round(_ga.imgOffY / cellRatio);
-        S.gridAlignGridOffX = Math.round(_ga.gridOffX / cellRatio);
-        S.gridAlignGridOffY = Math.round(_ga.gridOffY / cellRatio);
+        // 预览中：totalW = gridW * _ga.cellSizePx，主画板中：totalW = gridW * S.cellSize
+        // 偏移量需要按比例转换
+        var previewTotalW = S.gridW * _ga.cellSizePx;
+        var previewTotalH = S.gridH * _ga.cellSizePx;
+        var mainTotalW = S.gridW * S.cellSize;
+        var mainTotalH = S.gridH * S.cellSize;
+        var scaleRatio = mainTotalW / previewTotalW; // 主画板 / 预览
+
+        // 图片缩放：在预览中 imgScale 是相对于预览的 baseScale
+        // 预览的 baseScale = min(previewTotalW/imgW, previewTotalH/imgH)
+        // 主画板的 baseScale = min(mainTotalW/imgW, mainTotalH/imgH)
+        // 由于 previewTotalW/mainTotalW = _ga.cellSizePx/S.cellSize（是常数比），
+        // 两个 baseScale 的比值也是 _ga.cellSizePx/S.cellSize
+        // 所以 finalScale 在预览中 = previewBaseScale * (imgScale/100)
+        //      finalScale 在主画板中 = mainBaseScale * gridAlignImgScale
+        //      需要 mainBaseScale * gridAlignImgScale = previewBaseScale * (imgScale/100)
+        //      gridAlignImgScale = (previewBaseScale / mainBaseScale) * (imgScale/100)
+        //                        = (_ga.cellSizePx / S.cellSize) * (imgScale/100)
+        S.gridAlignImgScale = (_ga.cellSizePx / S.cellSize) * (_ga.imgScale / 100);
+
+        // 偏移量直接按比例缩放
+        S.gridAlignImgOffX = Math.round(_ga.imgOffX * scaleRatio);
+        S.gridAlignImgOffY = Math.round(_ga.imgOffY * scaleRatio);
+        S.gridAlignGridOffX = Math.round(_ga.gridOffX * scaleRatio);
+        S.gridAlignGridOffY = Math.round(_ga.gridOffY * scaleRatio);
         closeGridAlignModal();
         renderBg();
         showToast('网格对齐已应用', 'success');
     }
 
     function updateGaOffsetInfo() {
+        var fmtNum = function(n) { return Number.isInteger(n) ? n : n.toFixed(1); };
         $('gaOffsetInfo').textContent =
-            '图片偏移: (' + _ga.imgOffX + ', ' + _ga.imgOffY +
-            ') | 网格偏移: (' + _ga.gridOffX + ', ' + _ga.gridOffY +
+            '图片偏移: (' + fmtNum(_ga.imgOffX) + ', ' + fmtNum(_ga.imgOffY) +
+            ') | 网格偏移: (' + fmtNum(_ga.gridOffX) + ', ' + fmtNum(_ga.gridOffY) +
             ') | 格子: ' + _ga.cellSizePx.toFixed(1) + 'px';
     }
 
@@ -9955,9 +10082,9 @@
         // 偏移步长切换
         document.querySelectorAll('.ga-step-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                _ga.offsetStep = parseInt(btn.dataset.step) || 1;
+                _ga.offsetStep = parseFloat(btn.dataset.step) || 1;
                 document.querySelectorAll('.ga-step-btn').forEach(function (b) {
-                    b.classList.toggle('active', parseInt(b.dataset.step) === _ga.offsetStep);
+                    b.classList.toggle('active', parseFloat(b.dataset.step) === _ga.offsetStep);
                 });
             });
         });
@@ -10076,15 +10203,15 @@
         });
 
         // 微调按钮
-        $('gaImgUp').addEventListener('click', function () { _ga.imgOffY -= _ga.offsetStep; renderGridAlignPreview(); });
-        $('gaImgDown').addEventListener('click', function () { _ga.imgOffY += _ga.offsetStep; renderGridAlignPreview(); });
-        $('gaImgLeft').addEventListener('click', function () { _ga.imgOffX -= _ga.offsetStep; renderGridAlignPreview(); });
-        $('gaImgRight').addEventListener('click', function () { _ga.imgOffX += _ga.offsetStep; renderGridAlignPreview(); });
+        $('gaImgUp').addEventListener('click', function () { _ga.imgOffY = Math.round((_ga.imgOffY - _ga.offsetStep) * 10) / 10; renderGridAlignPreview(); });
+        $('gaImgDown').addEventListener('click', function () { _ga.imgOffY = Math.round((_ga.imgOffY + _ga.offsetStep) * 10) / 10; renderGridAlignPreview(); });
+        $('gaImgLeft').addEventListener('click', function () { _ga.imgOffX = Math.round((_ga.imgOffX - _ga.offsetStep) * 10) / 10; renderGridAlignPreview(); });
+        $('gaImgRight').addEventListener('click', function () { _ga.imgOffX = Math.round((_ga.imgOffX + _ga.offsetStep) * 10) / 10; renderGridAlignPreview(); });
 
-        $('gaGridUp').addEventListener('click', function () { _ga.gridOffY -= _ga.offsetStep; renderGridAlignPreview(); });
-        $('gaGridDown').addEventListener('click', function () { _ga.gridOffY += _ga.offsetStep; renderGridAlignPreview(); });
-        $('gaGridLeft').addEventListener('click', function () { _ga.gridOffX -= _ga.offsetStep; renderGridAlignPreview(); });
-        $('gaGridRight').addEventListener('click', function () { _ga.gridOffX += _ga.offsetStep; renderGridAlignPreview(); });
+        $('gaGridUp').addEventListener('click', function () { _ga.gridOffY = Math.round((_ga.gridOffY - _ga.offsetStep) * 10) / 10; renderGridAlignPreview(); });
+        $('gaGridDown').addEventListener('click', function () { _ga.gridOffY = Math.round((_ga.gridOffY + _ga.offsetStep) * 10) / 10; renderGridAlignPreview(); });
+        $('gaGridLeft').addEventListener('click', function () { _ga.gridOffX = Math.round((_ga.gridOffX - _ga.offsetStep) * 10) / 10; renderGridAlignPreview(); });
+        $('gaGridRight').addEventListener('click', function () { _ga.gridOffX = Math.round((_ga.gridOffX + _ga.offsetStep) * 10) / 10; renderGridAlignPreview(); });
 
         // 格子间距微调
         $('gaCellDec1').addEventListener('click', function () {
