@@ -8464,6 +8464,15 @@
             });
         });
 
+
+        // 取消选色按钮
+        var mobDeselect = container.querySelector('[data-original-id="deselectColor"]');
+        if (mobDeselect) {
+            mobDeselect.addEventListener('click', function () {
+                deselectCurrentColor();
+            });
+        }
+
         // 分组折叠展开
         container.querySelectorAll('.palette-group-header').forEach(function (header) {
             header.addEventListener('click', function () {
@@ -9795,7 +9804,7 @@
 
         _ga.gridCount = count;
 
-        // 计算两点在图片上的水平距离（像素）
+        // 计算两点在图片上的距离（像素）
         var distX = Math.abs(_ga.point2.x - _ga.point1.x);
         var distY = Math.abs(_ga.point2.y - _ga.point1.y);
         var dist = Math.sqrt(distX * distX + distY * distY);
@@ -9803,21 +9812,55 @@
         // 每格对应的图片像素数
         var cellInImgPx = dist / count;
 
-        // 计算需要的缩放：让图片中的格子大小 = 画板的 cellSize
-        // 当前图片的基础缩放 baseScale 下，图片中 cellInImgPx 个像素 = cellInImgPx * baseScale * (imgScale/100) 画板像素
-        // 我们希望这个值 = S.cellSize
-        var cellPx = _ga.cellSizePx;
-        var totalW = S.gridW * cellPx;
-        var totalH = S.gridH * cellPx;
+        // 核心思路：调整 cellSizePx 和 imgScale 使得图片中的格子精确匹配网格
+        // 方法：保持 imgScale=100，调整 cellSizePx 使得 cellSizePx = cellInImgPx * baseScale
+        // 其中 baseScale 依赖 cellSizePx，所以需要解方程：
+        // cellSizePx = cellInImgPx * min(gridW*cellSizePx/iw, gridH*cellSizePx/ih)
+        // 1 = cellInImgPx * min(gridW/iw, gridH/ih)
+        // 这个方程 cellSizePx 被消去了，说明 imgScale 必须调整
+        //
+        // 改用精确方法：不四舍五入 imgScale，改为调整 cellSizePx
         var iw = S.refImage.naturalWidth;
         var ih = S.refImage.naturalHeight;
+
+        // 设 imgScale = 100，计算需要的 cellSizePx
+        // baseScale = min(gridW*cellSizePx/iw, gridH*cellSizePx/ih)
+        //           = cellSizePx * min(gridW/iw, gridH/ih)
+        // finalScale = baseScale * 1.0 = cellSizePx * min(gridW/iw, gridH/ih)
+        // 要求：cellInImgPx * finalScale = cellSizePx
+        // cellInImgPx * cellSizePx * min(gridW/iw, gridH/ih) = cellSizePx
+        // cellInImgPx * min(gridW/iw, gridH/ih) = 1
+        // 这意味着如果上面等式不成立，cellSizePx 被消掉了，我们需要用 imgScale 来补偿
+        //
+        // 正确方法：精确计算 imgScale，不做四舍五入
+        var oldCellPx = _ga.cellSizePx;
+        var totalW = S.gridW * oldCellPx;
+        var totalH = S.gridH * oldCellPx;
         var baseScale = Math.min(totalW / iw, totalH / ih);
 
-        // 需要的 imgScale = S.cellSize / (cellInImgPx * baseScale) * 100
-        var neededScale = cellPx / (cellInImgPx * baseScale) * 100;
-        _ga.imgScale = Math.round(neededScale);
+        // neededScale 精确值，不取整
+        var neededScale = oldCellPx / (cellInImgPx * baseScale) * 100;
+        _ga.imgScale = neededScale; // 保留完整精度！
 
-        // 计算偏移：让 point1 对齐到最近的网格交叉点
+        // 但 imgScale 滑块是整数值，为了让滑块可用，我们换一种方式：
+        // 调整 cellSizePx 使得 imgScale 能取整
+        // 实际的 cellSizePx 应该满足：cellInImgPx * baseScale * (roundedImgScale/100) = cellSizePx
+        // 即 cellSizePx = cellInImgPx * min(gridW*cellSizePx/iw, gridH*cellSizePx/ih) * (roundedImgScale/100)
+        // 这又是一个关于 cellSizePx 的方程，解出来：
+        // cellSizePx = cellInImgPx * cellSizePx * min(gridW/iw, gridH/ih) * (roundedImgScale/100)
+        // 1 = cellInImgPx * min(gridW/iw, gridH/ih) * (roundedImgScale/100)
+        // 还是被消掉了...
+        //
+        // 最简单的精确方案：直接调整 cellSizePx 使格子完美对齐，imgScale 保持 100
+        // cellSizePx = cellInImgPx * baseScale(at cellSizePx)
+        // 由于 baseScale = cellSizePx * min(gridW/iw, gridH/ih)
+        // 所以 cellSizePx = cellInImgPx * cellSizePx * min(gridW/iw, gridH/ih)
+        // 这要求 cellInImgPx * min(gridW/iw, gridH/ih) = 1，但通常不会恰好等于1
+        //
+        // 终极方案：直接保留 imgScale 的完整小数精度
+        // UI 上显示四舍五入的值，但内部运算用精确值
+
+        // 用精确的 imgScale 计算偏移
         var finalScale2 = baseScale * (_ga.imgScale / 100);
         var dw = iw * finalScale2;
         var dh = ih * finalScale2;
@@ -9828,20 +9871,19 @@
             y: _ga.point1.y * finalScale2 + (totalH - dh) / 2
         };
 
-        // 找 point1 最近的网格交叉点
-        var nearestGridX = Math.round(p1InGrid.x / cellPx) * cellPx;
-        var nearestGridY = Math.round(p1InGrid.y / cellPx) * cellPx;
+        // 找 point1 最近的网格交叉点（不四舍五入偏移）
+        var nearestGridX = Math.round(p1InGrid.x / oldCellPx) * oldCellPx;
+        var nearestGridY = Math.round(p1InGrid.y / oldCellPx) * oldCellPx;
 
-        // 需要的偏移
-        _ga.imgOffX = Math.round(nearestGridX - p1InGrid.x);
-        _ga.imgOffY = Math.round(nearestGridY - p1InGrid.y);
+        _ga.imgOffX = nearestGridX - p1InGrid.x;
+        _ga.imgOffY = nearestGridY - p1InGrid.y;
         _ga.gridOffX = 0;
         _ga.gridOffY = 0;
 
-        // 更新 UI
-        if ($('gaScaleSlider')) $('gaScaleSlider').value = _ga.imgScale;
-        if ($('gaScaleVal')) $('gaScaleVal').textContent = _ga.imgScale + '%';
-        if ($('gaDetectedPx')) $('gaDetectedPx').textContent = cellInImgPx.toFixed(1);
+        // 更新 UI（滑块显示近似值，内部保留精确值）
+        if ($('gaScaleSlider')) $('gaScaleSlider').value = Math.round(_ga.imgScale);
+        if ($('gaScaleVal')) $('gaScaleVal').textContent = Math.round(_ga.imgScale) + '%';
+        if ($('gaDetectedPx')) $('gaDetectedPx').textContent = cellInImgPx.toFixed(2);
         syncGaCellSizeUI();
 
         _ga.step = 3;
@@ -9882,11 +9924,14 @@
     }
 
     function updateGaOffsetInfo() {
-        var fmtNum = function(n) { return Number.isInteger(n) ? n : n.toFixed(1); };
+        var fmtNum = function(n) {
+            if (typeof n !== 'number' || isNaN(n)) return '0';
+            return Math.abs(n - Math.round(n)) < 0.01 ? Math.round(n) : n.toFixed(1);
+        };
         $('gaOffsetInfo').textContent =
             '图片偏移: (' + fmtNum(_ga.imgOffX) + ', ' + fmtNum(_ga.imgOffY) +
             ') | 网格偏移: (' + fmtNum(_ga.gridOffX) + ', ' + fmtNum(_ga.gridOffY) +
-            ') | 格子: ' + _ga.cellSizePx.toFixed(1) + 'px';
+            ') | 格子: ' + _ga.cellSizePx.toFixed(1) + 'px | 缩放: ' + (typeof _ga.imgScale === 'number' ? _ga.imgScale.toFixed(1) : _ga.imgScale) + '%';
     }
 
     function renderGridAlignPreview() {
@@ -10163,8 +10208,8 @@
 
         // 图片缩放滑块
         $('gaScaleSlider').addEventListener('input', function () {
-            _ga.imgScale = parseInt(this.value);
-            $('gaScaleVal').textContent = _ga.imgScale + '%';
+            _ga.imgScale = parseFloat(this.value);
+            $('gaScaleVal').textContent = Math.round(_ga.imgScale) + '%';
             renderGridAlignPreview();
         });
 
