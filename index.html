@@ -317,10 +317,24 @@
 
     <script>
     (function () {
-        // 开屏动画
+        // 开屏动画：只在大退后首次打开时播放
         (function dismissSplash() {
             var splash = document.getElementById('splashScreen');
             if (!splash) return;
+
+            // sessionStorage 在关闭所有标签页后自动清除
+            // 如果已经播放过，直接隐藏不播动画
+            try {
+                if (sessionStorage.getItem('catpeas_splash_shown')) {
+                    splash.classList.add('hidden');
+                    if (splash.parentNode) splash.parentNode.removeChild(splash);
+                    return;
+                }
+            } catch (e) {}
+
+            // 标记为已播放
+            try { sessionStorage.setItem('catpeas_splash_shown', '1'); } catch (e) {}
+
             var minTime = 1800;
             function tryDismiss() {
                 splash.classList.add('fade-out');

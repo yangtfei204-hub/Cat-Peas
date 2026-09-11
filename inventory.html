@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="inventory.css">
 </head>
 <body>
-    <!-- 顶部导航 -->
     <header class="inv-header">
         <a href="index.html" class="inv-back-btn" title="返回主页">
             <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13 4l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -37,15 +36,10 @@
         </div>
     </header>
 
-    <!-- 标签页切换 -->
     <div class="inv-tabs">
-        <button class="inv-tab active" data-tab="boxes">
+        <button class="inv-tab active" data-tab="stock">
             <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 5l6-3 6 3v8l-6 3-6-3V5z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>
-            豆架库存
-        </button>
-        <button class="inv-tab" data-tab="bags">
-            <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 2h8l1 4v7a1 1 0 01-1 1H4a1 1 0 01-1-1V6l1-4z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/><path d="M3 6h10" stroke="currentColor" stroke-width="1"/></svg>
-            补豆袋
+            库存总览
         </button>
         <button class="inv-tab" data-tab="records">
             <svg viewBox="0 0 16 16" width="12" height="12"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 6h12M6 2v12" stroke="currentColor" stroke-width="0.8" opacity="0.4"/></svg>
@@ -57,116 +51,69 @@
         </button>
     </div>
 
-    <!-- ========== 豆架库存页 ========== -->
-    <div class="inv-page active" id="pageBoxes" data-page="boxes">
+    <!-- ========== 库存总览 ========== -->
+    <div class="inv-page active" id="pageStock" data-page="stock">
         <div class="inv-toolbar">
             <div class="inv-search-box">
                 <svg viewBox="0 0 16 16" width="13" height="13"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M10 10l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                <input type="text" class="inv-search-input" id="boxSearch" placeholder="搜索色号或名称...">
+                <input type="text" class="inv-search-input" id="stockSearch" placeholder="搜索色号或名称...">
             </div>
-            <select class="inv-select" id="boxFilter">
+            <select class="inv-select" id="stockFilter">
                 <option value="all">全部状态</option>
                 <option value="ok">充足</option>
                 <option value="low">偏少</option>
                 <option value="out">缺货</option>
             </select>
-            <select class="inv-select" id="boxSort">
+            <select class="inv-select" id="stockSort">
                 <option value="id_asc">色号升序</option>
                 <option value="id_desc">色号降序</option>
-                <option value="count_asc">数量升序</option>
-                <option value="count_desc">数量降序</option>
+                <option value="box_asc">盒数升序</option>
+                <option value="box_desc">盒数降序</option>
+                <option value="bag_asc">袋数升序</option>
+                <option value="bag_desc">袋数降序</option>
                 <option value="update_desc">最近更新</option>
             </select>
         </div>
-        <div class="inv-summary" id="boxSummary">
+        <div class="inv-summary" id="stockSummary">
             <div class="inv-summary-item">
-                <span class="inv-summary-num" id="boxTotalColors">0</span>
+                <span class="inv-summary-num" id="stockTotalColors">0</span>
                 <span class="inv-summary-label">色号</span>
             </div>
             <div class="inv-summary-item">
-                <span class="inv-summary-num" id="boxTotalCount">0</span>
+                <span class="inv-summary-num" id="stockTotalBoxes">0</span>
                 <span class="inv-summary-label">总盒数</span>
             </div>
-            <div class="inv-summary-item inv-summary-warn">
-                <span class="inv-summary-num" id="boxOutCount">0</span>
-                <span class="inv-summary-label">缺货</span>
-            </div>
-            <div class="inv-summary-item inv-summary-caution">
-                <span class="inv-summary-num" id="boxLowCount">0</span>
-                <span class="inv-summary-label">偏少</span>
-            </div>
-        </div>
-        <div class="inv-list" id="boxList">
-            <div class="inv-empty">暂无库存数据，请添加色号</div>
-        </div>
-        <div class="inv-bottom-actions">
-            <button class="inv-btn inv-btn-primary" id="boxAddBtn">
-                <svg viewBox="0 0 16 16" width="13" height="13"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                添加色号
-            </button>
-            <button class="inv-btn" id="boxCheckBtn">
-                <svg viewBox="0 0 16 16" width="13" height="13"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                一键盘点
-            </button>
-        </div>
-    </div>
-
-    <!-- ========== 补豆袋页 ========== -->
-    <div class="inv-page" id="pageBags" data-page="bags">
-        <div class="inv-toolbar">
-            <div class="inv-search-box">
-                <svg viewBox="0 0 16 16" width="13" height="13"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M10 10l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                <input type="text" class="inv-search-input" id="bagSearch" placeholder="搜索色号或名称...">
-            </div>
-            <select class="inv-select" id="bagFilter">
-                <option value="all">全部状态</option>
-                <option value="ok">充足</option>
-                <option value="low">偏少</option>
-                <option value="out">缺货</option>
-            </select>
-            <select class="inv-select" id="bagSort">
-                <option value="id_asc">色号升序</option>
-                <option value="count_asc">数量升序</option>
-                <option value="count_desc">数量降序</option>
-            </select>
-        </div>
-        <div class="inv-summary" id="bagSummary">
             <div class="inv-summary-item">
-                <span class="inv-summary-num" id="bagTotalColors">0</span>
-                <span class="inv-summary-label">色号</span>
-            </div>
-            <div class="inv-summary-item">
-                <span class="inv-summary-num" id="bagTotalCount">0</span>
+                <span class="inv-summary-num" id="stockTotalBags">0</span>
                 <span class="inv-summary-label">总袋数</span>
             </div>
             <div class="inv-summary-item inv-summary-warn">
-                <span class="inv-summary-num" id="bagOutCount">0</span>
+                <span class="inv-summary-num" id="stockOutCount">0</span>
                 <span class="inv-summary-label">缺货</span>
             </div>
+            <div class="inv-summary-item inv-summary-caution">
+                <span class="inv-summary-num" id="stockLowCount">0</span>
+                <span class="inv-summary-label">偏少</span>
+            </div>
         </div>
-        <div class="inv-list" id="bagList">
-            <div class="inv-empty">暂无补豆袋数据，请添加色号</div>
+        <div class="inv-list" id="stockList">
+            <div class="inv-empty">暂无库存数据，请添加色号</div>
         </div>
         <div class="inv-bottom-actions">
-            <button class="inv-btn inv-btn-primary" id="bagAddBtn">
+            <button class="inv-btn inv-btn-primary" id="stockAddBtn">
                 <svg viewBox="0 0 16 16" width="13" height="13"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 添加色号
             </button>
-            <button class="inv-btn" id="bagCheckBtn">
+            <button class="inv-btn" id="stockCheckBtn">
                 <svg viewBox="0 0 16 16" width="13" height="13"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 一键盘点
             </button>
         </div>
     </div>
 
-    <!-- ========== 盘点记录页 ========== -->
+    <!-- ========== 盘点记录 ========== -->
     <div class="inv-page" id="pageRecords" data-page="records">
         <div class="inv-toolbar">
-            <select class="inv-select" id="recordFilter">
-                <option value="all">全部类型</option>
-                <option value="box">豆架盘点</option>
-                <option value="bag">补豆袋盘点</option>
-            </select>
             <select class="inv-select" id="recordRange">
                 <option value="7">最近7天</option>
                 <option value="30">最近30天</option>
@@ -179,7 +126,7 @@
         </div>
     </div>
 
-    <!-- ========== 缺货清单页 ========== -->
+    <!-- ========== 缺货清单 ========== -->
     <div class="inv-page" id="pageShortage" data-page="shortage">
         <div class="inv-summary" id="shortageSummary">
             <div class="inv-summary-item inv-summary-warn">
@@ -211,7 +158,7 @@
         <div class="inv-modal">
             <div class="inv-modal-header">
                 <svg viewBox="0 0 20 20" width="16" height="16"><path d="M10 2v16M2 10h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                <span id="addModalTitle">添加豆架库存色号</span>
+                <span>添加库存色号</span>
                 <button class="inv-modal-close" id="addModalClose">
                     <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                 </button>
@@ -221,17 +168,13 @@
                     <button class="inv-add-tab active" data-addtab="palette">从色板选择</button>
                     <button class="inv-add-tab" data-addtab="manual">手动输入</button>
                 </div>
-                <!-- 色板选择 -->
                 <div class="inv-add-panel active" id="addPalettePanel" data-addpanel="palette">
                     <div class="inv-palette-search-row">
                         <input type="text" class="inv-input" id="paletteSearchInput" placeholder="搜索色号或名称...">
                     </div>
-                    <div class="inv-palette-grid" id="addPaletteGrid">
-                        <!-- JS动态生成 -->
-                    </div>
+                    <div class="inv-palette-grid" id="addPaletteGrid"></div>
                     <p class="inv-hint">点击色块添加到库存，已添加的色块显示对勾标记</p>
                 </div>
-                <!-- 手动输入 -->
                 <div class="inv-add-panel" id="addManualPanel" data-addpanel="manual">
                     <div class="inv-form-row">
                         <label>色号</label>
@@ -246,11 +189,19 @@
                         <input type="color" class="inv-color-picker" id="manualColorHex" value="#FF6B6B">
                     </div>
                     <div class="inv-form-row">
-                        <label id="manualCountLabel">盒数</label>
+                        <label>盒数</label>
                         <div class="inv-counter">
-                            <button class="inv-counter-btn" id="manualCountDec">-</button>
-                            <input type="number" class="inv-counter-input" id="manualCount" value="0" min="0">
-                            <button class="inv-counter-btn" id="manualCountInc">+</button>
+                            <button class="inv-counter-btn" id="manualBoxDec">-</button>
+                            <input type="number" class="inv-counter-input" id="manualBoxCount" value="0" min="0">
+                            <button class="inv-counter-btn" id="manualBoxInc">+</button>
+                        </div>
+                    </div>
+                    <div class="inv-form-row">
+                        <label>袋数</label>
+                        <div class="inv-counter">
+                            <button class="inv-counter-btn" id="manualBagDec">-</button>
+                            <input type="number" class="inv-counter-input" id="manualBagCount" value="0" min="0">
+                            <button class="inv-counter-btn" id="manualBagInc">+</button>
                         </div>
                     </div>
                     <button class="inv-btn inv-btn-primary inv-btn-full" id="manualAddBtn">添加</button>
@@ -264,7 +215,7 @@
         <div class="inv-modal inv-modal-check">
             <div class="inv-modal-header">
                 <svg viewBox="0 0 20 20" width="16" height="16"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span id="checkModalTitle">一键盘点 - 豆架</span>
+                <span>一键盘点</span>
                 <button class="inv-modal-close" id="checkModalClose">
                     <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                 </button>
@@ -276,9 +227,7 @@
                     </div>
                     <span class="inv-check-progress-text" id="checkProgressText">0 / 0</span>
                 </div>
-                <div class="inv-check-card" id="checkCard">
-                    <!-- JS动态 -->
-                </div>
+                <div class="inv-check-card" id="checkCard"></div>
                 <div class="inv-check-actions">
                     <button class="inv-btn" id="checkSkipBtn">跳过</button>
                     <button class="inv-btn inv-btn-primary" id="checkConfirmBtn">确认，下一个</button>
@@ -294,9 +243,6 @@
         </div>
     </div>
 
-    <!-- ========== Toast ========== -->
-    <div class="inv-toast-container" id="invToastContainer"></div>
-
     <!-- 使用说明弹窗 -->
     <div class="inv-modal-overlay" id="invHelpModal">
         <div class="inv-modal" style="width:520px;">
@@ -309,22 +255,16 @@
             </div>
             <div class="inv-modal-body" style="max-height:60vh;">
                 <div style="padding:10px 12px;background:var(--iris-lighter);border-radius:var(--radius-sm);border-left:3px solid var(--iris);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong style="color:var(--iris-dark);">豆架库存</strong>：管理店铺中每个色号的拼豆盒数量。点击「添加色号」可从221色色板中快速添加，也可手动输入自定义颜色。通过 +/- 按钮调整数量，下拉选择状态（充足/偏少/缺货）。
-                </div>
-                <div style="padding:10px 12px;background:var(--pink-lighter);border-radius:var(--radius-sm);border-left:3px solid var(--pink);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong style="color:var(--pink-dark);">补豆袋</strong>：管理散装补豆袋库存。与豆架类似，但以「袋」为单位计数。
+                    <strong style="color:var(--iris-dark);">库存总览</strong>：每个色号同时管理豆架盒数和补豆袋数。点击「添加色号」可从221色色板中快速选择，也可手动输入自定义颜色。通过 +/- 按钮调整数量，下拉选择状态（充足/偏少/缺货）。
                 </div>
                 <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>一键盘点</strong>：逐个显示所有色号，确认或修改实际数量。完成后自动生成盘点记录。中途可中断，已盘点的数据会保存。
+                    <strong>一键盘点</strong>：逐个显示所有色号，同时确认盒数和袋数。完成后自动生成盘点记录，记录变动明细。中途可中断，已盘点的数据会保存。
                 </div>
                 <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>缺货清单</strong>：自动汇总所有标记为「缺货」或「偏少」的色号。可一键复制清单文本，方便发给供应商。
-                </div>
-                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>数据安全</strong>：所有库存数据存储在浏览器本地（IndexedDB），不会上传到任何服务器。清除浏览器缓存会导致数据丢失，请定期使用右上角的导出按钮备份数据。
+                    <strong>缺货清单</strong>：自动汇总所有标记为「缺货」或「偏少」的色号，显示盒数和袋数。可一键复制清单文本发给供应商。
                 </div>
                 <div style="padding:10px 12px;background:var(--danger-light);border-radius:var(--radius-sm);border-left:3px solid var(--danger);font-size:10px;color:var(--text-secondary);line-height:1.7;">
-                    <strong style="color:var(--danger);">免责声明</strong>：本工具按「现状」提供，开发者不对数据的准确性、完整性或可靠性做任何保证。因库存管理数据错误导致的任何损失，开发者不承担责任。请以实际盘点为准，本工具仅作为辅助记录手段。
+                    <strong style="color:var(--danger);">免责声明</strong>：本工具按「现状」提供，开发者不对数据的准确性、完整性或可靠性做任何保证。因库存管理数据错误导致的任何损失，开发者不承担责任。请以实际盘点为准。所有数据存储在浏览器本地，清除缓存会导致数据丢失，请定期导出备份。
                 </div>
             </div>
             <div class="inv-modal-footer">
@@ -332,6 +272,8 @@
             </div>
         </div>
     </div>
+
+    <div class="inv-toast-container" id="invToastContainer"></div>
 
     <script src="palette.js"></script>
     <script src="inventory.js"></script>
