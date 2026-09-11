@@ -348,25 +348,37 @@
             </div>
             <div class="tb-modal-body" style="max-height:60vh;">
                 <div style="padding:10px 12px;background:var(--iris-lighter);border-radius:var(--radius-sm);border-left:3px solid var(--iris);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong style="color:var(--iris-dark);">开始接客</strong>：点击空闲桌位的「开始接客」按钮，选择正计时或倒计时模式，填写客人信息后开始。正计时从0累计，倒计时设定套餐时长后倒数。
+                    <strong style="color:var(--iris-dark);">开始接客</strong>：点击空闲桌位的「开始接客」按钮，选择正计时或倒计时模式，填写客人人数、价格、备注和拼豆图案信息后开始。正计时从 0 累计用时，倒计时设定套餐时长后倒数归零。支持 30/60/90/120 分钟快速选择或自定义分钟数。
                 </div>
                 <div style="padding:10px 12px;background:var(--pink-lighter);border-radius:var(--radius-sm);border-left:3px solid var(--pink);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong style="color:var(--pink-dark);">倒计时超时</strong>：倒计时结束后自动转为正计时，显示超时时长（红色负数）。超时桌位会高亮闪烁并置顶显示，方便店员及时提醒客人。
+                    <strong style="color:var(--pink-dark);">倒计时超时</strong>：倒计时结束后自动转为正计时（可在设置中关闭），显示超时时长（红色负数格式 -HH:MM:SS）。超时桌位会红色边框闪烁并自动置顶显示，页面顶部也会出现醒目的超时提醒横幅，方便店员第一时间注意到并提醒客人。
                 </div>
                 <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>暂离/继续</strong>：客人暂时离开时点击「暂停」，计时器暂停。客人回来后点击「继续」恢复计时。暂离时间不计入总时长。
+                    <strong>暂离/继续</strong>：客人暂时离开时点击「暂停」按钮，计时器暂停并显示暂离时长。客人回来后点击「继续」恢复计时。暂离期间的时间不计入客人的实际使用时长，结束时会单独显示暂离总时间。
                 </div>
                 <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>客人备注</strong>：记录客人的衣着特征（如「穿红色外套的女生」），方便在多桌同时使用时区分不同桌的客人。使用中也可随时点击「编辑」修改信息。
+                    <strong>编辑信息</strong>：使用中随时点击「编辑」按钮可修改客人人数、价格、备注和拼豆图案。倒计时模式下还可以调整剩余时长（-5分/+5分/+15分/+30分），方便客人续时。
                 </div>
                 <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>历史记录</strong>：每桌结束后自动归档到历史记录。可按日期和桌号筛选查看，汇总显示接客桌次、总人数、总营收和总时长。支持导出为 JSON 文件。
+                    <strong>客人备注</strong>：记录客人的衣着特征（如「穿红色外套的女生和穿蓝色卫衣的男生」），在多桌同时使用时方便区分不同桌的客人。备注信息会显示在桌位卡片上，一目了然。
                 </div>
                 <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>数据安全</strong>：计时状态每5秒自动保存到浏览器本地存储。刷新页面或意外关闭后，基于时间戳自动恢复，不会丢失计时进度。历史记录存储在 IndexedDB 中。
+                    <strong>结束与清台</strong>：点击「结束」按钮后会显示本次服务的完整汇总（开始时间、总用时、暂离时间、超时情况、客人信息、价格等），确认后桌位变为「已结束」状态。点击「清台」按钮将桌位恢复为空闲状态。可在设置中开启「自动清台」功能，跳过已结束的中间状态。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>空闲桌位紧凑显示</strong>：当空闲桌位较多（超过 3 个）且有活跃桌位时，空闲桌位会自动折叠为紧凑的按钮列表，减少页面滚动，让活跃桌位更加突出。点击空闲桌位按钮即可直接开始接客。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>历史记录</strong>：每桌结束后自动归档到历史记录，包含完整的服务信息。可按「今天/最近7天/最近30天/全部」和桌号筛选查看。页面顶部汇总显示接客桌次、总人数、总营收和总时长。支持单条删除、全部清空和导出为 JSON 文件备份。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>桌位设置</strong>：点击右上角齿轮按钮可管理桌位（重命名、删除、批量添加，最多 20 个），以及配置超时行为（是否自动转正计时、超时置顶、自动清台）和默认计时模式与套餐时长。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>数据安全</strong>：计时状态每 5 秒自动保存到浏览器本地存储（localStorage）。刷新页面或意外关闭浏览器后，系统会基于保存的时间戳自动恢复并补算经过的时间，不会丢失计时进度。历史记录存储在浏览器 IndexedDB 中。
                 </div>
                 <div style="padding:10px 12px;background:var(--danger-light);border-radius:var(--radius-sm);border-left:3px solid var(--danger);font-size:10px;color:var(--text-secondary);line-height:1.7;">
-                    <strong style="color:var(--danger);">免责声明</strong>：本工具按「现状」提供，开发者不对计时准确性、营收统计的正确性做任何保证。因工具使用产生的任何纠纷或损失，开发者不承担责任。请以实际情况为准，本工具仅作为辅助管理手段。清除浏览器缓存会导致历史数据丢失，请定期导出备份。
+                    <strong style="color:var(--danger);">免责声明</strong>：本工具按「现状」(AS IS) 提供，开发者不对计时精度、营收统计的正确性、数据的完整性做任何明示或暗示的保证。客桌管理功能仅作为辅助管理手段，不替代正式的收银系统或考勤系统。因使用本工具产生的任何纠纷、损失或争议（包括但不限于：计时误差导致的收费争议、数据丢失导致的营收统计缺失、系统故障导致的服务中断等），开发者不承担任何赔偿责任。请以实际情况为准，重要的营收数据请额外使用专业财务工具记录。所有数据存储在浏览器本地，清除浏览器缓存、卸载浏览器、使用无痕模式或更换设备均会导致数据永久丢失。强烈建议定期通过历史记录页面的「导出」功能备份数据。
                 </div>
             </div>
             <div class="tb-modal-footer">

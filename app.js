@@ -4,7 +4,7 @@
     'use strict';
 
     // 版本号 —— 每次功能更新后递增此值，将触发用户重新确认免责声明和查看使用说明
-    var APP_VERSION = '1.6.0';
+    var APP_VERSION = '2.0.0';
 
     // ===========================
     //  IndexedDB 项目库管理
@@ -540,6 +540,19 @@
         setupCanvas();
         updateLayerUI();
         render();
+        // 检查 URL 参数是否需要加载项目
+        try {
+            var urlParams = new URLSearchParams(window.location.search);
+            var loadProjectId = urlParams.get('loadProject');
+            if (loadProjectId) {
+                // 清除 URL 参数,避免刷新重复加载
+                window.history.replaceState({}, '', window.location.pathname);
+                // 延迟加载,等初始化完成
+                setTimeout(function () {
+                    loadProject(loadProjectId);
+                }, 500);
+            }
+        } catch (urlErr) {}
         bindAllEvents();
         initMobileDrawer();
         openDB();
@@ -590,6 +603,52 @@
                     savedAt: Date.now()
                 };
                 localStorage.setItem('catpeas_autosave', JSON.stringify(data));
+                // 辅助模式下自动保存到项目库
+                if (S.assistMode && S.currentProjectId) {
+                    var autoName = S.currentProjectName || '自动保存';
+                    var autoGridData = [];
+                    for (var ar = 0; ar < S.gridH; ar++) {
+                        autoGridData[ar] = Array.from(S.grid[ar]);
+                    }
+                    var autoThumb = generateThumbnail(autoGridData, S.gridW, S.gridH, null);
+                    var autoPalSnap = [];
+                    for (var api = 0; api < PALETTE.length; api++) {
+                        if (PALETTE[api]) {
+                            autoPalSnap.push({ id: PALETTE[api].id, name: PALETTE[api].name, hex: PALETTE[api].hex });
+                        } else {
+                            autoPalSnap.push(null);
+                        }
+                    }
+                    // 计算辅助模式进度
+                    var autoTotal = 0, autoMarked = 0;
+                    for (var atr = 0; atr < S.gridH; atr++) {
+                        for (var atc = 0; atc < S.gridW; atc++) {
+                            if (S.grid[atr][atc] !== null) {
+                                autoTotal++;
+                                if (S.assistMarked && S.assistMarked[atr] && S.assistMarked[atr][atc]) {
+                                    autoMarked++;
+                                }
+                            }
+                        }
+                    }
+                    var autoPercent = autoTotal > 0 ? Math.round(autoMarked / autoTotal * 100) : 0;
+                    var autoStatus = autoPercent >= 100 ? 'completed' : autoPercent > 0 ? 'in_progress' : 'not_started';
+                    dbGet(STORE_PROJECTS, S.currentProjectId).then(function (existProj) {
+                        if (existProj) {
+                            existProj.grid = autoGridData;
+                            existProj.gridW = S.gridW;
+                            existProj.gridH = S.gridH;
+                            existProj.thumbnail = autoThumb;
+                            existProj.totalBeads = total;
+                            existProj.updatedAt = Date.now();
+                            existProj.paletteSnapshot = autoPalSnap;
+                            existProj.progressPercent = autoPercent;
+                            existProj.progressStatus = autoStatus;
+                            existProj.assistMarked = S.assistMarked;
+                            dbPut(STORE_PROJECTS, existProj);
+                        }
+                    }).catch(function () {});
+                }
             } catch (e) { /* ignore */ }
         }, 30000);
     }
@@ -3116,6 +3175,10 @@
             triggerProjectRefresh();
         });
 
+        $('projectProgressFilter').addEventListener('change', function () {
+            triggerProjectRefresh();
+        });
+
         $('projectSearchInput').addEventListener('input', function () {
             triggerProjectRefresh();
         });
@@ -3612,6 +3675,41 @@
 
         $('exportCurrentLayerBtn').addEventListener('click', function () {
             exportCurrentLayer();
+        });
+
+        // 页面关闭前保存辅助模式进度
+        window.addEventListener('beforeunload', function () {
+            if (S.assistMode && S.currentProjectId) {
+                try {
+                    var exitData = {
+                        gridW: S.gridW,
+                        gridH: S.gridH,
+                        rle: [],
+                        currentColorIdx: S.currentColorIdx,
+                        savedAt: Date.now()
+                    };
+                    var flat2 = [];
+                    for (var er = 0; er < S.gridH; er++) {
+                        for (var ec = 0; ec < S.gridW; ec++) {
+                            var ev = S.grid[er][ec];
+                            flat2.push(ev === null ? -1 : ev);
+                        }
+                    }
+                    var rle2 = [];
+                    var ei = 0;
+                    while (ei < flat2.length) {
+                        var eval2 = flat2[ei];
+                        var ecount = 1;
+                        while (ei + ecount < flat2.length && flat2[ei + ecount] === eval2 && ecount < 255) {
+                            ecount++;
+                        }
+                        rle2.push(ecount, eval2);
+                        ei += ecount;
+                    }
+                    exitData.rle = rle2;
+                    localStorage.setItem('catpeas_autosave', JSON.stringify(exitData));
+                } catch (ex) {}
+            }
         });
 
         // Load saved theme
@@ -5929,21 +6027,23 @@
         }
 
         if (isOverwrite) {
-            // 覆盖模式：先获取原项目的 createdAt
+            // 覆盖模式：先获取原项目的 createdAt 和进度状态
             dbGet(STORE_PROJECTS, projectId).then(function (oldProj) {
                 if (oldProj) {
                     createdAt = oldProj.createdAt || now;
                 }
-                doSave(projectId, name, category, gridData, thumbnail, total, createdAt, now, isOverwrite);
+                doSave(projectId, name, category, gridData, thumbnail, total, createdAt, now, isOverwrite, oldProj);
             }).catch(function () {
-                doSave(projectId, name, category, gridData, thumbnail, total, now, now, isOverwrite);
+                doSave(projectId, name, category, gridData, thumbnail, total, now, now, isOverwrite, null);
             });
         } else {
-            doSave(projectId, name, category, gridData, thumbnail, total, now, now, false);
+            doSave(projectId, name, category, gridData, thumbnail, total, now, now, false, null);
         }
     }
 
-    function doSave(projectId, name, category, gridData, thumbnail, total, createdAt, now, isOverwrite) {
+    function doSave(projectId, name, category, gridData, thumbnail, total, createdAt, now, isOverwrite, oldProj) {
+        var keepProgress = (isOverwrite && oldProj && oldProj.progressStatus) ? oldProj.progressStatus : 'not_started';
+        var keepPercent = (isOverwrite && oldProj && oldProj.progressPercent !== undefined) ? oldProj.progressPercent : 0;
         // 使用传入的 gridData（而非 S.grid）来生成缩略图，确保数据一致
         thumbnail = generateThumbnail(gridData, S.gridW, S.gridH, null);
 
@@ -5957,6 +6057,13 @@
             }
         }
 
+        // 覆盖保存时保留原有的进度状态
+        var existingProgress = null;
+        if (isOverwrite) {
+            var existingIdx = -1;
+            // 异步获取已经在前面的 then 中处理了
+        }
+
         var projectData = {
             id: projectId,
             name: name,
@@ -5968,7 +6075,9 @@
             totalBeads: total,
             createdAt: createdAt,
             updatedAt: now,
-            paletteSnapshot: palSnap
+            paletteSnapshot: palSnap,
+            progressStatus: keepProgress,
+            progressPercent: keepPercent
         };
 
         dbPut(STORE_PROJECTS, projectData).then(function () {
@@ -6310,7 +6419,7 @@
         updateProjectPageFilters();
     }
 
-    function refreshProjectList(filterCategory, searchKeyword, sortBy) {
+    function refreshProjectList(filterCategory, searchKeyword, sortBy, progressFilter) {
         dbGetAll(STORE_PROJECTS).then(function (projects) {
             // 分类筛选
             if (filterCategory && filterCategory !== '__all__') {
@@ -6324,6 +6433,13 @@
                 var kw = searchKeyword.trim().toLowerCase();
                 projects = projects.filter(function (p) {
                     return p.name.toLowerCase().indexOf(kw) !== -1;
+                });
+            }
+
+            // 进度筛选
+            if (progressFilter && progressFilter !== '__all__') {
+                projects = projects.filter(function (p) {
+                    return (p.progressStatus || 'not_started') === progressFilter;
                 });
             }
 
@@ -6406,6 +6522,11 @@
                             '<span>' + (proj.totalBeads || 0) + '颗</span>' +
                             '<span>' + dateStr + '</span>' +
                         '</div>' +
+                        '<div class="project-card-progress">' +
+                            '<span class="project-progress-badge progress-' + (proj.progressStatus || 'not_started') + '">' +
+                                (proj.progressStatus === 'completed' ? '已完成' : proj.progressStatus === 'in_progress' ? '进行中 ' + (proj.progressPercent || 0) + '%' : '未开始') +
+                            '</span>' +
+                        '</div>' +
                     '</div>' +
                     '<div class="project-card-footer">' +
                         '<span class="project-card-category">' + escapeHtml(catName) + '</span>' +
@@ -6421,6 +6542,9 @@
                             '</button>' +
                             '<button class="project-card-btn btn-layer-import" title="导入为图层">' +
                                 '<svg viewBox="0 0 20 20" width="14" height="14"><path d="M2 14l8 4 8-4M2 10l8 4 8-4M10 2l8 4-8 4-8-4z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                            '</button>' +
+                            '<button class="project-card-btn btn-progress" title="切换进度状态" data-status="' + (proj.progressStatus || 'not_started') + '">' +
+                                '<svg viewBox="0 0 20 20" width="14" height="14"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
                             '</button>' +
                             '<button class="project-card-btn btn-del" title="删除">' +
                                 '<svg viewBox="0 0 20 20" width="14" height="14"><path d="M6 4V3a1 1 0 011-1h6a1 1 0 011 1v1M3 4h14M5 4v12a2 2 0 002 2h6a2 2 0 002-2V4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
@@ -6524,6 +6648,33 @@
                     });
                 });
 
+                // 切换进度状态
+                card.querySelector('.btn-progress').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var currentStatus = proj.progressStatus || 'not_started';
+                    var nextStatus, nextPercent;
+                    if (currentStatus === 'not_started') {
+                        nextStatus = 'in_progress';
+                        nextPercent = 0;
+                    } else if (currentStatus === 'in_progress') {
+                        nextStatus = 'completed';
+                        nextPercent = 100;
+                    } else {
+                        nextStatus = 'not_started';
+                        nextPercent = 0;
+                    }
+                    dbGet(STORE_PROJECTS, proj.id).then(function (pd) {
+                        if (pd) {
+                            pd.progressStatus = nextStatus;
+                            pd.progressPercent = nextPercent;
+                            pd.updatedAt = Date.now();
+                            dbPut(STORE_PROJECTS, pd).then(function () {
+                                triggerProjectRefresh();
+                            });
+                        }
+                    });
+                });
+
                 // 删除
                 card.querySelector('.btn-del').addEventListener('click', function (e) {
                     e.stopPropagation();
@@ -6610,10 +6761,12 @@
         var filterEl = $('projectFilterCategory2');
         var searchEl = $('projectSearchInput');
         var sortEl = $('projectSortSelect');
+        var progressEl = $('projectProgressFilter');
         var filterVal = filterEl ? filterEl.value : '__all__';
         var searchVal = searchEl ? searchEl.value : '';
         var sortVal = sortEl ? sortEl.value : 'updatedAt_desc';
-        refreshProjectList(filterVal, searchVal, sortVal);
+        var progressVal = progressEl ? progressEl.value : '__all__';
+        refreshProjectList(filterVal, searchVal, sortVal, progressVal);
     }
 
     function exportProjectJSON() {
@@ -7029,6 +7182,16 @@
             panel.classList.add('active');
             btn.classList.add('active');
             buildAssistColorGrid();
+            // 如果有当前项目且项目保存了辅助标记,恢复
+            if (S.currentProjectId) {
+                dbGet(STORE_PROJECTS, S.currentProjectId).then(function (proj) {
+                    if (proj && proj.assistMarked) {
+                        S.assistMarked = proj.assistMarked;
+                        renderMain();
+                        updateAssistProgress();
+                    }
+                }).catch(function () {});
+            }
             // 初始化标记数组（如果尚未初始化或尺寸不匹配）
             if (!S.assistMarked || S.assistMarked.length !== S.gridH) {
                 S.assistMarked = [];

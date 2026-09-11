@@ -234,6 +234,18 @@ body {
 .inv-summary-item.inv-summary-warn .inv-summary-num { color: var(--danger); }
 .inv-summary-item.inv-summary-caution .inv-summary-num { color: #c08830; }
 
+.inv-summary-item.inv-summary-transit {
+    border-color: #5b9bd5;
+    background: #e8f1f9;
+}
+
+[data-theme="dark"] .inv-summary-item.inv-summary-transit {
+    border-color: #3a7bc0;
+    background: #2a3545;
+}
+
+.inv-summary-item.inv-summary-transit .inv-summary-num { color: #3a7bc0; }
+
 .inv-summary-label {
     font-size: 10px;
     color: var(--text-muted);
@@ -280,6 +292,11 @@ body {
 .inv-card.inv-card-low {
     border-color: #e0a860;
     border-left: 4px solid #e0a860;
+}
+
+.inv-card.inv-card-transit {
+    border-color: #5b9bd5;
+    border-left: 4px solid #5b9bd5;
 }
 
 .inv-card-swatch {
@@ -340,6 +357,7 @@ body {
 .inv-card-status select.status-ok { color: var(--success); border-color: var(--success); }
 .inv-card-status select.status-low { color: #c08830; border-color: #e0a860; }
 .inv-card-status select.status-out { color: var(--danger); border-color: var(--danger); }
+.inv-card-status select.status-transit { color: #3a7bc0; border-color: #5b9bd5; }
 
 .inv-card-mid {
     display: flex;
@@ -560,6 +578,7 @@ body {
 
 .inv-shortage-section-title svg { color: var(--danger); flex-shrink: 0; }
 .inv-shortage-section-title.caution svg { color: #c08830; }
+.inv-shortage-section-title.transit svg { color: #3a7bc0; }
 
 .inv-shortage-item {
     display: flex;
@@ -1223,6 +1242,18 @@ body {
     background: #3a3428;
     color: #d4a040;
     border-color: #8a6d30;
+}
+
+.inv-group-badge-transit {
+    background: #e8f1f9;
+    color: #3a7bc0;
+    border: 1px solid #5b9bd5;
+}
+
+[data-theme="dark"] .inv-group-badge-transit {
+    background: #2a3545;
+    color: #7ab5e0;
+    border-color: #3a7bc0;
 }
 
 @media (max-width: 640px) {

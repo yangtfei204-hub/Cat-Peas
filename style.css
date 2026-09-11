@@ -6800,3 +6800,47 @@ body {
         gap: 4px;
     }
 }
+
+/* ========================================
+   项目进度状态标识
+   ======================================== */
+.project-card-progress {
+    padding: 0 12px 4px;
+}
+
+.project-grid.list-view .project-card-progress {
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.project-progress-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.project-progress-badge.progress-not_started {
+    background: var(--border-light);
+    color: var(--text-muted);
+}
+
+.project-progress-badge.progress-in_progress {
+    background: rgba(224, 168, 96, 0.15);
+    color: #c08830;
+    border: 1px solid rgba(224, 168, 96, 0.3);
+}
+
+.project-progress-badge.progress-completed {
+    background: rgba(142, 191, 142, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(142, 191, 142, 0.3);
+}
+
+.project-card-btn.btn-progress:hover {
+    border-color: var(--success);
+    color: var(--success);
+    background: rgba(142, 191, 142, 0.1);
+}

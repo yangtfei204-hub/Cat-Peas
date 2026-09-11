@@ -1030,6 +1030,16 @@
         $('tbHelpOk').addEventListener('click', function () { $('tbHelpModal').classList.remove('active'); });
         $('tbHelpModal').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('active'); });
 
+
+        // 首次使用或版本更新时自动弹出使用说明
+        try {
+            var tbHelpVersion = localStorage.getItem('catpeas_tb_help_version');
+            if (tbHelpVersion !== '2.0.0') {
+                $('tbHelpModal').classList.add('active');
+                localStorage.setItem('catpeas_tb_help_version', '2.0.0');
+            }
+        } catch (e) {}
+
         // Auto-save every 5 seconds
         setInterval(function () { saveState(); }, 5000);
     }

@@ -828,6 +828,15 @@
                     </select>
                 </div>
                 <div class="project-filter-group">
+                    <label>进度：</label>
+                    <select id="projectProgressFilter" class="custom-input project-filter-select">
+                        <option value="__all__">全部进度</option>
+                        <option value="not_started">未开始</option>
+                        <option value="in_progress">进行中</option>
+                        <option value="completed">已完成</option>
+                    </select>
+                </div>
+                <div class="project-filter-group">
                     <label>排序：</label>
                     <select id="projectSortSelect" class="custom-input project-filter-select">
                         <option value="updatedAt_desc">最近修改</option>
@@ -1441,6 +1450,9 @@
                         <li>使用大尺寸画布（超过 78x78 格）时，在内存较低（4GB 以下）或 GPU 性能较弱的设备上可能出现操作卡顿、渲染延迟或浏览器内存不足的情况。建议根据设备性能合理选择画布尺寸</li>
                         <li>移动端（手机和平板）的触控操作体验可能不如桌面端精确，特别是在精细绘制和小格子操作时。建议在桌面端完成精细编辑工作</li>
                         <li>导出的 PNG 图纸中嵌入的像素级数据还原功能对图片文件的完整性有严格要求。任何对导出 PNG 文件的二次处理（包括但不限于即时通讯软件传输时的自动压缩、社交媒体上传时的重新编码、截图工具的截取、图片编辑软件的打开与重新保存、格式转换等）都可能破坏嵌入数据，导致无法通过图纸图片还原画布</li>
+                        <li>辅助拼豆模式的自动保存功能每 30 秒执行一次，在两次保存间隔内如浏览器崩溃，该时段内的标记进度可能丢失。自动保存不保证百分之百的数据完整性</li>
+                        <li>抽图纸功能基于简单随机算法，不保证抽取结果的均匀分布。已完成状态的项目不参与抽取，如需重新抽取请先将项目状态改回未开始</li>
+                        <li>库存管理中的「在途」状态仅为辅助标记，不与任何物流系统对接，不具备自动跟踪到货的能力，需要用户手动更新状态</li>
                     </ul>
                 </div>
 
@@ -1721,6 +1733,30 @@
                             主题与自定义
                         </h4>
                         <p>点击顶部太阳图标切换预设主题（雾霾粉紫、海洋蓝、森林绿、落日橘、樱花和风、暗夜模式）。点击三圆图标可自定义配色和编写自定义 CSS。所有设置自动保存在浏览器中。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            项目进度管理
+                        </h4>
+                        <p>每个项目支持三种进度状态：未开始、进行中、已完成。在项目库中点击进度切换按钮可循环切换状态。</p>
+                        <p>项目库工具栏新增了进度筛选下拉，可快速查看特定状态的项目。辅助拼豆模式下的标记进度会自动同步到项目的进度百分比。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="7" r="5" stroke="currentColor" stroke-width="1.2" fill="none"/><line x1="3" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="7" r="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                            抽图纸功能
+                        </h4>
+                        <p>在主页点击「抽图纸」卡片，从项目库中随机抽取一张未完成的图纸。已完成的项目不会被抽到。</p>
+                        <p>抽到图纸后可直接点击「导入编辑器开始拼豆」，图纸会自动加载到编辑器画布中，配合辅助拼豆模式使用。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 8l8-4v12l-8-4z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            自动保存与闪退恢复
+                        </h4>
+                        <p>辅助拼豆模式下，系统每 30 秒自动将当前画布数据和拼豆标记进度保存到项目库。如果浏览器意外关闭或闪退，下次打开时进度不会丢失。</p>
+                        <p>页面关闭前也会触发一次紧急保存，尽最大可能保护你的拼豆进度数据。</p>
                     </div>
                 </div>
 

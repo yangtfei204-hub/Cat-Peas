@@ -63,6 +63,7 @@
                 <option value="ok">充足</option>
                 <option value="low">偏少</option>
                 <option value="out">缺货</option>
+                <option value="transit">在途</option>
             </select>
             <select class="inv-select" id="stockSort">
                 <option value="id_asc">色号升序</option>
@@ -94,6 +95,10 @@
             <div class="inv-summary-item inv-summary-caution">
                 <span class="inv-summary-num" id="stockLowCount">0</span>
                 <span class="inv-summary-label">偏少</span>
+            </div>
+            <div class="inv-summary-item inv-summary-transit">
+                <span class="inv-summary-num" id="stockTransitCount">0</span>
+                <span class="inv-summary-label">在途</span>
             </div>
         </div>
         <div class="inv-list" id="stockList">
@@ -140,6 +145,10 @@
             <div class="inv-summary-item inv-summary-caution">
                 <span class="inv-summary-num" id="shortageLowTotal">0</span>
                 <span class="inv-summary-label">偏少色号</span>
+            </div>
+            <div class="inv-summary-item inv-summary-transit">
+                <span class="inv-summary-num" id="shortageTransitTotal">0</span>
+                <span class="inv-summary-label">在途色号</span>
             </div>
             <div class="inv-summary-item">
                 <span class="inv-summary-num" id="shortageTotalColors">0</span>
@@ -262,16 +271,25 @@
             </div>
             <div class="inv-modal-body" style="max-height:60vh;">
                 <div style="padding:10px 12px;background:var(--iris-lighter);border-radius:var(--radius-sm);border-left:3px solid var(--iris);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong style="color:var(--iris-dark);">库存总览</strong>：每个色号同时管理豆架盒数和补豆袋数。点击「添加色号」可从221色色板中快速选择，也可手动输入自定义颜色。通过 +/- 按钮调整数量，下拉选择状态（充足/偏少/缺货）。
+                    <strong style="color:var(--iris-dark);">库存总览</strong>：每个色号同时管理豆架盒数和补豆袋数。点击「添加色号」可从 221 色 Mard 色板中快速选择，也可手动输入自定义颜色。通过 +/- 按钮调整数量，下拉选择状态（充足/偏少/缺货/在途）。
                 </div>
                 <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>一键盘点</strong>：逐个显示所有色号，同时确认盒数和袋数。完成后自动生成盘点记录，记录变动明细。中途可中断，已盘点的数据会保存。
+                    <strong>在途状态</strong>：已下单但尚未到货的色号可标记为「在途」状态。在途色号会在库存总览和缺货清单中单独统计和显示，方便跟踪补货进度，避免重复下单。
                 </div>
                 <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
-                    <strong>缺货清单</strong>：自动汇总所有标记为「缺货」或「偏少」的色号，显示盒数和袋数。可一键复制清单文本发给供应商。
+                    <strong>一键盘点</strong>：逐个显示所有色号，同时确认盒数和袋数。完成后自动生成盘点记录，记录变动明细。中途可中断，已盘点的数据会保存。支持键盘 Enter 键快速确认并跳到下一个色号。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>缺货清单</strong>：自动汇总所有标记为「缺货」「偏少」或「在途」的色号，分别显示盒数和袋数。可一键复制清单文本发给供应商，复制内容包含缺货、偏少和在途三个分类。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>分组显示</strong>：按色号排序时，库存列表会自动按色系分组（A黄橙系、B绿色系等），每组显示缺货和偏少数量的统计标签。点击分组标题可展开/折叠该组色号。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>数据导出/导入</strong>：点击右上角的下载按钮可导出全部库存和盘点记录为 JSON 文件。点击上传按钮可导入之前导出的备份文件。建议定期导出备份，防止数据丢失。
                 </div>
                 <div style="padding:10px 12px;background:var(--danger-light);border-radius:var(--radius-sm);border-left:3px solid var(--danger);font-size:10px;color:var(--text-secondary);line-height:1.7;">
-                    <strong style="color:var(--danger);">免责声明</strong>：本工具按「现状」提供，开发者不对数据的准确性、完整性或可靠性做任何保证。因库存管理数据错误导致的任何损失，开发者不承担责任。请以实际盘点为准。所有数据存储在浏览器本地，清除缓存会导致数据丢失，请定期导出备份。
+                    <strong style="color:var(--danger);">免责声明</strong>：本工具按「现状」(AS IS) 提供，开发者不对库存数据的准确性、完整性或可靠性做任何明示或暗示的保证。库存管理功能仅作为辅助记录工具，不构成任何商业决策建议。因库存管理数据错误、操作失误或系统故障导致的任何直接或间接损失（包括但不限于：材料采购错误、库存盘亏、缺货断供等），开发者不承担任何赔偿责任。请以实际盘点结果为准。所有数据存储在浏览器本地存储空间中，清除浏览器缓存、卸载浏览器、使用无痕模式或更换设备均会导致数据永久丢失。强烈建议定期使用导出功能备份数据。
                 </div>
             </div>
             <div class="inv-modal-footer">

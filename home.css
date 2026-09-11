@@ -163,7 +163,7 @@ body {
 /* ---------- 功能卡片 ---------- */
 .home-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 18px;
     width: 100%;
 }
@@ -318,6 +318,12 @@ body {
 }
 
 /* ---------- 移动端 ---------- */
+@media (max-width: 960px) and (min-width: 721px) {
+    .home-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 720px) {
     .home-container {
         padding: 28px 16px;
@@ -521,4 +527,441 @@ body {
     .splash-cat svg { width: 110px; height: 110px; }
     .splash-title { font-size: 28px; }
     .splash-subtitle { font-size: 11px; letter-spacing: 3px; }
+}
+
+/* ========================================
+   抽图纸卡片
+   ======================================== */
+.home-card-gacha .home-card-icon {
+    background: linear-gradient(135deg, rgba(255, 183, 231, 0.15), rgba(160, 226, 251, 0.15));
+    color: var(--pink-dark);
+}
+
+.home-card-gacha::before {
+    background: linear-gradient(90deg, #FFB7E7, #A0E2FB);
+}
+
+/* ========================================
+   抽图纸弹窗
+   ======================================== */
+.gacha-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 500;
+    background: rgba(62, 54, 64, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.gacha-modal.active {
+    display: flex;
+}
+
+.gacha-modal-inner {
+    background: var(--bg-card);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(140, 120, 130, 0.3);
+    width: 420px;
+    max-width: 92vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: gachaModalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes gachaModalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.92); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.gacha-modal-header {
+    padding: 16px 20px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--iris-dark);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(255, 183, 231, 0.08), rgba(160, 226, 251, 0.08));
+}
+
+.gacha-modal-header span { flex: 1; }
+
+.gacha-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: var(--radius-xs);
+    transition: var(--transition);
+}
+
+.gacha-modal-close:hover {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+.gacha-modal-body {
+    flex: 1;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+}
+
+.gacha-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 40px 20px;
+}
+
+/* 扭蛋机 */
+.gacha-machine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.gacha-capsule {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink-lighter), var(--iris-lighter));
+    border: 3px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: var(--shadow);
+    transition: transform 0.3s ease;
+}
+
+.gacha-capsule.shaking {
+    animation: gachaShake 0.6s ease-in-out;
+}
+
+@keyframes gachaShake {
+    0%, 100% { transform: rotate(0deg); }
+    15% { transform: rotate(-15deg); }
+    30% { transform: rotate(15deg); }
+    45% { transform: rotate(-10deg); }
+    60% { transform: rotate(10deg); }
+    75% { transform: rotate(-5deg); }
+    90% { transform: rotate(5deg); }
+}
+
+.gacha-capsule-text {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--iris);
+}
+
+.gacha-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.gacha-pool-info {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 3px 12px;
+    background: var(--border-light);
+    border-radius: 10px;
+}
+
+/* 抽取结果 */
+.gacha-result {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    animation: gachaResultIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes gachaResultIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.gacha-result-preview {
+    width: 160px;
+    height: 160px;
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+    background: repeating-conic-gradient(var(--border-light) 0% 25%, var(--bg-card) 0% 50%) 50% / 12px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gacha-result-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 8px;
+    image-rendering: pixelated;
+}
+
+.gacha-result-info {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gacha-result-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.gacha-result-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.gacha-result-progress {
+    font-size: 11px;
+}
+
+/* 按钮 */
+.gacha-modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.gacha-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 24px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    font-family: var(--font-base);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: var(--bg-card);
+    color: var(--text);
+    outline: none;
+    text-decoration: none;
+}
+
+.gacha-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.gacha-btn-draw {
+    background: linear-gradient(135deg, #FFB7E7, #A0E2FB);
+    color: #fff;
+    border: none;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.gacha-btn-draw:hover {
+    box-shadow: 0 6px 20px rgba(255, 183, 231, 0.35);
+}
+
+.gacha-btn-go {
+    background: linear-gradient(135deg, var(--pink), var(--iris));
+    color: #fff;
+    border: none;
+}
+
+.gacha-btn-go:hover {
+    box-shadow: 0 6px 20px rgba(176, 160, 196, 0.35);
+}
+
+@media (max-width: 480px) {
+    .gacha-modal-inner {
+        width: 96vw;
+    }
+
+    .gacha-result-preview {
+        width: 130px;
+        height: 130px;
+    }
+
+    .gacha-result-name {
+        font-size: 16px;
+    }
+}
+
+/* ========================================
+   抽图纸筛选和说明按钮
+   ======================================== */
+.gacha-header-btn {
+    background: none;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: var(--radius-xs);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+.gacha-header-btn:hover {
+    background: var(--iris-lighter);
+    color: var(--iris-dark);
+    border-color: var(--iris);
+}
+
+.gacha-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 0 4px;
+}
+
+.gacha-filter-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.gacha-filter-select {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-base);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    outline: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.gacha-filter-select:focus {
+    border-color: var(--iris);
+    box-shadow: 0 0 0 2px rgba(176, 160, 196, 0.15);
+}
+
+/* ========================================
+   抽图纸使用说明弹窗
+   ======================================== */
+.gacha-help-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 600;
+    background: rgba(62, 54, 64, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.gacha-help-modal.active {
+    display: flex;
+}
+
+.gacha-help-inner {
+    background: var(--bg-card);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(140, 120, 130, 0.3);
+    width: 480px;
+    max-width: 92vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: gachaModalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gacha-help-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.gacha-help-block {
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.gacha-help-block h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.gacha-help-block p {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 4px;
+}
+
+.gacha-help-block p:last-child {
+    margin-bottom: 0;
+}
+
+.gacha-help-block strong {
+    color: var(--text);
+}
+
+.gacha-help-block.gacha-help-danger {
+    background: var(--danger-light);
+    border-color: var(--danger);
+    border-left: 3px solid var(--danger);
+}
+
+.gacha-help-block.gacha-help-danger h4 {
+    color: var(--danger);
+}
+
+.gacha-help-block.gacha-help-danger p {
+    font-size: 10px;
+}
+
+@media (max-width: 480px) {
+    .gacha-help-inner {
+        width: 96vw;
+    }
+
+    .gacha-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+    }
 }

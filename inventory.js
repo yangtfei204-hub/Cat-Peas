@@ -142,16 +142,19 @@
         });
 
         var totalColors = stockData.length, totalBoxes = 0, totalBags = 0, outCount = 0, lowCount = 0;
+        var transitCount = 0;
         stockData.forEach(function (s) {
             totalBoxes += s.boxCount; totalBags += s.bagCount;
             if (s.status === 'out') outCount++;
             if (s.status === 'low') lowCount++;
+            if (s.status === 'transit') transitCount++;
         });
         $('stockTotalColors').textContent = totalColors;
         $('stockTotalBoxes').textContent = totalBoxes;
         $('stockTotalBags').textContent = totalBags;
         $('stockOutCount').textContent = outCount;
         $('stockLowCount').textContent = lowCount;
+        $('stockTransitCount').textContent = transitCount;
 
         var list = $('stockList');
         if (items.length === 0) {
@@ -181,14 +184,16 @@
                 var groupHeader = document.createElement('div');
                 groupHeader.className = 'inv-group-header';
                 var groupItems = grouped[prefix];
-                var groupOutCount = 0, groupLowCount = 0;
+                var groupOutCount = 0, groupLowCount = 0, groupTransitCount = 0;
                 groupItems.forEach(function (gi) {
                     if (gi.status === 'out') groupOutCount++;
                     if (gi.status === 'low') groupLowCount++;
+                    if (gi.status === 'transit') groupTransitCount++;
                 });
                 var badgeHtml = '';
                 if (groupOutCount > 0) badgeHtml += '<span class="inv-group-badge inv-group-badge-out">' + groupOutCount + ' 缺货</span>';
                 if (groupLowCount > 0) badgeHtml += '<span class="inv-group-badge inv-group-badge-low">' + groupLowCount + ' 偏少</span>';
+                if (groupTransitCount > 0) badgeHtml += '<span class="inv-group-badge inv-group-badge-transit">' + groupTransitCount + ' 在途</span>';
 
                 groupHeader.innerHTML =
                     '<span class="inv-group-dot" style="background:' + groupItems[0].hex + '"></span>' +
@@ -229,9 +234,9 @@
 
     function createStockCard(item) {
         var card = document.createElement('div');
-        card.className = 'inv-card' + (item.status === 'out' ? ' inv-card-out' : '') + (item.status === 'low' ? ' inv-card-low' : '');
+        card.className = 'inv-card' + (item.status === 'out' ? ' inv-card-out' : '') + (item.status === 'low' ? ' inv-card-low' : '') + (item.status === 'transit' ? ' inv-card-transit' : '');
 
-        var statusClass = item.status === 'ok' ? 'status-ok' : item.status === 'low' ? 'status-low' : 'status-out';
+        var statusClass = item.status === 'ok' ? 'status-ok' : item.status === 'low' ? 'status-low' : item.status === 'transit' ? 'status-transit' : 'status-out';
 
         card.innerHTML =
             '<div class="inv-card-swatch" style="background:' + item.hex + '"></div>' +
@@ -244,6 +249,7 @@
                             '<option value="ok"' + (item.status === 'ok' ? ' selected' : '') + '>充足</option>' +
                             '<option value="low"' + (item.status === 'low' ? ' selected' : '') + '>偏少</option>' +
                             '<option value="out"' + (item.status === 'out' ? ' selected' : '') + '>缺货</option>' +
+                            '<option value="transit"' + (item.status === 'transit' ? ' selected' : '') + '>在途</option>' +
                         '</select>' +
                     '</div>' +
                 '</div>' +
@@ -414,14 +420,16 @@
     //  Shortage List
     // ===========================
     function renderShortageList() {
-        var outItems = [], lowItems = [];
+        var outItems = [], lowItems = [], transitItems = [];
         stockData.forEach(function (s) {
             if (s.status === 'out') outItems.push(s);
             else if (s.status === 'low') lowItems.push(s);
+            else if (s.status === 'transit') transitItems.push(s);
         });
 
         $('shortageOutTotal').textContent = outItems.length;
         $('shortageLowTotal').textContent = lowItems.length;
+        $('shortageTransitTotal').textContent = transitItems.length;
         $('shortageTotalColors').textContent = stockData.length;
 
         // 在缺货标题中附加盒袋合计
@@ -449,6 +457,13 @@
             t2.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1L1 14h14L8 1z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 5v4M8 12h.01" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg> 偏少（建议补货）';
             list.appendChild(t2);
             lowItems.forEach(function (item) { list.appendChild(createShortageItem(item)); });
+        }
+        if (transitItems.length > 0) {
+            var t3 = document.createElement('div');
+            t3.className = 'inv-shortage-section-title transit';
+            t3.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 在途中（已下单等待到货）';
+            list.appendChild(t3);
+            transitItems.forEach(function (item) { list.appendChild(createShortageItem(item)); });
         }
     }
 
@@ -709,12 +724,13 @@
     // ===========================
     function copyShortage() {
         var lines = ['Cat Peas 补货清单 ' + new Date().toLocaleDateString('zh-CN'), '---'];
-        var outItems = [], lowItems = [];
+        var outItems = [], lowItems = [], transitItems = [];
         stockData.forEach(function (s) {
             if (s.status === 'out') outItems.push(s);
             else if (s.status === 'low') lowItems.push(s);
+            else if (s.status === 'transit') transitItems.push(s);
         });
-        if (outItems.length === 0 && lowItems.length === 0) { showToast('所有色号库存充足', 'success'); return; }
+        if (outItems.length === 0 && lowItems.length === 0 && transitItems.length === 0) { showToast('所有色号库存充足', 'success'); return; }
         if (outItems.length > 0) {
             lines.push('缺货:');
             outItems.forEach(function (i) { lines.push('  ' + i.colorId + ' ' + i.colorName + ' - 盒' + i.boxCount + '/袋' + i.bagCount); });
@@ -722,6 +738,10 @@
         if (lowItems.length > 0) {
             lines.push('偏少:');
             lowItems.forEach(function (i) { lines.push('  ' + i.colorId + ' ' + i.colorName + ' - 盒' + i.boxCount + '/袋' + i.bagCount); });
+        }
+        if (transitItems.length > 0) {
+            lines.push('在途:');
+            transitItems.forEach(function (i) { lines.push('  ' + i.colorId + ' ' + i.colorName + ' - 盒' + i.boxCount + '/袋' + i.bagCount); });
         }
         var text = lines.join('\n');
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -911,6 +931,16 @@
         $('invHelpClose').addEventListener('click', function () { $('invHelpModal').classList.remove('active'); });
         $('invHelpOk').addEventListener('click', function () { $('invHelpModal').classList.remove('active'); });
         $('invHelpModal').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('active'); });
+
+        // 首次使用或版本更新时自动弹出使用说明
+        try {
+            var invHelpVersion = localStorage.getItem('catpeas_inv_help_version');
+            if (invHelpVersion !== '2.0.0') {
+                $('invHelpModal').classList.add('active');
+                localStorage.setItem('catpeas_inv_help_version', '2.0.0');
+            }
+        } catch (e) {}
+
     }
 
     init();

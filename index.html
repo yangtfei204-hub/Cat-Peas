@@ -218,6 +218,30 @@
 
         <!-- 功能入口卡片 -->
         <div class="home-cards">
+            <!-- 抽图纸 -->
+            <div class="home-card home-card-gacha" id="homeGachaCard">
+                <div class="home-card-icon">
+                    <svg viewBox="0 0 48 48" width="48" height="48">
+                        <circle cx="24" cy="20" r="14" stroke="currentColor" stroke-width="2" fill="currentColor" opacity="0.06"/>
+                        <line x1="10" y1="20" x2="38" y2="20" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="24" cy="20" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="24" cy="20" r="1.5" fill="currentColor"/>
+                        <path d="M18 34h12v6a2 2 0 01-2 2H20a2 2 0 01-2-2v-6z" stroke="currentColor" stroke-width="1.5" fill="currentColor" opacity="0.08"/>
+                        <path d="M20 28l4-8 4 8" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="16" cy="12" r="2" fill="#FFB7E7" stroke="#f0a0d0" stroke-width="0.6"/>
+                        <circle cx="24" cy="8" r="2" fill="#A0E2FB" stroke="#80c8e8" stroke-width="0.6"/>
+                        <circle cx="32" cy="12" r="2" fill="#CAEB7B" stroke="#a8d060" stroke-width="0.6"/>
+                    </svg>
+                </div>
+                <div class="home-card-body">
+                    <h2 class="home-card-title">抽图纸</h2>
+                    <p class="home-card-desc">从项目库随机抽取图纸 / 开始拼豆之旅</p>
+                </div>
+                <div class="home-card-arrow">
+                    <svg viewBox="0 0 20 20" width="18" height="18"><path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+            </div>
+
             <!-- 拼豆编辑器 -->
             <a href="editor.html" class="home-card home-card-editor">
                 <div class="home-card-icon">
@@ -307,9 +331,117 @@
             </a>
         </div>
 
+        <!-- 抽图纸弹窗 -->
+        <div class="gacha-modal" id="gachaModal">
+            <div class="gacha-modal-inner">
+                <div class="gacha-modal-header">
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                        <circle cx="12" cy="10" r="8" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <line x1="4" y1="10" x2="20" y2="10" stroke="currentColor" stroke-width="1.5"/>
+                        <circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    </svg>
+                    <span>抽图纸</span>
+                    <button class="gacha-header-btn" id="gachaHelpBtn" title="使用说明与免责声明">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 8a2 2 0 113 1.5c-.3.3-.7.6-.7 1v.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="10.3" cy="13.5" r="0.6" fill="currentColor"/></svg>
+                    </button>
+                    <button class="gacha-modal-close" id="gachaModalClose">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                    </button>
+                </div>
+                <div class="gacha-modal-body">
+                    <div class="gacha-empty" id="gachaEmpty">
+                        <p>项目库中没有未完成的图纸可以抽取</p>
+                        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">请先在拼豆编辑器中创建并保存项目</p>
+                    </div>
+                    <div class="gacha-machine" id="gachaMachine" style="display:none;">
+                        <div class="gacha-filter-row">
+                            <label class="gacha-filter-label">抽取范围：</label>
+                            <select class="gacha-filter-select" id="gachaFilterSelect">
+                                <option value="not_completed">未完成的（排除已完成）</option>
+                                <option value="not_started">仅未开始</option>
+                                <option value="in_progress">仅进行中</option>
+                                <option value="all">全部项目</option>
+                            </select>
+                        </div>
+                        <div class="gacha-capsule" id="gachaCapsule">
+                            <div class="gacha-capsule-top"></div>
+                            <div class="gacha-capsule-bottom"></div>
+                            <span class="gacha-capsule-text">?</span>
+                        </div>
+                        <p class="gacha-hint" id="gachaHint">点击按钮随机抽取一张图纸</p>
+                        <p class="gacha-pool-info" id="gachaPoolInfo">可抽取: 0 张</p>
+                    </div>
+                    <div class="gacha-result" id="gachaResult" style="display:none;">
+                        <div class="gacha-result-preview" id="gachaResultPreview"></div>
+                        <div class="gacha-result-info">
+                            <h3 class="gacha-result-name" id="gachaResultName"></h3>
+                            <div class="gacha-result-meta" id="gachaResultMeta"></div>
+                            <div class="gacha-result-progress" id="gachaResultProgress"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="gacha-modal-footer">
+                    <button class="gacha-btn gacha-btn-draw" id="gachaDrawBtn">
+                        <svg viewBox="0 0 20 20" width="16" height="16"><path d="M10 2a8 8 0 100 16 8 8 0 000-16z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 6v4l2 2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                        抽取图纸
+                    </button>
+                    <a class="gacha-btn gacha-btn-go" id="gachaGoBtn" href="editor.html" style="display:none;">
+                        <svg viewBox="0 0 20 20" width="16" height="16"><path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        导入编辑器开始拼豆
+                    </a>
+                    <button class="gacha-btn" id="gachaRedrawBtn" style="display:none;">再抽一次</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 抽图纸使用说明弹窗 -->
+        <div class="gacha-help-modal" id="gachaHelpModal">
+            <div class="gacha-help-inner">
+                <div class="gacha-modal-header">
+                    <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 8a2 2 0 113 1.5c-.3.3-.7.6-.7 1v.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="10.3" cy="13.5" r="0.6" fill="currentColor"/></svg>
+                    <span>抽图纸 - 使用说明与免责声明</span>
+                    <button class="gacha-modal-close" id="gachaHelpClose">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                    </button>
+                </div>
+                <div class="gacha-help-body">
+                    <div class="gacha-help-block">
+                        <h4>功能介绍</h4>
+                        <p>抽图纸功能从你的项目库中随机抽取一张图纸，帮你决定今天拼哪个图案。适合选择困难时使用，增添拼豆过程的趣味性。</p>
+                    </div>
+                    <div class="gacha-help-block">
+                        <h4>抽取范围设置</h4>
+                        <p><strong>未完成的</strong>：排除已完成的项目，从未开始和进行中的项目里抽取。这是默认选项。</p>
+                        <p><strong>仅未开始</strong>：只从从未开始拼的全新项目里抽取。</p>
+                        <p><strong>仅进行中</strong>：只从已经拼了一部分但还没完成的项目里抽取，适合想继续之前未完工的作品。</p>
+                        <p><strong>全部项目</strong>：从项目库所有项目中抽取，包括已完成的。适合想重温之前作品或重新拼一次的情况。</p>
+                    </div>
+                    <div class="gacha-help-block">
+                        <h4>如何使用</h4>
+                        <p>1. 选择你想要的抽取范围。</p>
+                        <p>2. 点击「抽取图纸」按钮。</p>
+                        <p>3. 抽到图纸后点击「导入编辑器开始拼豆」，图纸会自动加载到拼豆编辑器中。</p>
+                        <p>4. 在编辑器中开启辅助拼豆模式即可开始拼豆。</p>
+                        <p>5. 如果抽到的不满意，可以点击「再抽一次」重新抽取。</p>
+                    </div>
+                    <div class="gacha-help-block">
+                        <h4>注意事项</h4>
+                        <p>抽取结果完全随机，不保证每次抽取的均匀分布。项目库为空时无法使用抽图纸功能，请先在拼豆编辑器中创建并保存项目。</p>
+                    </div>
+                    <div class="gacha-help-block gacha-help-danger">
+                        <h4>免责声明</h4>
+                        <p>抽图纸功能基于简单随机算法，不对抽取结果的公平性、随机性做任何保证。本功能仅供娱乐和辅助决策使用，不构成任何形式的承诺或约束。项目的进度状态由用户自行管理和维护，开发者不对进度数据的准确性负责。</p>
+                    </div>
+                </div>
+                <div class="gacha-modal-footer">
+                    <button class="gacha-btn" id="gachaHelpOk">我知道了</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 底部信息 -->
         <div class="home-footer">
-            <span class="home-version" id="homeVersion">v1.6.0</span>
+            <span class="home-version" id="homeVersion">v2.0.0</span>
             <span class="home-footer-dot"></span>
             <span class="home-footer-text">所有数据存储于本地浏览器</span>
         </div>
@@ -408,6 +540,219 @@
                 document.head.appendChild(style);
             }
         } catch (e) {}
+
+        // ===========================
+        //  抽图纸功能
+        // ===========================
+        var GACHA_DB_NAME = 'CatPeasProjectDB';
+        var GACHA_DB_VERSION = 1;
+        var GACHA_STORE = 'projects';
+        var _gachaDb = null;
+        var _gachaResult = null;
+
+        function gachaOpenDB() {
+            return new Promise(function (resolve, reject) {
+                if (_gachaDb) { resolve(_gachaDb); return; }
+                var req = indexedDB.open(GACHA_DB_NAME, GACHA_DB_VERSION);
+                req.onupgradeneeded = function (e) {
+                    var db = e.target.result;
+                    if (!db.objectStoreNames.contains(GACHA_STORE)) {
+                        var store = db.createObjectStore(GACHA_STORE, { keyPath: 'id' });
+                        store.createIndex('category', 'category', { unique: false });
+                        store.createIndex('updatedAt', 'updatedAt', { unique: false });
+                    }
+                };
+                req.onsuccess = function (e) { _gachaDb = e.target.result; resolve(_gachaDb); };
+                req.onerror = function (e) { reject(e.target.error); };
+            });
+        }
+
+        function gachaGetAll() {
+            return gachaOpenDB().then(function (db) {
+                return new Promise(function (resolve, reject) {
+                    var tx = db.transaction(GACHA_STORE, 'readonly');
+                    var req = tx.objectStore(GACHA_STORE).getAll();
+                    req.onsuccess = function () { resolve(req.result); };
+                    req.onerror = function () { reject(req.error); };
+                });
+            });
+        }
+
+        var gachaCard = document.getElementById('homeGachaCard');
+        var gachaModal = document.getElementById('gachaModal');
+        var gachaModalClose = document.getElementById('gachaModalClose');
+        var gachaDrawBtn = document.getElementById('gachaDrawBtn');
+        var gachaGoBtn = document.getElementById('gachaGoBtn');
+        var gachaRedrawBtn = document.getElementById('gachaRedrawBtn');
+
+        if (gachaCard) {
+            gachaCard.addEventListener('click', function () {
+                openGachaModal();
+            });
+            gachaCard.style.cursor = 'pointer';
+        }
+
+        if (gachaModalClose) {
+            gachaModalClose.addEventListener('click', function () {
+                gachaModal.classList.remove('active');
+            });
+        }
+
+        if (gachaModal) {
+            gachaModal.addEventListener('click', function (e) {
+                if (e.target === gachaModal) gachaModal.classList.remove('active');
+            });
+        }
+
+        if (gachaDrawBtn) {
+            gachaDrawBtn.addEventListener('click', function () {
+                doGachaDraw();
+            });
+        }
+
+        if (gachaRedrawBtn) {
+            gachaRedrawBtn.addEventListener('click', function () {
+                doGachaDraw();
+            });
+        }
+
+        var gachaFilterSelect = document.getElementById('gachaFilterSelect');
+        if (gachaFilterSelect) {
+            gachaFilterSelect.addEventListener('change', function () {
+                // 切换筛选条件时重新计算可抽取数量
+                document.getElementById('gachaResult').style.display = 'none';
+                gachaGoBtn.style.display = 'none';
+                gachaRedrawBtn.style.display = 'none';
+                gachaDrawBtn.style.display = '';
+                _gachaResult = null;
+                refreshGachaPool();
+            });
+        }
+
+        var gachaHelpBtn = document.getElementById('gachaHelpBtn');
+        var gachaHelpModal = document.getElementById('gachaHelpModal');
+        var gachaHelpClose = document.getElementById('gachaHelpClose');
+        var gachaHelpOk = document.getElementById('gachaHelpOk');
+
+        if (gachaHelpBtn) {
+            gachaHelpBtn.addEventListener('click', function () {
+                gachaHelpModal.classList.add('active');
+            });
+        }
+        if (gachaHelpClose) {
+            gachaHelpClose.addEventListener('click', function () {
+                gachaHelpModal.classList.remove('active');
+            });
+        }
+        if (gachaHelpOk) {
+            gachaHelpOk.addEventListener('click', function () {
+                gachaHelpModal.classList.remove('active');
+            });
+        }
+        if (gachaHelpModal) {
+            gachaHelpModal.addEventListener('click', function (e) {
+                if (e.target === gachaHelpModal) gachaHelpModal.classList.remove('active');
+            });
+        }
+
+        function getGachaPool(projects) {
+            var filterVal = document.getElementById('gachaFilterSelect').value;
+            return projects.filter(function (p) {
+                var status = p.progressStatus || 'not_started';
+                if (filterVal === 'not_completed') return status !== 'completed';
+                if (filterVal === 'not_started') return status === 'not_started';
+                if (filterVal === 'in_progress') return status === 'in_progress';
+                return true; // 'all'
+            });
+        }
+
+        function refreshGachaPool() {
+            gachaGetAll().then(function (projects) {
+                var pool = getGachaPool(projects);
+                if (pool.length === 0) {
+                    document.getElementById('gachaEmpty').style.display = '';
+                    document.getElementById('gachaMachine').style.display = 'none';
+                    gachaDrawBtn.style.display = 'none';
+                } else {
+                    document.getElementById('gachaEmpty').style.display = 'none';
+                    document.getElementById('gachaMachine').style.display = '';
+                    document.getElementById('gachaPoolInfo').textContent = '可抽取: ' + pool.length + ' 张';
+                    document.getElementById('gachaHint').textContent = '点击按钮随机抽取一张图纸';
+                }
+            }).catch(function () {
+                document.getElementById('gachaEmpty').style.display = '';
+                document.getElementById('gachaMachine').style.display = 'none';
+                gachaDrawBtn.style.display = 'none';
+            });
+        }
+
+        function openGachaModal() {
+            gachaModal.classList.add('active');
+            // 重置状态
+            document.getElementById('gachaResult').style.display = 'none';
+            gachaGoBtn.style.display = 'none';
+            gachaRedrawBtn.style.display = 'none';
+            gachaDrawBtn.style.display = '';
+            _gachaResult = null;
+
+            refreshGachaPool();
+        }
+
+        function doGachaDraw() {
+            gachaGetAll().then(function (projects) {
+                var pool = getGachaPool(projects);
+                if (pool.length === 0) {
+                    alert('没有可抽取的图纸');
+                    return;
+                }
+
+                // 播放抖动动画
+                var capsule = document.getElementById('gachaCapsule');
+                capsule.classList.remove('shaking');
+                void capsule.offsetWidth; // 触发重排
+                capsule.classList.add('shaking');
+
+                setTimeout(function () {
+                    // 随机抽取
+                    var idx = Math.floor(Math.random() * pool.length);
+                    var proj = pool[idx];
+                    _gachaResult = proj;
+
+                    // 显示结果
+                    document.getElementById('gachaMachine').style.display = 'none';
+                    var resultEl = document.getElementById('gachaResult');
+                    resultEl.style.display = '';
+
+                    // 预览图
+                    var previewEl = document.getElementById('gachaResultPreview');
+                    if (proj.thumbnail && proj.thumbnail.length > 100) {
+                        previewEl.innerHTML = '<img src="' + proj.thumbnail + '" alt="预览">';
+                    } else {
+                        previewEl.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">无预览</span>';
+                    }
+
+                    document.getElementById('gachaResultName').textContent = proj.name;
+                    document.getElementById('gachaResultMeta').innerHTML =
+                        '<span>' + proj.gridW + ' x ' + proj.gridH + '</span>' +
+                        '<span>' + (proj.totalBeads || 0) + ' 颗</span>';
+
+                    var statusText = (proj.progressStatus || 'not_started') === 'in_progress'
+                        ? '进行中 ' + (proj.progressPercent || 0) + '%'
+                        : '未开始';
+                    var statusClass = (proj.progressStatus || 'not_started') === 'in_progress'
+                        ? 'progress-in_progress'
+                        : 'progress-not_started';
+                    document.getElementById('gachaResultProgress').innerHTML =
+                        '<span class="project-progress-badge ' + statusClass + '">' + statusText + '</span>';
+
+                    // 按钮
+                    gachaDrawBtn.style.display = 'none';
+                    gachaGoBtn.style.display = '';
+                    gachaGoBtn.href = 'editor.html?loadProject=' + encodeURIComponent(proj.id);
+                    gachaRedrawBtn.style.display = '';
+                }, 700);
+            });
+        }
     })();
     </script>
 </body>
