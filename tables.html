@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Peas · 客桌管理</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="common.css">
+    <link rel="stylesheet" href="tables.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="tb-header">
+        <a href="index.html" class="tb-back-btn" title="返回主页">
+            <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13 4l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>主页</span>
+        </a>
+        <div class="tb-header-title">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+                <circle cx="12" cy="7" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <path d="M12 4v3l2 1.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="4" y="14" width="16" height="3" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <line x1="7" y1="17" x2="7" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="17" y1="17" x2="17" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>客桌管理</span>
+        </div>
+        <div class="tb-header-actions">
+            <button class="tb-header-btn" id="tbHelpBtn" title="使用说明">
+                <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 8a2 2 0 113 1.5c-.3.3-.7.6-.7 1v.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="10.3" cy="13.5" r="0.6" fill="currentColor"/></svg>
+            </button>
+            <button class="tb-header-btn" id="tbAddTableBtn" title="添加桌位">
+                <svg viewBox="0 0 20 20" width="16" height="16"><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <button class="tb-header-btn" id="tbHistoryBtn" title="历史记录">
+                <svg viewBox="0 0 20 20" width="16" height="16"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 8h14M8 3v14" stroke="currentColor" stroke-width="0.8" opacity="0.4"/></svg>
+            </button>
+            <button class="tb-header-btn" id="tbSettingsBtn" title="设置">
+                <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 2v2M10 16v2M3.5 5.5l1.4 1.4M15.1 15.1l1.4 1.4M2 10h2M16 10h2M3.5 14.5l1.4-1.4M15.1 4.9l1.4-1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- 状态总览 -->
+    <div class="tb-status-bar" id="tbStatusBar">
+        <div class="tb-status-item">
+            <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="8" r="3" fill="var(--success)"/></svg>
+            <span>活跃: <strong id="tbActiveCount">0</strong></span>
+        </div>
+        <div class="tb-status-item">
+            <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="8" r="3" fill="var(--border)" stroke="var(--text-muted)" stroke-width="1"/></svg>
+            <span>空闲: <strong id="tbIdleCount">0</strong></span>
+        </div>
+        <div class="tb-status-item">
+            <span>总人数: <strong id="tbTotalGuests">0</strong></span>
+        </div>
+    </div>
+
+    <!-- 超时提醒横幅 -->
+    <div class="tb-overtime-banner" id="tbOvertimeBanner">
+        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3v5M10 14h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        <span id="tbOvertimeText">有桌位已超时</span>
+    </div>
+
+    <!-- 桌位卡片网格 -->
+    <div class="tb-grid" id="tbGrid">
+        <!-- JS动态生成 -->
+    </div>
+
+    <!-- ========== 开始接客弹窗 ========== -->
+    <div class="tb-modal-overlay" id="startModal">
+        <div class="tb-modal">
+            <div class="tb-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><path d="M6 4l10 6-10 6V4z" fill="currentColor"/></svg>
+                <span id="startModalTitle">开始接客 -- 1号桌</span>
+                <button class="tb-modal-close" id="startModalClose">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="tb-modal-body">
+                <div class="tb-form-section">
+                    <label class="tb-form-label">计时模式</label>
+                    <div class="tb-timer-mode-btns">
+                        <button class="tb-mode-btn active" data-mode="up" id="modeUpBtn">
+                            <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 6v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span>正计时</span>
+                            <small>从0开始累计</small>
+                        </button>
+                        <button class="tb-mode-btn" data-mode="down" id="modeDownBtn">
+                            <svg viewBox="0 0 20 20" width="16" height="16"><path d="M10 2v3M10 15v3M3.5 5.5l2 2M14.5 14.5l2 2M2 10h3M15 10h3M3.5 14.5l2-2M14.5 5.5l2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                            <span>倒计时</span>
+                            <small>设定时长</small>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tb-form-section tb-countdown-section" id="countdownSection" style="display:none;">
+                    <label class="tb-form-label">套餐时长</label>
+                    <div class="tb-duration-btns">
+                        <button class="tb-dur-btn" data-min="30">30分</button>
+                        <button class="tb-dur-btn active" data-min="60">60分</button>
+                        <button class="tb-dur-btn" data-min="90">90分</button>
+                        <button class="tb-dur-btn" data-min="120">120分</button>
+                    </div>
+                    <div class="tb-custom-dur">
+                        <span>自定义:</span>
+                        <input type="number" class="tb-input tb-dur-input" id="customDuration" value="60" min="1" max="600">
+                        <span>分钟</span>
+                    </div>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">客人人数</label>
+                    <div class="tb-counter">
+                        <button class="tb-counter-btn" id="guestDec">-</button>
+                        <input type="number" class="tb-counter-input" id="guestCount" value="1" min="1" max="50">
+                        <button class="tb-counter-btn" id="guestInc">+</button>
+                    </div>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">价格</label>
+                    <div class="tb-price-row">
+                        <input type="number" class="tb-input" id="startPrice" placeholder="0" min="0" step="0.01">
+                        <span class="tb-price-unit">元</span>
+                    </div>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">客人备注（衣着特征等）</label>
+                    <textarea class="tb-textarea" id="guestNote" placeholder="描述客人衣着特征以便辨识，例如：穿红色外套的女生和穿蓝色卫衣的男生" rows="3"></textarea>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">拼豆图案（选填）</label>
+                    <input type="text" class="tb-input" id="patternInput" placeholder="如：52x52 小猫">
+                </div>
+            </div>
+            <div class="tb-modal-footer">
+                <button class="tb-btn" id="startCancelBtn">取消</button>
+                <button class="tb-btn tb-btn-primary" id="startConfirmBtn">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M5 3l8 5-8 5V3z" fill="currentColor"/></svg>
+                    确认开始
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 编辑弹窗 ========== -->
+    <div class="tb-modal-overlay" id="editModal">
+        <div class="tb-modal">
+            <div class="tb-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13.586 3.586a2 2 0 112.828 2.828l-8.486 8.486L4 16l1.1-3.928 8.486-8.486z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                <span id="editModalTitle">编辑 -- 1号桌</span>
+                <button class="tb-modal-close" id="editModalClose">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="tb-modal-body">
+                <div class="tb-edit-status" id="editStatusInfo"></div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">客人人数</label>
+                    <div class="tb-counter">
+                        <button class="tb-counter-btn" id="editGuestDec">-</button>
+                        <input type="number" class="tb-counter-input" id="editGuestCount" value="1" min="1">
+                        <button class="tb-counter-btn" id="editGuestInc">+</button>
+                    </div>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">价格</label>
+                    <div class="tb-price-row">
+                        <input type="number" class="tb-input" id="editPrice" placeholder="0" min="0" step="0.01">
+                        <span class="tb-price-unit">元</span>
+                    </div>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">客人备注</label>
+                    <textarea class="tb-textarea" id="editGuestNote" rows="3"></textarea>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">拼豆图案</label>
+                    <input type="text" class="tb-input" id="editPattern">
+                </div>
+
+                <div class="tb-form-section" id="editDurationSection" style="display:none;">
+                    <label class="tb-form-label">剩余时长调整</label>
+                    <div class="tb-dur-adjust-btns">
+                        <button class="tb-btn tb-btn-sm" data-adj="-5">-5分</button>
+                        <button class="tb-btn tb-btn-sm" data-adj="5">+5分</button>
+                        <button class="tb-btn tb-btn-sm" data-adj="15">+15分</button>
+                        <button class="tb-btn tb-btn-sm" data-adj="30">+30分</button>
+                    </div>
+                </div>
+            </div>
+            <div class="tb-modal-footer">
+                <button class="tb-btn" id="editCancelBtn">取消</button>
+                <button class="tb-btn tb-btn-primary" id="editSaveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 结束确认弹窗 ========== -->
+    <div class="tb-modal-overlay" id="endModal">
+        <div class="tb-modal">
+            <div class="tb-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5" fill="currentColor" opacity="0.15"/></svg>
+                <span id="endModalTitle">确认结束 -- 1号桌</span>
+                <button class="tb-modal-close" id="endModalClose">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="tb-modal-body">
+                <div class="tb-end-summary" id="endSummary"></div>
+                <div class="tb-form-section">
+                    <label class="tb-form-label">结束备注（选填）</label>
+                    <input type="text" class="tb-input" id="endNote" placeholder="客人反馈、特殊情况等">
+                </div>
+            </div>
+            <div class="tb-modal-footer">
+                <button class="tb-btn" id="endCancelBtn">取消</button>
+                <button class="tb-btn tb-btn-danger" id="endConfirmBtn">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><rect x="3" y="3" width="10" height="10" rx="1.5" fill="currentColor"/></svg>
+                    确认结束
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 历史记录弹窗 ========== -->
+    <div class="tb-modal-overlay" id="historyModal">
+        <div class="tb-modal tb-modal-wide">
+            <div class="tb-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 8h14" stroke="currentColor" stroke-width="1"/></svg>
+                <span>客桌历史记录</span>
+                <button class="tb-modal-close" id="historyModalClose">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="tb-modal-body">
+                <div class="tb-history-toolbar">
+                    <select class="tb-select" id="historyDateFilter">
+                        <option value="today">今天</option>
+                        <option value="7">最近7天</option>
+                        <option value="30">最近30天</option>
+                        <option value="0">全部</option>
+                    </select>
+                    <select class="tb-select" id="historyTableFilter">
+                        <option value="all">全部桌号</option>
+                    </select>
+                </div>
+                <div class="tb-history-summary" id="historySummary"></div>
+                <div class="tb-history-list" id="historyList">
+                    <div class="tb-empty">暂无历史记录</div>
+                </div>
+            </div>
+            <div class="tb-modal-footer">
+                <button class="tb-btn tb-btn-danger" id="historyClearBtn">清空历史</button>
+                <button class="tb-btn" id="historyExportBtn">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 11V2M5 8l3 3 3-3M2 12v1.5a.5.5 0 00.5.5h11a.5.5 0 00.5-.5V12" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                    导出
+                </button>
+                <button class="tb-btn" id="historyCloseBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 设置弹窗 ========== -->
+    <div class="tb-modal-overlay" id="settingsModal">
+        <div class="tb-modal">
+            <div class="tb-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 2v2M10 16v2M3.5 5.5l1.4 1.4M15.1 15.1l1.4 1.4M2 10h2M16 10h2M3.5 14.5l1.4-1.4M15.1 4.9l1.4-1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <span>客桌管理设置</span>
+                <button class="tb-modal-close" id="settingsModalClose">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="tb-modal-body">
+                <div class="tb-form-section">
+                    <label class="tb-form-label">桌位管理</label>
+                    <div class="tb-settings-tables" id="settingsTableList"></div>
+                    <div class="tb-settings-add-row">
+                        <span>批量添加:</span>
+                        <input type="number" class="tb-input" id="batchAddCount" value="1" min="1" max="20" style="width:50px;text-align:center;">
+                        <span>个桌位</span>
+                        <button class="tb-btn tb-btn-sm" id="batchAddBtn">添加</button>
+                    </div>
+                    <p class="tb-hint">最多 20 个桌位</p>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">超时设置</label>
+                    <label class="tb-toggle">
+                        <input type="checkbox" id="settingOvertimeSwitch" checked>
+                        <span class="tb-toggle-slider"></span>
+                        <span>倒计时结束后自动转为正计时</span>
+                    </label>
+                    <label class="tb-toggle">
+                        <input type="checkbox" id="settingOvertimeTop" checked>
+                        <span class="tb-toggle-slider"></span>
+                        <span>超时桌位置顶高亮显示</span>
+                    </label>
+                </div>
+
+                <div class="tb-form-section">
+                    <label class="tb-form-label">默认设置</label>
+                    <div class="tb-settings-row">
+                        <span>默认计时模式:</span>
+                        <select class="tb-select" id="settingDefaultMode">
+                            <option value="up">正计时</option>
+                            <option value="down">倒计时</option>
+                        </select>
+                    </div>
+                    <div class="tb-settings-row">
+                        <span>默认套餐时长:</span>
+                        <input type="number" class="tb-input" id="settingDefaultDuration" value="60" min="1" max="600" style="width:60px;text-align:center;">
+                        <span>分钟</span>
+                    </div>
+                </div>
+            </div>
+            <div class="tb-modal-footer">
+                <button class="tb-btn" id="settingsCancelBtn">取消</button>
+                <button class="tb-btn tb-btn-primary" id="settingsSaveBtn">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用说明弹窗 -->
+    <div class="tb-modal-overlay" id="tbHelpModal">
+        <div class="tb-modal" style="width:520px;">
+            <div class="tb-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 8a2 2 0 113 1.5c-.3.3-.7.6-.7 1v.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="10.3" cy="13.5" r="0.6" fill="currentColor"/></svg>
+                <span>客桌管理 - 使用说明</span>
+                <button class="tb-modal-close" id="tbHelpClose">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="tb-modal-body" style="max-height:60vh;">
+                <div style="padding:10px 12px;background:var(--iris-lighter);border-radius:var(--radius-sm);border-left:3px solid var(--iris);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong style="color:var(--iris-dark);">开始接客</strong>：点击空闲桌位的「开始接客」按钮，选择正计时或倒计时模式，填写客人信息后开始。正计时从0累计，倒计时设定套餐时长后倒数。
+                </div>
+                <div style="padding:10px 12px;background:var(--pink-lighter);border-radius:var(--radius-sm);border-left:3px solid var(--pink);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong style="color:var(--pink-dark);">倒计时超时</strong>：倒计时结束后自动转为正计时，显示超时时长（红色负数）。超时桌位会高亮闪烁并置顶显示，方便店员及时提醒客人。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>暂离/继续</strong>：客人暂时离开时点击「暂停」，计时器暂停。客人回来后点击「继续」恢复计时。暂离时间不计入总时长。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>客人备注</strong>：记录客人的衣着特征（如「穿红色外套的女生」），方便在多桌同时使用时区分不同桌的客人。使用中也可随时点击「编辑」修改信息。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>历史记录</strong>：每桌结束后自动归档到历史记录。可按日期和桌号筛选查看，汇总显示接客桌次、总人数、总营收和总时长。支持导出为 JSON 文件。
+                </div>
+                <div style="padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.7;">
+                    <strong>数据安全</strong>：计时状态每5秒自动保存到浏览器本地存储。刷新页面或意外关闭后，基于时间戳自动恢复，不会丢失计时进度。历史记录存储在 IndexedDB 中。
+                </div>
+                <div style="padding:10px 12px;background:var(--danger-light);border-radius:var(--radius-sm);border-left:3px solid var(--danger);font-size:10px;color:var(--text-secondary);line-height:1.7;">
+                    <strong style="color:var(--danger);">免责声明</strong>：本工具按「现状」提供，开发者不对计时准确性、营收统计的正确性做任何保证。因工具使用产生的任何纠纷或损失，开发者不承担责任。请以实际情况为准，本工具仅作为辅助管理手段。清除浏览器缓存会导致历史数据丢失，请定期导出备份。
+                </div>
+            </div>
+            <div class="tb-modal-footer">
+                <button class="tb-btn tb-btn-primary" id="tbHelpOk">我知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="tb-toast-container" id="tbToastContainer"></div>
+
+    <script src="tables.js"></script>
+</body>
+</html>

@@ -527,8 +527,7 @@
     }
 
     function init() {
-        // 开屏动画（必须在最前面调用，不依赖任何条件）
-        dismissSplash();
+        // 开屏动画已移到主页
         // 显示版本号
         if ($('logoVersion')) $('logoVersion').textContent = 'v' + APP_VERSION;
         showDisclaimer();

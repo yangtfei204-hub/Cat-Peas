@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Peas · 拼豆图纸生成编辑器</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="editor-home-btn" title="返回主页">
+            <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13 4l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <div class="logo">
+            <svg class="logo-cat" viewBox="0 0 40 40" width="34" height="34">
+                <defs>
+                    <radialGradient id="logoFace" cx="48%" cy="42%" r="50%">
+                        <stop offset="0%" stop-color="#fff5f0"/>
+                        <stop offset="100%" stop-color="#f0d0c8"/>
+                    </radialGradient>
+                    <radialGradient id="logoEar" cx="50%" cy="30%" r="60%">
+                        <stop offset="0%" stop-color="#f5d0cc"/>
+                        <stop offset="100%" stop-color="#d4979c"/>
+                    </radialGradient>
+                </defs>
+                <!-- 左耳 -->
+                <path d="M10 18 Q8 10 12 6 L14.5 3 Q15.5 2 16 3.5 L16.5 8 Q14 13 12 17 Z" fill="url(#logoEar)"/>
+                <path d="M11.5 16 Q10 10.5 13 7.5 L14.5 5.5 Q15 5 15.2 6 L15.5 9 Q14 12.5 12.5 15.5 Z" fill="#f0a8a8" opacity="0.7"/>
+                <!-- 右耳 -->
+                <path d="M30 18 Q32 10 28 6 L25.5 3 Q24.5 2 24 3.5 L23.5 8 Q26 13 28 17 Z" fill="url(#logoEar)"/>
+                <path d="M28.5 16 Q30 10.5 27 7.5 L25.5 5.5 Q25 5 24.8 6 L24.5 9 Q26 12.5 27.5 15.5 Z" fill="#f0a8a8" opacity="0.7"/>
+                <!-- 头 -->
+                <ellipse cx="20" cy="22" rx="12.5" ry="11.5" fill="url(#logoFace)" stroke="#e8c0b8" stroke-width="0.5"/>
+                <!-- 左眼 -->
+                <ellipse cx="16" cy="21" rx="2.2" ry="2.4" fill="#3a3040"/>
+                <circle cx="15.2" cy="19.8" r="0.8" fill="#fff" opacity="0.85"/>
+                <circle cx="17" cy="21.8" r="0.4" fill="#fff" opacity="0.4"/>
+                <!-- 右眼 -->
+                <ellipse cx="24" cy="21" rx="2.2" ry="2.4" fill="#3a3040"/>
+                <circle cx="23.2" cy="19.8" r="0.8" fill="#fff" opacity="0.85"/>
+                <circle cx="25" cy="21.8" r="0.4" fill="#fff" opacity="0.4"/>
+                <!-- 鼻子 -->
+                <ellipse cx="20" cy="24.5" rx="1.2" ry="0.8" fill="#c07078"/>
+                <ellipse cx="19.7" cy="24.2" rx="0.4" ry="0.25" fill="#fff" opacity="0.35"/>
+                <!-- 嘴 -->
+                <path d="M18.2 25.5 Q20 27.5 21.8 25.5" stroke="#c07880" stroke-width="0.7" fill="none" stroke-linecap="round"/>
+                <line x1="20" y1="24.5" x2="20" y2="25.8" stroke="#c07880" stroke-width="0.5" stroke-linecap="round"/>
+                <!-- 腮红 -->
+                <circle cx="13" cy="24.5" r="2.2" fill="#f0a0a0" opacity="0.3"/>
+                <circle cx="27" cy="24.5" r="2.2" fill="#f0a0a0" opacity="0.3"/>
+                <!-- 胡须 -->
+                <line x1="11" y1="22.5" x2="5" y2="21" stroke="#d4b0b0" stroke-width="0.5" opacity="0.5" stroke-linecap="round"/>
+                <line x1="11" y1="24.5" x2="5" y2="25.5" stroke="#d4b0b0" stroke-width="0.5" opacity="0.5" stroke-linecap="round"/>
+                <line x1="29" y1="22.5" x2="35" y2="21" stroke="#d4b0b0" stroke-width="0.5" opacity="0.5" stroke-linecap="round"/>
+                <line x1="29" y1="24.5" x2="35" y2="25.5" stroke="#d4b0b0" stroke-width="0.5" opacity="0.5" stroke-linecap="round"/>
+                <!-- 小豆子装饰 -->
+                <circle cx="14" cy="12" r="1.8" fill="#FFB7E7" opacity="0.8"/>
+                <circle cx="20" cy="10" r="2" fill="#A0E2FB" opacity="0.8"/>
+                <circle cx="26" cy="12" r="1.8" fill="#CAEB7B" opacity="0.8"/>
+            </svg>
+            <div class="logo-text-wrap">
+                <span class="logo-text">Cat Peas</span>
+                <span class="logo-sub">拼豆图纸生成编辑器 <span class="logo-version" id="logoVersion"></span></span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="theme-toggle-btn" id="helpBtn" title="使用说明与免责声明">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M9.5 9.5a2.5 2.5 0 114 2c-.5.4-1 .9-1 1.5v.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12.5" cy="16.5" r="0.8" fill="currentColor"/>
+                </svg>
+            </button>
+            <button class="theme-toggle-btn" id="projectLibBtn" title="项目库">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M3 5a2 2 0 012-2h4l2 2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 13h6M12 10v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <button class="theme-toggle-btn" id="assistModeBtn" title="辅助拼豆模式">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="6.5" cy="6.5" r="2" fill="currentColor" opacity="0.4"/>
+                    <path d="M17.5 5v4M15.5 7h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <button class="theme-toggle-btn" id="themeToggleBtn" title="切换主题">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <button class="theme-custom-btn" id="themeCustomBtn" title="自定义配色">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <circle cx="7" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="17" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+            </button>
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="菜单">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="main-layout" id="mainLayout">
+        <!-- ===== 左侧控制面板 ===== -->
+        <aside class="panel panel-left" id="panelLeft">
+            <div class="panel-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><path d="M10 1a1 1 0 011 1v1.07A7.002 7.002 0 0117 10a7 7 0 01-6 6.93V18a1 1 0 11-2 0v-1.07A7.002 7.002 0 013 10a7 7 0 016-6.93V2a1 1 0 011-1zm0 4a5 5 0 100 10A5 5 0 0010 5z" fill="currentColor"/></svg>
+                <span>功能控制</span>
+                <button class="panel-close mobile-only" data-panel="left">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="panel-content">
+                <!-- 画布尺寸 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M3 3h4v4H3zM13 3h4v4h-4zM3 13h4v4H3zM13 13h4v4h-4z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                        画布尺寸
+                    </h3>
+                    <div class="size-inputs">
+                        <div class="input-group">
+                            <label>宽</label>
+                            <input type="number" id="canvasWidth" value="52" min="4" max="200">
+                        </div>
+                        <span class="size-x">×</span>
+                        <div class="input-group">
+                            <label>高</label>
+                            <input type="number" id="canvasHeight" value="52" min="4" max="200">
+                        </div>
+                        <button class="btn btn-apply" id="applySize">应用</button>
+                    </div>
+                    <p class="size-note">范围4~200格，常规小板选52×52（约2700颗），中版选78×78（约6000颗），大版选104×104（约10800颗）。应用新尺寸会保留在范围内的已有内容。</p>
+                    <div class="size-presets">
+                        <button class="btn btn-preset" data-w="32" data-h="32">32×32</button>
+                        <button class="btn btn-preset" data-w="40" data-h="40">40×40</button>
+                        <button class="btn btn-preset" data-w="48" data-h="48">48×48</button>
+                        <button class="btn btn-preset active" data-w="52" data-h="52">52×52</button>
+                        <button class="btn btn-preset" data-w="78" data-h="78">78×78</button>
+                        <button class="btn btn-preset" data-w="104" data-h="104">104×104</button>
+                    </div>
+                    <div style="display:flex;gap:4px;margin-top:8px;">
+                        <button class="btn btn-full" id="cropCanvasBtn" style="margin-top:0;">
+                            <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 1v14h14M1 5h14v14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            裁剪画板
+                        </button>
+                        <button class="btn btn-full" id="expandCanvasBtn" style="margin-top:0;">
+                            <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 2v16M2 10h16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><rect x="4" y="4" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1" fill="none" stroke-dasharray="2 2" opacity="0.4"/></svg>
+                            扩展画板
+                        </button>
+                    </div>
+                </section>
+
+                <!-- 缩放控制 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 12l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        缩放控制
+                    </h3>
+                    <div class="zoom-controls">
+                        <button class="btn btn-icon" id="zoomOut" title="缩小">
+                            <svg viewBox="0 0 20 20" width="16" height="16"><path d="M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </button>
+                        <span class="zoom-value" id="zoomValue">100%</span>
+                        <button class="btn btn-icon" id="zoomIn" title="放大">
+                            <svg viewBox="0 0 20 20" width="16" height="16"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </button>
+                        <button class="btn btn-sm" id="zoomFit">适应</button>
+                    </div>
+                </section>
+
+                <!-- 绘图工具 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M13.586 3.586a2 2 0 112.828 2.828l-8.486 8.486L4 16l1.1-3.928 8.486-8.486z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                        绘图工具
+                    </h3>
+                    <div class="tools-grid">
+                        <button class="btn btn-tool active" data-tool="pen" title="画笔(B)">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span>画笔</span>
+                        </button>
+                        <button class="btn btn-tool" data-tool="eraser" title="橡皮(E)">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 20H8.5l-4.21-4.3a1 1 0 010-1.41L15 3.5a1 1 0 011.41 0L21.5 8.59a1 1 0 010 1.41L13 18.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><line x1="5" y1="21" x2="19" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                            <span>橡皮</span>
+                        </button>
+                        <button class="btn btn-tool" data-tool="picker" title="吸取画板上的拼豆颜色(I)">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M7 21l-4-4 8.5-8.5 4 4L7 21zm0 0h14M17.5 6.5l-4-4 2-2 4 4-2 2z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span>吸色</span>
+                        </button>
+                        <button class="btn btn-tool" data-tool="bgpicker" title="吸取底图（参考图片）的颜色，自动匹配最近色板色">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M7 21l-4-4 8.5-8.5 4 4L7 21z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="6" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                            <span>吸底</span>
+                        </button>
+                        <button class="btn btn-tool" data-tool="bucket" title="油漆桶：填充连通的同色区域(F)">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 16l4-10 8 8-4 2-8 0z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 18c1.5 0 2-1 2-2s-2-3-2-3-2 2-2 3 .5 2 2 2z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1"/></svg>
+                            <span>填充</span>
+                        </button>
+                        <button class="btn btn-tool" data-tool="fill" title="一键换色：点击画布上某颜色，将其全部替换为当前选中色(G)">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3v18M3 12c0-3 4-6 9-6s9 3 9 6-4 6-9 6-9-3-9-6z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                            <span>换色</span>
+                        </button>
+                        <button class="btn btn-tool" data-tool="hand" title="抓手工具：拖拽画布移动观察(H)">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M18 11V6.5a1.5 1.5 0 00-3 0V11M15 11V4.5a1.5 1.5 0 00-3 0V11M12 11V5.5a1.5 1.5 0 00-3 0v7.8M9 12.5V9.5a1.5 1.5 0 00-3 0v5a7 7 0 0014 0v-4a1.5 1.5 0 00-3 0" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span>抓手</span>
+                        </button>
+                        <button class="btn btn-tool" data-tool="select" title="框选工具：拖拽选区，可移动/复制/删除(M)">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><rect x="4" y="4" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-dasharray="3 2"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="1" fill="currentColor" opacity="0.15"/></svg>
+                            <span>框选</span>
+                        </button>
+                    </div>
+                    <div id="fillHint" class="fill-hint" style="display:none;">
+                        点击画布上某个颜色，将其全部替换为当前选中色
+                    </div>
+                    <div id="bucketHint" class="fill-hint" style="display:none;">
+                        点击画布上某格子，将与其颜色相同的连通区域填充为当前选中色
+                    </div>
+                    <div class="brush-size-row" id="brushSizeRow">
+                        <label class="brush-size-label">
+                            <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.3" fill="currentColor" opacity="0.2"/></svg>
+                            画笔大小：<strong id="brushSizeVal">1x1</strong>
+                        </label>
+                        <div class="brush-size-btns">
+                            <button class="btn btn-sm brush-sz active" data-size="1">1x1</button>
+                            <button class="btn btn-sm brush-sz" data-size="2">2x2</button>
+                            <button class="btn btn-sm brush-sz" data-size="3">3x3</button>
+                            <button class="btn btn-sm brush-sz" data-size="5">5x5</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 显示选项 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 4C4 4 1 10 1 10s3 6 9 6 9-6 9-6-3-6-9-6z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                        显示选项
+                    </h3>
+                    <div class="toggle-list">
+                        <label class="toggle-item">
+                            <input type="checkbox" id="toggleGrid" checked>
+                            <span class="toggle-slider"></span>
+                            <span>网格线</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="toggleRuler" checked>
+                            <span class="toggle-slider"></span>
+                            <span>坐标标尺</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="toggleNumbers" checked>
+                            <span class="toggle-slider"></span>
+                            <span>色号数字</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="toggleBead">
+                            <span class="toggle-slider"></span>
+                            <span>仿真豆子预览</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="toggleSplitLine">
+                            <span class="toggle-slider"></span>
+                            <span>分板线（52格）</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="toggleCenterLine">
+                            <span class="toggle-slider"></span>
+                            <span>中心参考线</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- 图层管理 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M2 14l8 4 8-4M2 10l8 4 8-4M10 2l8 4-8 4-8-4z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        图层
+                    </h3>
+                    <div class="layer-list" id="layerList">
+                        <!-- JS 动态生成 -->
+                    </div>
+                    <div class="layer-actions">
+                        <button class="btn btn-sm" id="addLayerBtn" title="添加新图层">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                            添加图层
+                        </button>
+                        <button class="btn btn-sm" id="mergeLayersBtn">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M3 12l5-4 5 4M3 8l5-4 5 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            合并全部
+                        </button>
+                        <button class="btn btn-sm" id="mergeDownBtn" title="将当前图层向下合并">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M8 2v8M5 7l3 3 3-3M3 13h10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            向下合并
+                        </button>
+                        <button class="btn btn-sm" id="deleteLayerBtn" title="删除当前图层">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M5 3V2.5a.5.5 0 01.5-.5h5a.5.5 0 01.5.5V3M2 3h12M4 3v9.5a1.5 1.5 0 001.5 1.5h5a1.5 1.5 0 001.5-1.5V3" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            删除图层
+                        </button>
+                    </div>
+                    <div class="layer-export-row" style="margin-top:6px;">
+                        <button class="btn btn-sm btn-export btn-full" id="exportCurrentLayerBtn" style="margin-top:0;">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M8 2v8M5 7l3 3 3-3M2 12v1.5a.5.5 0 00.5.5h11a.5.5 0 00.5-.5V12" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            仅导出当前图层
+                        </button>
+                    </div>
+                </section>
+
+                <!-- 图案变换 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        图案变换
+                    </h3>
+                    <div class="transform-grid">
+                        <button class="btn btn-action" id="flipH">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M7 16V4l-5 6 5 6zm10-12v12l5-6-5-6zM12 2v20" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            水平镜像
+                        </button>
+                        <button class="btn btn-action" id="flipV">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M16 7H4l6-5 6 5zM4 17h12l-6 5-6-5zM2 12h20" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            垂直镜像
+                        </button>
+                        <button class="btn btn-action" id="rotate90">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 12a8 8 0 0114-5.3V3M18 6.7V3h-3.3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12a8 8 0 01-14 5.3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+                            旋转90°
+                        </button>
+                    </div>
+                    <div class="symmetry-row" style="margin-top:10px;">
+                        <label class="brush-size-label">
+                            <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2" opacity="0.3"/></svg>
+                            对称绘制模式
+                        </label>
+                        <div class="brush-size-btns" style="margin-top:4px;">
+                            <button class="btn btn-sm sym-btn active" data-sym="none">关闭</button>
+                            <button class="btn btn-sm sym-btn" data-sym="h">水平对称</button>
+                            <button class="btn btn-sm sym-btn" data-sym="v">垂直对称</button>
+                            <button class="btn btn-sm sym-btn" data-sym="hv">四向对称</button>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <label class="brush-size-label">
+                            <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2v12M2 8h12M8 2l-2 2M8 2l2 2M8 14l-2-2M8 14l2-2M2 8l2-2M2 8l2 2M14 8l-2-2M14 8l-2 2" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            整体偏移
+                        </label>
+                        <div class="shift-btns" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;width:120px;margin:4px auto 0;">
+                            <span></span>
+                            <button class="btn btn-sm" id="shiftUp" title="上移1格" style="padding:4px;">
+                                <svg viewBox="0 0 12 12" width="10" height="10"><path d="M6 2v8M3 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>
+                            <span></span>
+                            <button class="btn btn-sm" id="shiftLeft" title="左移1格" style="padding:4px;">
+                                <svg viewBox="0 0 12 12" width="10" height="10"><path d="M2 6h8M5 3L2 6l3 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>
+                            <span></span>
+                            <button class="btn btn-sm" id="shiftRight" title="右移1格" style="padding:4px;">
+                                <svg viewBox="0 0 12 12" width="10" height="10"><path d="M10 6H2M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>
+                            <span></span>
+                            <button class="btn btn-sm" id="shiftDown" title="下移1格" style="padding:4px;">
+                                <svg viewBox="0 0 12 12" width="10" height="10"><path d="M6 10V2M3 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>
+                            <span></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 撤销重做 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M3 7l4-4v3h6a5 5 0 010 10H9" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        操作历史
+                    </h3>
+                    <div class="history-controls">
+                        <button class="btn btn-action" id="undoBtn">
+                            <svg viewBox="0 0 20 20" width="14" height="14"><path d="M3 7l4-4M3 7l4 4M3 7h10a4 4 0 010 8H9" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            撤销
+                        </button>
+                        <button class="btn btn-action" id="redoBtn">
+                            <svg viewBox="0 0 20 20" width="14" height="14"><path d="M17 7l-4-4M17 7l-4 4M17 7H7a4 4 0 000 8h4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            重做
+                        </button>
+                    </div>
+                    <button class="btn btn-full btn-remove" id="clearCanvasBtn" style="margin-top:6px;">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M6 4V3a1 1 0 011-1h6a1 1 0 011 1v1M3 4h14M5 4v12a2 2 0 002 2h6a2 2 0 002-2V4M8 8v6M12 8v6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        清空画布
+                    </button>
+                    <span class="history-info" id="historyInfo">0 / 50</span>
+                </section>
+
+                <!-- 图片导入 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><rect x="2" y="2" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="7" cy="7" r="2" fill="currentColor"/><path d="M2 14l4-4 3 3 4-4 5 5v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2z" fill="currentColor" opacity="0.3"/></svg>
+                        图片导入
+                    </h3>
+                    <input type="file" id="imageInput" accept="image/*" style="display:none">
+                    <button class="btn btn-full" id="uploadBtn">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3v10M6 7l4-4 4 4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        上传参考底图
+                    </button>
+                    <div id="imageControls" style="display:none;">
+                        <label class="slider-label">底图透明度：<span id="opacityVal">50%</span></label>
+                        <input type="range" id="opacitySlider" min="0" max="100" value="50" class="slider">
+                        <label class="slider-label">色块透明度：<span id="cellOpacityVal">100%</span></label>
+                        <input type="range" id="cellOpacitySlider" min="0" max="100" value="100" class="slider">
+                        <p class="size-note">降低色块透明度可透视底图，方便比对颜色差异。</p>
+                        <label class="toggle-item" style="margin-top:10px;">
+                            <input type="checkbox" id="toggleBgFilter">
+                            <span class="toggle-slider"></span>
+                            <span>屏蔽背景色</span>
+                        </label>
+                        <div id="bgFilterControls" style="display:none; margin-top:6px;">
+                            <label class="slider-label">容差值：<span id="bgToleranceVal">30</span></label>
+                            <input type="range" id="bgToleranceSlider" min="5" max="100" value="30" class="slider">
+                            <p class="size-note">自动检测图片四角颜色作为背景色，容差越大屏蔽范围越广。纯色背景效果最佳。</p>
+                        </div>
+                        <div class="max-colors-row">
+                            <label>最大用色数：</label>
+                            <input type="number" id="maxColors" value="24" min="2" max="64">
+                        </div>
+                        <button class="btn btn-full btn-accent" id="convertBtn">
+                            <svg viewBox="0 0 20 20" width="14" height="14"><path d="M13 2L3 14h5l-1 6 10-12h-5l1-6z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            一键转换为拼豆图纸
+                        </button>
+                        <button class="btn btn-full btn-export" id="recognizeBtn">
+                            <svg viewBox="0 0 20 20" width="14" height="14">
+                                <rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                                <rect x="12" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                                <rect x="2" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                                <rect x="12" y="12" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                                <path d="M8 5h4M5 8v4M15 8v4M8 15h4" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+                            </svg>
+                            识别色块图（保持格数）
+                        </button>
+                        <p class="size-note" id="recognizeHint" style="display:none;">
+                            已根据图片像素检测到格子数为 <strong id="detectedSize">-</strong>，不改变画布尺寸，仅标注色号。如需同步修改画布尺寸请勾选下方选项。
+                        </p>
+                        <label class="toggle-item" id="recognizeResizeToggle" style="display:none;margin-top:6px;">
+                            <input type="checkbox" id="recognizeResize">
+                            <span class="toggle-slider"></span>
+                            <span>自动调整画布到检测尺寸</span>
+                        </label>
+                        <button class="btn btn-full btn-accent" id="gridAlignBtn" style="display:none;margin-top:8px;">
+                            <svg viewBox="0 0 20 20" width="14" height="14">
+                                <rect x="2" y="2" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                                <path d="M2 7h16M2 12h16M7 2v16M12 2v16" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+                                <path d="M10 6v8M6 10h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                            </svg>
+                            网格对齐调整（对照图纸填色）
+                        </button>
+                        <div id="bgMoveControls" style="display:none;margin-top:8px;">
+                            <label class="brush-size-label">
+                                <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2v12M2 8h12M8 2l-2 2M8 2l2 2M8 14l-2-2M8 14l2-2M2 8l2-2M2 8l2 2M14 8l-2-2M14 8l-2 2" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                底图位置微调
+                            </label>
+                            <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                                <div class="shift-btns" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;width:100px;">
+                                    <span></span>
+                                    <button class="btn btn-sm" id="bgMoveUp" title="上移" style="padding:4px;">↑</button>
+                                    <span></span>
+                                    <button class="btn btn-sm" id="bgMoveLeft" title="左移" style="padding:4px;">←</button>
+                                    <button class="btn btn-sm" id="bgMoveReset" title="重置" style="padding:4px;font-size:8px;">●</button>
+                                    <button class="btn btn-sm" id="bgMoveRight" title="右移" style="padding:4px;">→</button>
+                                    <span></span>
+                                    <button class="btn btn-sm" id="bgMoveDown" title="下移" style="padding:4px;">↓</button>
+                                    <span></span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:2px;">
+                                    <label style="font-size:10px;color:var(--text-muted);">步长：</label>
+                                    <select id="bgMoveStep" class="custom-input" style="padding:3px 4px;font-size:10px;width:60px;">
+                                        <option value="0.5">0.5px</option>
+                                        <option value="1">1px</option>
+                                        <option value="5" selected>5px</option>
+                                        <option value="10">10px</option>
+                                        <option value="20">20px</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-full btn-remove" id="removeImage">
+                            <svg viewBox="0 0 20 20" width="14" height="14"><path d="M6 4V3a1 1 0 011-1h6a1 1 0 011 1v1M3 4h14M5 4v12a2 2 0 002 2h6a2 2 0 002-2V4M8 8v6M12 8v6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            移除参考图
+                        </button>
+                    </div>
+                </section>
+
+                <!-- 导出 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 13V3M6 9l4 4 4-4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        图纸导出
+                    </h3>
+                    <button class="btn btn-full btn-export" id="exportPNG">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><rect x="2" y="2" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M6 14l3-4 2 2 3-4 4 6H2z" fill="currentColor" opacity="0.25"/></svg>
+                        导出色块图纸 PNG
+                    </button>
+                    <button class="btn btn-full btn-export" id="exportBeadPNG">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="10" cy="10" r="2" fill="currentColor" opacity="0.3"/></svg>
+                        导出仿真豆子 PNG
+                    </button>
+                    <button class="btn btn-full btn-export" id="exportSplitPNG">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M2 2h7v7H2zM11 2h7v7h-7zM2 11h7v7H2zM11 11h7v7h-7z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M10 1v18M1 10h18" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/></svg>
+                        导出分板切割图纸
+                    </button>
+                </section>
+                <!-- 导入图纸图片 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3v10M6 7l4-4 4 4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        导入图纸图片
+                    </h3>
+                    <p class="size-note">上传由 Cat Peas 导出的 PNG 图纸，自动还原画布数据。</p>
+                    <input type="file" id="importSheetInput" accept="image/png" style="display:none">
+                    <button class="btn btn-full btn-accent" id="importSheetBtn">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3v10M6 7l4-4 4 4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        选择图纸图片还原数据
+                    </button>
+                </section>
+                <!-- 保存到项目库 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M3 5a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                        项目库
+                    </h3>
+                    <div class="project-save-form">
+                        <input type="text" id="projectName" placeholder="项目名称（如：小猫图案）" maxlength="30" class="custom-input" style="flex:1;">
+                    </div>
+                    <div class="project-save-form" style="margin-top:6px;">
+                        <select id="projectCategory" class="custom-input" style="flex:1;padding:5px 6px;">
+                            <option value="default">默认分类</option>
+                        </select>
+                        <button class="btn btn-sm" id="addProjectCategory">新建</button>
+                        <button class="btn btn-sm" id="manageCategoryBtn" title="管理分类">管理</button>
+                    </div>
+                    <button class="btn btn-full btn-apply" id="saveToProject" style="margin-top:8px;">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 3h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 3v5h6V3M7 14h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                        保存到项目库
+                    </button>
+                    <button class="btn btn-full btn-export" id="exportProjectJSON" style="margin-top:4px;">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 13V3M6 9l4 4 4-4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        导出项目 JSON
+                    </button>
+                    <button class="btn btn-full" id="importProjectJSON" style="margin-top:4px;">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3v10M6 7l4-4 4 4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        导入项目 JSON
+                    </button>
+                    <input type="file" id="projectFileInput" accept=".json" style="display:none">
+                </section>
+            </div>
+        </aside>
+
+        <!-- ===== 中间预览区 ===== -->
+        <div class="canvas-area" id="canvasArea">
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <div class="canvas-scroller" id="canvasScroller">
+                    <div class="canvas-container" id="canvasContainer">
+                        <div class="ruler-corner" id="rulerCorner"></div>
+                        <canvas id="rulerTop" class="ruler ruler-top"></canvas>
+                        <canvas id="rulerLeft" class="ruler ruler-left"></canvas>
+                        <div class="canvas-layers" id="canvasLayers">
+                            <canvas id="bgCanvas" class="canvas-layer"></canvas>
+                            <canvas id="mainCanvas" class="canvas-layer"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 选区浮动工具栏 -->
+            <div class="selection-toolbar" id="selectionToolbar">
+                <button class="sel-btn" id="selMoveMode" title="移动选区内容">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 2v16M2 10h16M10 2l-3 3M10 2l3 3M10 18l-3-3M10 18l3-3M2 10l3-3M2 10l3 3M18 10l-3-3M18 10l-3 3" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>移动</span>
+                </button>
+                <button class="sel-btn" id="selCopy" title="复制选区 (Ctrl+C)">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><rect x="6" y="6" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M14 6V4.5A1.5 1.5 0 0012.5 3h-8A1.5 1.5 0 003 4.5v8A1.5 1.5 0 004.5 14H6" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                    <span>复制</span>
+                </button>
+                <button class="sel-btn" id="selPaste" title="粘贴 (Ctrl+V)">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><rect x="4" y="5" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 5V3.5A1.5 1.5 0 018.5 2h3A1.5 1.5 0 0113 3.5V5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 11h6M7 14h4" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.4"/></svg>
+                    <span>粘贴</span>
+                </button>
+                <button class="sel-btn" id="selDelete" title="删除选区 (Delete)">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M6 4V3a1 1 0 011-1h6a1 1 0 011 1v1M3 4h14M5 4v12a2 2 0 002 2h6a2 2 0 002-2V4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>删除</span>
+                </button>
+                <span class="sel-divider"></span>
+                <button class="sel-btn" id="selFlipH" title="水平镜像选区">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 14V6l-3 4 3 4zm10-8v8l3-4-3-4zM10 3v14" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>水平镜像</span>
+                </button>
+                <button class="sel-btn" id="selFlipV" title="垂直镜像选区">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M14 5H6l4-3 4 3zM6 15h8l-4 3-4-3zM3 10h14" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>垂直镜像</span>
+                </button>
+                <button class="sel-btn" id="selConfirm" title="确认放置，完成移动" style="background:linear-gradient(135deg,var(--pink-lighter),var(--iris-lighter));border-color:var(--iris);">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>确认放置</span>
+                </button>
+                <span class="sel-divider"></span>
+                <button class="sel-btn sel-btn-cancel" id="selCancel" title="取消选区 (Esc)">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+                    <span>取消</span>
+                </button>
+                <div class="sel-info" id="selInfo"></div>
+            </div>
+            <!-- 缩略图小地图 -->
+            <div class="minimap" id="minimap">
+                <canvas id="minimapCanvas"></canvas>
+                <div class="minimap-viewport" id="minimapViewport"></div>
+            </div>
+            <div class="color-legend" id="colorLegend"></div>
+            <div class="coord-status-bar" id="coordStatusBar">
+                <span class="coord-pos" id="coordPos">行: -- 列: --</span>
+                <span class="coord-color" id="coordColor"></span>
+            </div>
+            <!-- 移动端底部功能控制抽屉 -->
+            <div class="mobile-control-drawer" id="mobileControlDrawer">
+                <div class="mobile-drawer-handle mobile-control-handle" id="mobileControlHandle">
+                    <div class="drawer-handle-bar"></div>
+                    <div class="drawer-handle-info">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 1a1 1 0 011 1v1.07A7.002 7.002 0 0117 10a7 7 0 01-6 6.93V18a1 1 0 11-2 0v-1.07A7.002 7.002 0 013 10a7 7 0 016-6.93V2a1 1 0 011-1zm0 4a5 5 0 100 10A5 5 0 0010 5z" fill="currentColor"/></svg>
+                        <span class="drawer-control-text" id="drawerControlText">功能控制</span>
+                    </div>
+                    <span class="drawer-handle-hint" id="drawerControlHint">图层·变换·导出</span>
+                    <svg class="drawer-arrow" viewBox="0 0 20 20" width="14" height="14"><path d="M5 12l5-5 5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="mobile-control-body" id="mobileControlBody">
+                    <!-- JS 动态填充左侧面板内容 -->
+                </div>
+            </div>
+            <!-- 移动端底部色板抽屉 -->
+            <div class="mobile-palette-drawer" id="mobilePaletteDrawer">
+                <div class="mobile-drawer-handle" id="mobileDrawerHandle">
+                    <div class="drawer-handle-bar"></div>
+                    <div class="drawer-handle-info">
+                        <div class="drawer-current-color" id="drawerCurrentColor"></div>
+                        <span class="drawer-current-text" id="drawerCurrentText">M01 奶油黄</span>
+                    </div>
+                    <span class="drawer-handle-hint">色板与统计</span>
+                    <svg class="drawer-arrow" viewBox="0 0 20 20" width="14" height="14"><path d="M5 12l5-5 5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="mobile-drawer-body" id="mobileDrawerBody">
+                    <!-- 这里会由 JS 动态填充右侧面板的内容 -->
+                </div>
+            </div>
+            <!-- 移动端底部工具栏 -->
+            <div class="mobile-toolbar" id="mobileToolbar">
+                <div class="mob-current-color" id="mobCurrentColor" title="当前画笔色"></div>
+                <button class="mob-tool active" data-tool="pen" title="画笔">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                </button>
+                <button class="mob-tool" data-tool="eraser" title="橡皮">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 20H8.5l-4.21-4.3a1 1 0 010-1.41L15 3.5a1 1 0 011.41 0L21.5 8.59a1 1 0 010 1.41L13 18.5" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                </button>
+                <button class="mob-tool" data-tool="picker" title="吸色">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M7 21l-4-4 8.5-8.5 4 4L7 21zM17.5 6.5l-4-4 2-2 4 4-2 2z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                </button>
+                <button class="mob-tool" data-tool="bgpicker" title="吸底图色">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M7 21l-4-4 8.5-8.5 4 4L7 21z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="18" cy="6" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                </button>
+                <button class="mob-tool" data-tool="bucket" title="填充">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 16l4-10 8 8-4 2-8 0z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M19 18c1.5 0 2-1 2-2s-2-3-2-3-2 2-2 3 .5 2 2 2z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="1"/></svg>
+                </button>
+                <button class="mob-tool" data-tool="fill" title="换色">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 3v18M3 12c0-3 4-6 9-6s9 3 9 6-4 6-9 6-9-3-9-6z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                </button>
+                <button class="mob-tool" data-tool="hand" title="抓手">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 11V6.5a1.5 1.5 0 00-3 0V11M15 11V4.5a1.5 1.5 0 00-3 0V11M12 11V5.5a1.5 1.5 0 00-3 0v7.8M9 12.5V9.5a1.5 1.5 0 00-3 0v5a7 7 0 0014 0v-4a1.5 1.5 0 00-3 0" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="mob-tool" data-tool="select" title="框选">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="4" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-dasharray="3 2"/></svg>
+                </button>
+                <span class="mob-divider"></span>
+                <button class="mob-tool" id="mobUndo" title="撤销">
+                    <svg viewBox="0 0 20 20" width="20" height="20"><path d="M3 7l4-4M3 7l4 4M3 7h10a4 4 0 010 8H9" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="mob-tool" id="mobRedo" title="重做">
+                    <svg viewBox="0 0 20 20" width="20" height="20"><path d="M17 7l-4-4M17 7l-4 4M17 7H7a4 4 0 000 8h4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <span class="mob-divider"></span>
+                <button class="mob-tool mob-tool-label" id="mobPanelLeft" title="功能面板">
+                    <svg viewBox="0 0 20 20" width="16" height="16"><path d="M10 1a1 1 0 011 1v1.07A7 7 0 0117 10a7 7 0 01-6 6.93V18a1 1 0 11-2 0v-1.07A7 7 0 013 10a7 7 0 016-6.93V2a1 1 0 011-1zm0 4a5 5 0 100 10 5 5 0 000-10z" fill="currentColor"/></svg>
+                    <span>功能</span>
+                </button>
+                <button class="mob-tool mob-tool-label" id="mobPanelRight" title="色板面板">
+                    <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="6" cy="6" r="2.5" fill="#e8b4b8"/><circle cx="14" cy="6" r="2.5" fill="#b8a9c9"/><circle cx="6" cy="14" r="2.5" fill="#a0c4dc"/><circle cx="14" cy="14" r="2.5" fill="#a0c9a0"/></svg>
+                    <span>色板</span>
+                </button>
+            </div>
+            <!-- 工具切换提示 -->
+            <div class="tool-hint-bar" id="toolHintBar"></div>
+        </div>
+
+        <!-- ===== 右侧色板面板 ===== -->
+        <aside class="panel panel-right" id="panelRight">
+            <div class="panel-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="6" cy="6" r="2.5" fill="#e8b4b8"/><circle cx="14" cy="6" r="2.5" fill="#b8a9c9"/><circle cx="6" cy="14" r="2.5" fill="#a0c4dc"/><circle cx="14" cy="14" r="2.5" fill="#a0c9a0"/></svg>
+                <span>色板与统计</span>
+                <button class="panel-close mobile-only" data-panel="right">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="panel-content">
+                <!-- 当前颜色 -->
+                <section class="panel-section">
+                    <h3 class="section-title">当前画笔色</h3>
+                    <div class="current-color">
+                        <div class="color-preview" id="currentColorPreview"></div>
+                        <div class="color-info">
+                            <span class="color-id-big" id="currentColorId">M01</span>
+                            <span class="color-name-text" id="currentColorName">白色</span>
+                        </div>
+                        <button class="color-deselect-btn" id="deselectColor" title="取消选色，进入观察模式">
+                            <svg viewBox="0 0 16 16" width="14" height="14">
+                                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+                            </svg>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- 色板 -->
+                <section class="panel-section">
+                    <h3 class="section-title">Mard 拼豆色板</h3>
+                    <div class="palette-grid" id="paletteGrid"></div>
+                </section>
+
+                <!-- 自定义颜色 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        自定义颜色
+                    </h3>
+                    <div class="custom-color-form">
+                        <input type="text" id="customColorId" placeholder="编号如U01" maxlength="8" class="custom-input">
+                        <input type="text" id="customColorName" placeholder="名称" maxlength="10" class="custom-input">
+                        <input type="color" id="customColorHex" value="#FF6B6B" class="custom-color-picker">
+                        <button class="btn btn-apply" id="addCustomColor">添加</button>
+                    </div>
+                    <div class="custom-group-form" style="margin-top:8px;">
+                        <input type="text" id="customGroupName" placeholder="分组名称（如：我的配色）" maxlength="20" class="custom-input" style="flex:1;">
+                        <button class="btn btn-sm" id="addCustomGroup">新建分组</button>
+                    </div>
+                    <p class="size-note">添加颜色时，会自动加入当前选中的分组。可新建分组来分类管理。</p>
+                    <div class="custom-group-select" style="margin-top:6px;">
+                        <label style="font-size:11px;color:var(--text-secondary);">当前分组：</label>
+                        <select id="customGroupSelect" class="custom-input" style="flex:1;min-width:80px;padding:4px 6px;">
+                            <option value="default">默认分组</option>
+                        </select>
+                    </div>
+                    <div class="custom-color-list" id="customColorList"></div>
+                </section>
+
+                <!-- 色板预设管理 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><rect x="2" y="2" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="11" y="2" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="2" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="11" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                        色板预设
+                    </h3>
+                    <label class="toggle-item">
+                        <input type="checkbox" id="toggleDefaultPalette" checked>
+                        <span class="toggle-slider"></span>
+                        <span>显示默认 Mard 色板</span>
+                    </label>
+                    <p class="size-note" style="margin-top:6px;">关闭后只显示自定义颜色，可用于创建完全自定义的色板。</p>
+                    <div style="display:flex;gap:4px;margin-top:8px;">
+                        <button class="btn btn-full btn-export" id="exportPaletteBtn">导出自定义色板</button>
+                        <button class="btn btn-full" id="importPaletteBtn">导入色板</button>
+                    </div>
+                    <input type="file" id="paletteFileInput" accept=".json" style="display:none">
+                </section>
+
+                <!-- 用料统计 -->
+                <section class="panel-section">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><rect x="2" y="10" width="3" height="8" rx="0.5" fill="currentColor" opacity="0.5"/><rect x="7" y="6" width="3" height="12" rx="0.5" fill="currentColor" opacity="0.65"/><rect x="12" y="3" width="3" height="15" rx="0.5" fill="currentColor" opacity="0.8"/><rect x="17" y="8" width="3" height="10" rx="0.5" fill="currentColor" opacity="0.5"/></svg>
+                        用料统计
+                    </h3>
+                    <div class="usage-summary">
+                        <span>总计用豆</span>
+                        <strong id="totalBeads">0</strong>
+                        <span>颗</span>
+                    </div>
+                    <div class="usage-list" id="usageList"></div>
+                </section>
+            </div>
+        </aside>
+    </main>
+
+        <!-- ===== 项目库页面（全屏覆盖画布区域） ===== -->
+        <div class="project-page" id="projectPage">
+            <div class="project-page-header">
+                <button class="project-back-btn" id="projectBackBtn">
+                    <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13 4l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span>返回编辑器</span>
+                </button>
+                <div class="project-page-title">
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                        <path d="M3 5a2 2 0 012-2h4l2 2h8a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    </svg>
+                    <span>项目库</span>
+                    <span class="project-page-count" id="projectPageCount">0 个项目</span>
+                </div>
+                <div class="project-page-actions">
+                    <button class="btn btn-sm" id="projectDeleteSelected2">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M6 4V3a1 1 0 011-1h6a1 1 0 011 1v1M3 4h14M5 4v12a2 2 0 002 2h6a2 2 0 002-2V4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        删除选中
+                    </button>
+                    <button class="btn btn-sm btn-export" id="projectExportAll2">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M10 13V3M6 9l4 4 4-4M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        导出全部
+                    </button>
+                </div>
+            </div>
+            <div class="project-page-toolbar">
+                <div class="project-search-box">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 12l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <input type="text" id="projectSearchInput" placeholder="搜索项目名称..." class="project-search-input">
+                </div>
+                <div class="project-filter-group">
+                    <label>分类：</label>
+                    <select id="projectFilterCategory2" class="custom-input project-filter-select">
+                        <option value="__all__">全部分类</option>
+                        <option value="default">默认分类</option>
+                    </select>
+                </div>
+                <div class="project-filter-group">
+                    <label>排序：</label>
+                    <select id="projectSortSelect" class="custom-input project-filter-select">
+                        <option value="updatedAt_desc">最近修改</option>
+                        <option value="updatedAt_asc">最早修改</option>
+                        <option value="name_asc">名称 A→Z</option>
+                        <option value="name_desc">名称 Z→A</option>
+                        <option value="totalBeads_desc">用豆最多</option>
+                    </select>
+                </div>
+                <div class="project-view-toggle">
+                    <button class="project-view-btn active" id="projectViewGrid" title="卡片视图">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><rect x="2" y="2" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="11" y="2" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="2" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="11" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                    </button>
+                    <button class="project-view-btn" id="projectViewList" title="列表视图">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="project-page-body">
+                <div class="project-grid" id="projectGrid">
+                    <div class="project-empty">暂无保存的项目</div>
+                </div>
+            </div>
+        </div>
+
+    <!-- 辅助拼豆浮动面板 -->
+    <div class="assist-panel" id="assistPanel">
+        <div class="assist-panel-header">
+            <svg viewBox="0 0 24 24" width="14" height="14">
+                <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            </svg>
+            <span>辅助拼豆模式</span>
+            <button class="assist-panel-minimize" id="assistPanelMinimize" title="缩小为悬浮窗">
+                <svg viewBox="0 0 20 20" width="12" height="12"><path d="M3 10h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <button class="assist-panel-close" id="assistPanelClose">
+                <svg viewBox="0 0 20 20" width="12" height="12"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+            </button>
+        </div>
+        <div class="assist-panel-body">
+            <!-- 计时器 -->
+            <div class="assist-timer">
+                <div class="assist-timer-display" id="assistTimerDisplay">00:00:00</div>
+                <div class="assist-timer-controls">
+                    <button class="btn btn-sm btn-apply" id="assistTimerStart">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M6 4l10 6-10 6V4z" fill="currentColor"/></svg>
+                        开始
+                    </button>
+                    <button class="btn btn-sm" id="assistTimerPause" disabled>
+                        <svg viewBox="0 0 20 20" width="12" height="12"><rect x="5" y="4" width="3" height="12" rx="0.5" fill="currentColor"/><rect x="12" y="4" width="3" height="12" rx="0.5" fill="currentColor"/></svg>
+                        暂停
+                    </button>
+                    <button class="btn btn-sm" id="assistTimerReset">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 12a8 8 0 0114-5.3V3M18 6.7V3h-3.3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M16 8a6 6 0 11-10 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                        重置
+                    </button>
+                </div>
+            </div>
+            <!-- 计数方向 -->
+            <div class="assist-direction">
+                <label class="assist-direction-label">连续计数方向：</label>
+                <div class="assist-direction-btns">
+                    <button class="btn btn-sm assist-dir-btn active" id="assistDirV" data-dir="vertical">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2v12M5 11l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        纵向
+                    </button>
+                    <button class="btn btn-sm assist-dir-btn" id="assistDirH" data-dir="horizontal">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 8h12M11 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        横向
+                    </button>
+                </div>
+            </div>
+            <!-- 高亮颜色选择 -->
+            <div class="assist-color-section">
+                <label class="assist-color-label">选择要拼的颜色（点击高亮）：</label>
+                <div class="assist-color-grid" id="assistColorGrid">
+                    <!-- JS 动态生成 -->
+                </div>
+                <button class="btn btn-sm btn-full" id="assistClearHighlight" style="margin-top:6px;">
+                    <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    取消高亮（显示全部）
+                </button>
+                <div class="assist-mark-actions" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+                    <label class="assist-color-label">标记已拼进度：</label>
+                    <p class="size-note" style="margin-bottom:6px;">点击画布上的格子可标记/取消标记已拼完。</p>
+                    <div style="display:flex;gap:4px;">
+                        <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+                            <label class="assist-color-label" style="font-size:10px;margin-bottom:0;">按行/列标记：</label>
+                            <div style="display:flex;gap:3px;align-items:center;">
+                                <label style="font-size:10px;color:var(--text-muted);flex-shrink:0;">行号</label>
+                                <input type="number" id="assistMarkRow" min="0" class="custom-input" style="width:46px;text-align:center;padding:4px 2px;font-size:11px;" placeholder="0">
+                                <button class="btn btn-sm" id="assistMarkRowBtn" style="padding:4px 8px;font-size:10px;">标记行</button>
+                            </div>
+                            <div style="display:flex;gap:3px;align-items:center;">
+                                <label style="font-size:10px;color:var(--text-muted);flex-shrink:0;">列号</label>
+                                <input type="number" id="assistMarkCol" min="0" class="custom-input" style="width:46px;text-align:center;padding:4px 2px;font-size:11px;" placeholder="0">
+                                <button class="btn btn-sm" id="assistMarkColBtn" style="padding:4px 8px;font-size:10px;">标记列</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-full" id="assistMarkAllColor" style="margin-top:0;">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        标记当前颜色全部已拼
+                    </button>
+                    <button class="btn btn-sm btn-full btn-remove" id="assistClearMarks" style="margin-top:0;">
+                        <svg viewBox="0 0 20 20" width="12" height="12"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        清除所有标记
+                    </button>
+                </div>
+            </div>
+            <!-- 进度 -->
+            <div class="assist-progress">
+                <div class="assist-progress-bar-wrap">
+                    <div class="assist-progress-bar" id="assistProgressBar" style="width:0%"></div>
+                </div>
+                <div class="assist-progress-text" id="assistProgressText">选择颜色查看拼豆进度</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 辅助拼豆悬浮小窗 -->
+    <div class="assist-mini" id="assistMini">
+        <div class="assist-mini-header" id="assistMiniHeader">
+            <div class="assist-mini-timer" id="assistMiniTimer">00:00:00</div>
+            <button class="assist-mini-expand" id="assistMiniExpand" title="展开面板">
+                <svg viewBox="0 0 20 20" width="12" height="12"><path d="M3 7h14M3 13h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <div class="assist-mini-body">
+            <div class="assist-mini-color" id="assistMiniColor"></div>
+            <div class="assist-mini-info">
+                <span class="assist-mini-id" id="assistMiniId">--</span>
+                <span class="assist-mini-count" id="assistMiniCount"></span>
+            </div>
+            <div class="assist-mini-nav">
+                <button class="assist-mini-nav-btn" id="assistMiniPrev" title="上一个颜色">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="assist-mini-nav-btn" id="assistMiniNext" title="下一个颜色">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主题自定义弹窗 -->
+    <div class="theme-modal" id="themeModal">
+        <div class="theme-modal-inner">
+            <div class="theme-modal-header">
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                    <circle cx="7" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="17" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+                <span>自定义主题配色</span>
+                <button class="theme-modal-close" id="themeModalClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="theme-modal-body">
+                <div class="theme-presets">
+                    <h4 class="theme-presets-title">预设主题</h4>
+                    <div class="theme-presets-grid">
+                        <button class="theme-preset-btn active" data-theme="default" title="默认 · 雾霾粉紫">
+                            <span class="preset-dot" style="background:#dba8ad"></span>
+                            <span class="preset-dot" style="background:#b0a0c4"></span>
+                            <span class="preset-dot" style="background:#f9f6f4"></span>
+                            <span class="preset-label">雾霾粉紫</span>
+                        </button>
+                        <button class="theme-preset-btn" data-theme="ocean" title="海洋蓝">
+                            <span class="preset-dot" style="background:#5b9bd5"></span>
+                            <span class="preset-dot" style="background:#70c1b3"></span>
+                            <span class="preset-dot" style="background:#f4f8fb"></span>
+                            <span class="preset-label">海洋蓝</span>
+                        </button>
+                        <button class="theme-preset-btn" data-theme="forest" title="森林绿">
+                            <span class="preset-dot" style="background:#7baa6e"></span>
+                            <span class="preset-dot" style="background:#c4a86e"></span>
+                            <span class="preset-dot" style="background:#f6f8f4"></span>
+                            <span class="preset-label">森林绿</span>
+                        </button>
+                        <button class="theme-preset-btn" data-theme="sunset" title="落日橘">
+                            <span class="preset-dot" style="background:#e8956d"></span>
+                            <span class="preset-dot" style="background:#d4789c"></span>
+                            <span class="preset-dot" style="background:#fdf7f4"></span>
+                            <span class="preset-label">落日橘</span>
+                        </button>
+                        <button class="theme-preset-btn" data-theme="dark" title="暗夜模式">
+                            <span class="preset-dot" style="background:#b48ead"></span>
+                            <span class="preset-dot" style="background:#88c0d0"></span>
+                            <span class="preset-dot" style="background:#2e3440"></span>
+                            <span class="preset-label">暗夜模式</span>
+                        </button>
+                        <button class="theme-preset-btn" data-theme="sakura" title="樱花和风">
+                            <span class="preset-dot" style="background:#f0a0b0"></span>
+                            <span class="preset-dot" style="background:#d4a0a0"></span>
+                            <span class="preset-dot" style="background:#fef8f6"></span>
+                            <span class="preset-label">樱花和风</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="theme-custom-section">
+                    <h4 class="theme-presets-title">自定义配色</h4>
+                    <div class="theme-color-row">
+                        <label>主色调</label>
+                        <input type="color" id="themeColorPrimary" value="#DBA8AD" class="theme-color-input">
+                    </div>
+                    <div class="theme-color-row">
+                        <label>辅色调</label>
+                        <input type="color" id="themeColorSecondary" value="#B0A0C4" class="theme-color-input">
+                    </div>
+                    <div class="theme-color-row">
+                        <label>背景色</label>
+                        <input type="color" id="themeColorBg" value="#F9F6F4" class="theme-color-input">
+                    </div>
+                    <div class="theme-color-row">
+                        <label>画板方格1</label>
+                        <input type="color" id="themeColorBoardCell1" value="#FDFDFD" class="theme-color-input">
+                    </div>
+                    <div class="theme-color-row">
+                        <label>画板方格2</label>
+                        <input type="color" id="themeColorBoardCell2" value="#F5F2F0" class="theme-color-input">
+                    </div>
+                    <div class="theme-color-row">
+                        <label>标尺背景</label>
+                        <input type="color" id="themeColorRulerBg" value="#F6F1EE" class="theme-color-input">
+                    </div>
+                    <div class="theme-color-row">
+                        <label>标尺文字</label>
+                        <input type="color" id="themeColorRulerText" value="#8D7BAA" class="theme-color-input">
+                    </div>
+                    <button class="btn btn-apply" id="applyCustomTheme" style="width:100%;margin-top:10px;">应用自定义配色</button>
+                    <button class="btn btn-full" id="resetTheme" style="margin-top:6px;">重置为默认</button>
+                </div>
+                <div class="theme-custom-css-section" style="border-top:1px solid var(--border-light);padding-top:14px;margin-top:14px;">
+                    <h4 class="theme-presets-title" style="display:flex;align-items:center;gap:6px;">
+                        自定义 CSS
+                        <button class="css-help-btn" id="cssHelpBtn" title="查看 CSS 编写示例">
+                            <svg viewBox="0 0 16 16" width="14" height="14">
+                                <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                                <path d="M6.5 6.5a1.5 1.5 0 113 1.2c-.3.3-.7.6-.7 1v.3" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="8.8" cy="11.2" r="0.6" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </h4>
+                    <textarea id="customCSSInput" class="custom-css-textarea" placeholder="在此输入自定义 CSS 代码..." spellcheck="false"></textarea>
+                    <div style="display:flex;gap:4px;margin-top:6px;">
+                        <button class="btn btn-apply" id="applyCustomCSS" style="flex:1;">应用 CSS</button>
+                        <button class="btn btn-full" id="clearCustomCSS" style="flex:1;margin-top:0;">清除 CSS</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 自定义 CSS 帮助弹窗 -->
+    <div class="css-help-modal" id="cssHelpModal">
+        <div class="css-help-modal-inner">
+            <div class="css-help-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16">
+                    <path d="M7 5c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v1c0 .8-.5 1.5-1.2 1.8L10 9v1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="10" cy="13" r="0.8" fill="currentColor"/>
+                    <rect x="2" y="1" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+                <span>自定义 CSS 编写示例</span>
+                <button class="css-help-modal-close" id="cssHelpModalClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="css-help-modal-body">
+                <p class="css-help-intro">你可以通过自定义 CSS 来修改工具的任何外观样式。以下是一些常用示例，点击标题展开查看代码，点击代码块右上角的按钮即可复制。</p>
+
+                <div class="css-example-block">
+                    <div class="css-example-title css-example-toggle collapsed">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                        <span>修改圆角大小</span>
+                        <svg class="css-example-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="css-example-content collapsed">
+                        <div class="css-example-code-wrap">
+                            <pre class="css-example-code">:root {
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+}</pre>
+                            <button class="css-copy-btn" title="复制代码">
+                                <svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="css-example-block">
+                    <div class="css-example-title css-example-toggle collapsed">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                        <span>修改字体</span>
+                        <svg class="css-example-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="css-example-content collapsed">
+                        <div class="css-example-code-wrap">
+                            <pre class="css-example-code">body {
+    font-family: "Comic Sans MS", cursive, sans-serif;
+}</pre>
+                            <button class="css-copy-btn" title="复制代码">
+                                <svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="css-example-block">
+                    <div class="css-example-title css-example-toggle collapsed">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.3"/></svg>
+                        <span>修改顶部导航栏背景</span>
+                        <svg class="css-example-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="css-example-content collapsed">
+                        <div class="css-example-code-wrap">
+                            <pre class="css-example-code">.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.logo-text {
+    color: #ffffff;
+}
+.logo-sub {
+    color: rgba(255, 255, 255, 0.7);
+}</pre>
+                            <button class="css-copy-btn" title="复制代码">
+                                <svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="css-example-block">
+                    <div class="css-example-title css-example-toggle collapsed">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M2 6h12" stroke="currentColor" stroke-width="1.3"/></svg>
+                        <span>修改面板宽度</span>
+                        <svg class="css-example-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="css-example-content collapsed">
+                        <div class="css-example-code-wrap">
+                            <pre class="css-example-code">:root {
+    --panel-w: 320px;
+}</pre>
+                            <button class="css-copy-btn" title="复制代码">
+                                <svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="css-example-block">
+                    <div class="css-example-title css-example-toggle collapsed">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="5" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="11" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                        <span>修改按钮样式</span>
+                        <svg class="css-example-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="css-example-content collapsed">
+                        <div class="css-example-code-wrap">
+                            <pre class="css-example-code">.btn-apply {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 20px;
+}
+.btn-apply:hover {
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+}</pre>
+                            <button class="css-copy-btn" title="复制代码">
+                                <svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="css-example-block">
+                    <div class="css-example-title css-example-toggle collapsed">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>隐藏不需要的区域</span>
+                        <svg class="css-example-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="css-example-content collapsed">
+                        <div class="css-example-code-wrap">
+                            <pre class="css-example-code">/* 隐藏颜色图例栏 */
+.color-legend {
+    display: none;
+}
+/* 隐藏缩略图小地图 */
+.minimap {
+    display: none !important;
+}</pre>
+                            <button class="css-copy-btn" title="复制代码">
+                                <svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="css-example-block">
+                    <div class="css-example-title css-example-toggle collapsed">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="6" cy="6" r="1.5" fill="currentColor" opacity="0.4"/><path d="M2 11l3-3 2 2 3-3 4 5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+                        <span>添加背景图案</span>
+                        <svg class="css-example-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="css-example-content collapsed">
+                        <div class="css-example-code-wrap">
+                            <pre class="css-example-code">.canvas-area {
+    background-image:
+        radial-gradient(circle, var(--border-light) 1px, transparent 1px);
+    background-size: 20px 20px;
+}</pre>
+                            <button class="css-copy-btn" title="复制代码">
+                                <svg viewBox="0 0 16 16" width="14" height="14"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="css-help-tip">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zm0 3v3M8 11h.01" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                    提示：自定义 CSS 会保存在浏览器本地，刷新页面后自动加载。如果样式导致界面异常，点击「清除 CSS」即可恢复。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片裁剪弹窗 -->
+    <div class="crop-modal" id="cropModal">
+        <div class="crop-modal-inner">
+            <div class="crop-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><path d="M5 1v14h14M1 5h14v14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>裁剪图片</span>
+                <button class="crop-modal-close" id="cropModalClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="crop-modal-body">
+                <div class="crop-info-bar">
+                    <span class="crop-info-text" id="cropInfoText">拖拽选择裁剪区域，或直接使用整张图片</span>
+                </div>
+                <div class="crop-options-bar">
+                    <label class="crop-option-item">
+                        <input type="checkbox" id="cropKeepRatio"> 锁定正方形
+                    </label>
+                    <label class="crop-option-item">
+                        <input type="checkbox" id="cropAutoBoard" checked> 自动扩展画板适应图片
+                    </label>
+                    <div class="crop-size-info" id="cropSizeInfo">
+                        预计画板：<strong id="cropBoardSize">52×52</strong>
+                    </div>
+                </div>
+                <div class="crop-canvas-wrap" id="cropCanvasWrap">
+                    <canvas id="cropCanvas"></canvas>
+                    <div class="crop-selection" id="cropSelection"></div>
+                    <div class="crop-handle crop-handle-tl" data-handle="tl"></div>
+                    <div class="crop-handle crop-handle-tr" data-handle="tr"></div>
+                    <div class="crop-handle crop-handle-bl" data-handle="bl"></div>
+                    <div class="crop-handle crop-handle-br" data-handle="br"></div>
+                    <div class="crop-handle crop-handle-t" data-handle="t"></div>
+                    <div class="crop-handle crop-handle-b" data-handle="b"></div>
+                    <div class="crop-handle crop-handle-l" data-handle="l"></div>
+                    <div class="crop-handle crop-handle-r" data-handle="r"></div>
+                </div>
+            </div>
+            <div class="crop-modal-footer">
+                <button class="btn" id="cropResetBtn">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 8a6 6 0 0110-4.5V1M14 3.5V1h-2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M12 8a6 6 0 01-10 4.5V15M2 12.5V15h2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                    重置选区
+                </button>
+                <button class="btn" id="cropSkipBtn">跳过裁剪（使用整图）</button>
+                <button class="btn btn-apply" id="cropApplyBtn">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    确认裁剪
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片转换预览弹窗 -->
+    <div class="convert-preview-modal" id="convertPreviewModal">
+        <div class="convert-preview-inner">
+            <div class="convert-preview-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13 2L3 14h5l-1 6 10-12h-5l1-6z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>图片转换预览</span>
+                <button class="convert-preview-close" id="convertPreviewClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="convert-preview-body">
+                <div class="convert-preview-options">
+                    <div class="convert-opt-row">
+                        <label>最大用色数：</label>
+                        <input type="number" id="previewMaxColors" value="24" min="2" max="64" class="custom-input" style="width:50px;text-align:center;">
+                    </div>
+                    <div class="convert-opt-row">
+                        <label>抖动算法：</label>
+                        <select id="previewDither" class="custom-input" style="flex:1;">
+                            <option value="none">无抖动（锐利）</option>
+                            <option value="floyd">Floyd-Steinberg（渐变平滑）</option>
+                        </select>
+                    </div>
+                    <div class="convert-opt-row">
+                        <label>
+                            <input type="checkbox" id="previewFilterBg"> 屏蔽背景色
+                        </label>
+                        <label style="margin-left:10px;">
+                            容差：<input type="number" id="previewBgTolerance" value="30" min="5" max="100" class="custom-input" style="width:40px;text-align:center;">
+                        </label>
+                    </div>
+                    <button class="btn btn-apply" id="previewRefreshBtn" style="margin-top:6px;">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 8a6 6 0 0110-4.5V1M14 3.5V1h-2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M12 8a6 6 0 01-10 4.5V15M2 12.5V15h2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                        刷新预览
+                    </button>
+                </div>
+                <div class="convert-preview-canvas-wrap">
+                    <canvas id="convertPreviewCanvas"></canvas>
+                    <div class="convert-preview-loading" id="convertPreviewLoading">正在生成预览...</div>
+                </div>
+                <div class="convert-preview-info" id="convertPreviewInfo">点击"刷新预览"查看效果</div>
+            </div>
+            <div class="convert-preview-footer">
+                <button class="btn" id="convertPreviewCancel">取消</button>
+                <button class="btn btn-apply" id="convertPreviewApply">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    应用到画布
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 免责声明弹窗 -->
+    <div class="disclaimer-modal" id="disclaimerModal">
+        <div class="disclaimer-inner">
+            <div class="disclaimer-header">
+                <svg class="logo-cat" viewBox="0 0 40 40" width="28" height="28">
+                    <path d="M8 30 Q6 18 10 12 L14 6 Q15 5 16 7 L17 12 H23 L24 7 Q25 5 26 6 L30 12 Q34 18 32 30 Z" fill="#d4979c" stroke="#b07a80" stroke-width="1"/>
+                    <circle cx="16" cy="20" r="2.5" fill="#4a4148"/>
+                    <circle cx="24" cy="20" r="2.5" fill="#4a4148"/>
+                    <circle cx="15.2" cy="19" r="0.8" fill="#fff"/>
+                    <circle cx="23.2" cy="19" r="0.8" fill="#fff"/>
+                    <ellipse cx="20" cy="24" rx="1.5" ry="1" fill="#b07a80"/>
+                    <path d="M18.5 25 Q20 27 21.5 25" stroke="#b07a80" stroke-width="0.8" fill="none"/>
+                </svg>
+                <span>Cat Peas 使用条款与免责声明</span>
+            </div>
+            <div class="disclaimer-body">
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 3v5M10 13h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                        一、工具概述与性质
+                    </h4>
+                    <p>Cat Peas（以下简称「本工具」）是一款基于浏览器运行的免费在线拼豆图纸设计辅助工具，旨在帮助拼豆手工爱好者便捷地创建、编辑和导出拼豆图纸。本工具不收取任何费用，不要求用户注册账号，所有操作均在用户本地浏览器中完成，不会向任何服务器上传或传输用户的个人信息、画布数据或上传的图片文件。</p>
+                    <p>本工具按照「现状」(AS IS) 提供，开发者不对工具的适用性、准确性、完整性或可靠性做出任何明示或暗示的保证或承诺。用户在使用本工具前应仔细阅读并充分理解以下所有条款。继续使用本工具即视为用户已阅读、理解并同意接受本声明的全部内容。</p>
+                </div>
+
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 6v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        二、色彩显示与色差声明
+                    </h4>
+                    <ul>
+                        <li>本工具中使用的色板颜色（包括 Mard 拼豆色板及用户自定义颜色）均为<strong>屏幕数字近似色</strong>，仅供视觉参考之用，<strong>不代表也不保证与任何品牌拼豆产品的实际颜色一致</strong></li>
+                        <li>不同品牌、不同批次生产的拼豆产品之间天然存在色差。同一色号的拼豆在不同生产批次中可能呈现出肉眼可辨的颜色差异</li>
+                        <li>屏幕显示颜色受显示器型号、面板类型（IPS/VA/OLED等）、色域覆盖率、亮度设定、色温设定、操作系统色彩管理配置、环境光线等诸多因素影响。同一颜色值在不同设备上的视觉呈现可能存在显著差异</li>
+                        <li>图片自动转换功能使用数学算法（基于 CIEDE2000 色差公式和可选的 Floyd-Steinberg 误差扩散算法）进行颜色匹配与近似，属于计算机辅助的近似处理，结果与用户的主观预期之间可能存在偏差，建议用户在转换后进行手动检查和微调</li>
+                        <li><strong>因色差导致的拼豆材料选购错误、成品与预期效果不符或其他任何损失，开发者不承担任何责任。请务必以实物色卡和拼豆实物为最终购买依据</strong></li>
+                    </ul>
+                </div>
+
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        三、数据存储与安全
+                    </h4>
+                    <ul>
+                        <li>本工具的所有数据（包括但不限于画布内容、项目库、自定义颜色、自定义主题设置、自定义 CSS 代码等）均存储在用户浏览器的<strong>本地存储空间</strong>（包括 LocalStorage 和 IndexedDB）中，不会上传到任何远程服务器</li>
+                        <li>以下操作将导致数据<strong>不可逆地丢失</strong>：清除浏览器全部缓存或指定网站数据、卸载浏览器、在浏览器设置中手动删除网站数据、使用无痕/隐私浏览模式（该模式下关闭窗口后所有数据自动清除）、重装操作系统等</li>
+                        <li>不同浏览器之间的数据相互独立且不互通（例如 Chrome 中保存的项目在 Firefox 中不可见），更换设备后数据亦不会自动同步</li>
+                        <li>浏览器本地存储空间存在容量上限（通常为 5~10MB），保存过多项目或使用超大画布可能导致存储空间不足而保存失败</li>
+                        <li><strong>强烈建议用户养成定期备份的习惯</strong>，通过以下方式保护作品数据安全：使用「导出项目 JSON」功能备份单个项目、使用「导出全部」功能备份整个项目库、使用「导出色块图纸 PNG」保存图纸图片文件</li>
+                        <li><strong>因用户未及时备份或因任何原因导致的数据丢失，开发者不承担任何责任</strong></li>
+                    </ul>
+                </div>
+
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 1l2.5 5.5H18l-4.5 3.5 1.5 5.5L10 13l-5 2.5 1.5-5.5L2 6.5h5.5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        四、知识产权与内容合规
+                    </h4>
+                    <ul>
+                        <li>用户通过本工具上传的图片和创建的所有内容，其版权及相关法律责任完全由用户自行承担</li>
+                        <li>用户应确保对所上传和使用的图片素材拥有合法的使用权或已取得权利人的明确授权。未经授权使用他人享有版权的素材（包括但不限于摄影作品、绘画作品、设计图案等）可能构成侵权</li>
+                        <li>使用动漫角色形象、影视作品截图、游戏素材、品牌标志（Logo/商标）、名人肖像照片等涉及第三方知识产权或肖像权的内容制作拼豆图纸时，用户应自行确认已取得相应权利人的许可或符合相关法律规定的合理使用条件</li>
+                        <li>本工具提供的图片转换功能仅为技术处理手段，不对用户上传图片的合法性、合规性进行任何形式的审核或判断</li>
+                        <li>用户通过本工具生成的拼豆图纸，建议仅用于个人学习、技能练习、爱好交流和非商业性质的个人欣赏用途。将涉及他人知识产权的作品用于商业销售、有偿服务或公开展示可能构成侵权</li>
+                        <li><strong>因用户上传或使用侵权素材而引发的任何法律纠纷、投诉、索赔或处罚，由用户自行承担全部法律责任，开发者不承担任何连带责任或赔偿义务</strong></li>
+                    </ul>
+                </div>
+
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M4 15l1-4L13.5 2.5a1.5 1.5 0 012 0l2 2a1.5 1.5 0 010 2L9 15l-4 1z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 4.5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        五、功能限制与兼容性
+                    </h4>
+                    <ul>
+                        <li>本工具依赖现代浏览器的 HTML5 Canvas、IndexedDB、LocalStorage 等 Web 标准特性，建议使用以下浏览器的最新版本以获得最佳体验：Google Chrome（推荐）、Microsoft Edge、Apple Safari、Mozilla Firefox</li>
+                        <li>在 Internet Explorer（IE）或其他不支持现代 Web 标准的浏览器中，本工具可能无法正常运行或出现功能缺失</li>
+                        <li>使用大尺寸画布（超过 78x78 格）时，在内存较低（4GB 以下）或 GPU 性能较弱的设备上可能出现操作卡顿、渲染延迟或浏览器内存不足的情况。建议根据设备性能合理选择画布尺寸</li>
+                        <li>移动端（手机和平板）的触控操作体验可能不如桌面端精确，特别是在精细绘制和小格子操作时。建议在桌面端完成精细编辑工作</li>
+                        <li>导出的 PNG 图纸中嵌入的像素级数据还原功能对图片文件的完整性有严格要求。任何对导出 PNG 文件的二次处理（包括但不限于即时通讯软件传输时的自动压缩、社交媒体上传时的重新编码、截图工具的截取、图片编辑软件的打开与重新保存、格式转换等）都可能破坏嵌入数据，导致无法通过图纸图片还原画布</li>
+                    </ul>
+                </div>
+
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 2a8 8 0 100 16 8 8 0 000-16z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        六、责任限制与免责条款
+                    </h4>
+                    <ul>
+                        <li>本工具作为免费开源的辅助设计工具提供，不提供任何形式的服务等级协议（SLA）、质量保证或技术支持承诺</li>
+                        <li>开发者不保证本工具在任何时间、任何网络环境、任何设备上都能持续稳定地运行，也不保证本工具完全没有程序错误（Bug）或安全漏洞</li>
+                        <li>因使用或无法使用本工具而直接或间接产生的任何形式的损失（包括但不限于：拼豆材料的采购费用和浪费、设计时间的投入和损失、画布数据的丢失或损坏、成品与预期效果不符导致的心理落差或经济损失、设备因长时间运行本工具导致的损耗等），<strong>开发者均不承担任何赔偿责任</strong></li>
+                        <li>开发者保留随时更新、修改、暂停或永久终止本工具全部或部分功能的权利，届时不另行逐一通知用户。用户应自行关注工具的更新状态</li>
+                        <li>如因不可抗力因素（包括但不限于自然灾害、网络基础设施故障、政策法规变更等）导致本工具无法正常运行或被迫终止服务，开发者不承担任何责任</li>
+                    </ul>
+                </div>
+
+                <div class="disclaimer-section">
+                    <h4>
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 17c-4 0-7-3-7-7s3-7 7-7 7 3 7 7-3 7-7 7z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10 7v3l2 1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        七、条款变更与争议解决
+                    </h4>
+                    <p>开发者有权根据实际情况随时修订和更新本声明的内容，修订后的声明将在本工具内直接更新发布。用户在声明修订后继续使用本工具，即视为接受修订后的全部条款。</p>
+                    <p>因使用本工具而引发的任何争议，应首先通过友好协商解决。如协商不成，双方一致同意提交开发者所在地有管辖权的人民法院诉讼解决，适用中华人民共和国法律。</p>
+                    <p>本工具持续开发改进中，如果你在使用过程中遇到问题或有功能改进建议，欢迎通过相关渠道反馈。你的反馈是推动本工具不断完善的重要动力。</p>
+                </div>
+            </div>
+            <div class="disclaimer-footer">
+                <span class="disclaimer-countdown" id="disclaimerCountdown">请阅读以上内容（5秒）</span>
+                <span class="disclaimer-version" id="disclaimerVersion"></span>
+                <button class="btn btn-apply disclaimer-btn" id="disclaimerConfirm" disabled>请等待 5 秒</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用说明弹窗 -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-modal-inner">
+            <div class="help-modal-header">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M9.5 9.5a2.5 2.5 0 114 2c-.5.4-1 .9-1 1.5v.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12.5" cy="16.5" r="0.8" fill="currentColor"/>
+                </svg>
+                <span>使用说明</span>
+                <button class="help-modal-close" id="helpModalClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="help-modal-body">
+                <!-- 导航标签 -->
+                <div class="help-tabs">
+                    <button class="help-tab active" data-tab="quick">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        快速上手
+                    </button>
+                    <button class="help-tab" data-tab="tools">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        工具详解
+                    </button>
+                    <button class="help-tab" data-tab="image">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="5" cy="5" r="1.5" fill="currentColor" opacity="0.4"/><path d="M1 11l3-3 2 2 3-3 6 6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                        图片转换
+                    </button>
+                    <button class="help-tab" data-tab="project">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 4a1.5 1.5 0 011.5-1.5h3L8 4h5.5A1.5 1.5 0 0115 5.5v7a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 011 12.5V4z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                        保存与导出
+                    </button>
+                    <button class="help-tab" data-tab="shortcut">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="4" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M4 7h2M7 7h2M10 7h2M3 10h10" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/></svg>
+                        快捷键
+                    </button>
+                </div>
+
+                <!-- ========== 快速上手 ========== -->
+                <div class="help-content active" data-content="quick">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            三步完成第一幅拼豆图纸
+                        </h4>
+                        <p><strong>① 选尺寸</strong> — 左侧面板顶部输入宽×高格数，点击「应用」。常用尺寸：小板 52×52、中板 78×78、大板 104×104。也可点击预设按钮一键切换。</p>
+                        <p><strong>② 选颜色</strong> — 右侧面板点击色板上的色块选中颜色，当前画笔色会显示在最顶部。按数字键 1~9 可快速选前 9 种颜色。</p>
+                        <p><strong>③ 画格子</strong> — 在画布上点击或拖动即可涂色。画错了用橡皮擦（E 键），或 Ctrl+Z 撤销。完成后在左侧底部「图纸导出」区域导出 PNG 图纸。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 8h4M8 6v4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+                            画布导航
+                        </h4>
+                        <p>· <strong>缩放</strong>：鼠标滚轮，或点击左侧的 +/- 按钮。移动端双指捏合。</p>
+                        <p>· <strong>平移</strong>：按住鼠标中键拖拽；或切换到抓手工具（H 键）后左键拖拽。移动端在抓手模式下单指拖拽。</p>
+                        <p>· <strong>回到中心</strong>：点击「适应」按钮，或按 Home 键。</p>
+                        <p>· <strong>小地图</strong>：画布放大后右下角自动显示缩略图，点击可快速跳转位置。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 4C4 4 1 8 1 8s3 4 7 4 7-4 7-4-3-4-7-4z" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            显示选项
+                        </h4>
+                        <p>在左侧「显示选项」区域可以开关：网格线、坐标标尺、色号数字、仿真豆子预览、分板线（超板时显示切割线）、中心参考线（辅助对称设计）。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 12l6 3 6-3M2 9l6 3 6-3M8 2l6 3-6 3-6-3z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            多图层
+                        </h4>
+                        <p>支持最多 10 个自由图层，可独立绘制、调节透明度、显示/隐藏、重命名和排序。</p>
+                        <p>· <strong>添加图层</strong>：点击「添加图层」按钮新建空白图层</p>
+                        <p>· <strong>透明度</strong>：每个图层右侧有滑块，拖动可减淡该图层（如先画身体，减淡后在新图层上画衣服）</p>
+                        <p>· <strong>重命名</strong>：桌面端双击图层名称，移动端点击图层名称即可修改</p>
+                        <p>· <strong>排序</strong>：使用上下箭头按钮调整图层叠放顺序</p>
+                        <p>· <strong>向下合并</strong>：将当前图层合并到下方图层</p>
+                        <p>· <strong>仅导出当前图层</strong>：只导出选中图层的内容，适合分层输出</p>
+                        <p>· <strong>从项目库导入图层</strong>：在项目库中点击图层图标，可将已有项目作为新图层叠加到当前画布上</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 12l6 3 6-3M2 9l6 3 6-3M8 2l6 3-6 3-6-3z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            移动端双抽屉
+                        </h4>
+                        <p>手机端底部有两个独立抽屉：「色板与统计」和「功能控制」。点击对应把手即可展开，两个抽屉互斥——打开一个会自动关闭另一个，最大化画布可视面积。工具栏的「功能」按钮也可快速切换功能控制抽屉。</p>
+                    </div>
+
+                </div>
+
+                <!-- ========== 工具详解 ========== -->
+                <div class="help-content" data-content="tools">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M11 1l4 4-8.5 8.5H3v-3.5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            画笔 (B) · 橡皮 (E)
+                        </h4>
+                        <p>画笔涂色、橡皮擦除。支持 1×1 到 5×5 四种笔刷大小，用 [ ] 键调整。拖动绘制时会自动补全路径，不会断线。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 14l-3-3 6-6 3 3L5 14zM12 5l-3-3 1.5-1.5 3 3L12 5z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            吸色 (I) · 吸底
+                        </h4>
+                        <p><strong>吸色</strong>：点击画布上已填色的格子，把该颜色设为画笔色，然后自动切回画笔。</p>
+                        <p><strong>吸底</strong>：需先上传参考底图。点击画布某位置，自动采样底图颜色并匹配最接近的色板色。比手动对比选色更快更准。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 12l3-8 6 6-3 2z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M14 13c1 0 1.5-.7 1.5-1.5S14 9 14 9s-1.5 1.5-1.5 2.5S13 13 14 13z" fill="currentColor" opacity="0.3" stroke="currentColor" stroke-width="0.8"/></svg>
+                            填充 (F) · 换色 (G)
+                        </h4>
+                        <p><strong>填充</strong>：点击某格子，将与它相同颜色且相邻连通的区域一次性填满当前选中色。适合快速填充封闭区域。</p>
+                        <p><strong>换色</strong>：点击某颜色的格子，将整个画布上所有该颜色全部替换为当前选中色。鼠标悬停时可预览哪些格子会被替换。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.3" fill="none" stroke-dasharray="2.5 1.5"/></svg>
+                            框选 (M)
+                        </h4>
+                        <p>拖拽创建矩形选区后可进行：</p>
+                        <p>· 在选区内拖拽移动内容，或用方向键逐格微调</p>
+                        <p>· Ctrl+C 复制 → Ctrl+V 粘贴 · Delete 删除选区内容</p>
+                        <p>· 工具栏提供水平镜像、垂直镜像按钮</p>
+                        <p>· 移动完毕后点击「确认放置」或 Esc 取消</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/></svg>
+                            对称绘制 · 图案变换
+                        </h4>
+                        <p><strong>对称模式</strong>（在「图案变换」区域）：水平对称、垂直对称、四向对称。配合中心参考线使用效果更佳。</p>
+                        <p><strong>变换操作</strong>：水平镜像、垂直镜像、旋转 90°，一键变换整个画布。还有上下左右整体偏移功能。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 1v14h14M1 5h14v14" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            裁剪与扩展画板
+                        </h4>
+                        <p><strong>裁剪</strong>：自动检测内容边界，去除空白边缘。支持自动裁剪、自定义范围、带边距裁剪三种模式。</p>
+                        <p><strong>扩展</strong>：向指定方向扩展画板格数。支持单方向、四周均匀、自定义四个方向分别设置。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                            自定义颜色
+                        </h4>
+                        <p>在右侧「自定义颜色」区域添加不在默认色板中的颜色。输入编号、名称、选择色值即可添加。支持创建多个分组分类管理。可以关闭默认色板只使用自定义颜色，也可以导出/导入色板文件。</p>
+                    </div>
+                </div>
+
+                <!-- ========== 图片转换 ========== -->
+                <div class="help-content" data-content="image">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v8M5 6l3-4 3 4M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            上传参考底图
+                        </h4>
+                        <p>点击「上传参考底图」选择图片，先进入裁剪弹窗可框选需要的区域，也可跳过使用整图。勾选「自动扩展画板」可让画布自动适应图片比例。</p>
+                        <p>上传后可调整底图透明度和色块透明度——降低色块透明度可透视底图，方便手动比对上色。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M9 1L2 10h4l-1 5 7-9H8l1-5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            一键转换为拼豆图纸
+                        </h4>
+                        <p>点击后打开预览弹窗，可调整参数实时查看效果：</p>
+                        <p>· <strong>最大用色数</strong>：限制颜色种类（建议 16~24），减少用色可降低成本和复杂度</p>
+                        <p>· <strong>抖动算法</strong>：「无抖动」锐利清晰；「Floyd-Steinberg」通过颜色混合模拟渐变，适合照片</p>
+                        <p>· <strong>屏蔽背景色</strong>：自动检测四角颜色作为背景，转换时跳过</p>
+                        <p>满意后点击「应用到画布」。转换后建议手动微调关键部位（眼睛、嘴巴等）。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="8" y="1" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="1" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="8" y="8" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                            识别色块图 · 网格对齐
+                        </h4>
+                        <p><strong>识别色块图</strong>：如果上传的图片本身就是格子图纸（其他软件生成的截图），此功能可自动检测格子大小并匹配颜色，保持原图格数不变。</p>
+                        <p><strong>网格对齐</strong>（两种模式）：</p>
+                        <p>· <strong>两点标定（推荐）</strong>：在图片上点两个已知间距的格子角点，输入两点间的格数，系统自动计算缩放和偏移。操作简单、精度高。</p>
+                        <p>· <strong>手动调整</strong>：拖拽图片或网格调整位置，支持1/5/10像素三档步长，格子间距支持0.1px精度微调。可选择拖拽对象是图片还是网格。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 2a6 6 0 11-6 6" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M4 4l-2 4h4z" fill="currentColor" opacity="0.3"/></svg>
+                            转换效果优化建议
+                        </h4>
+                        <p>· 简单卡通、像素画、扁平插画效果最佳</p>
+                        <p>· 照片和渐变图像建议用 Floyd-Steinberg 抖动，并适当增加用色数</p>
+                        <p>· 纯色背景图片开启「屏蔽背景色」效果更干净</p>
+                        <p>· 大画布（78×78 以上）保留更多细节，但用豆量也更大</p>
+                    </div>
+                </div>
+
+                <!-- ========== 保存与导出 ========== -->
+                <div class="help-content" data-content="project">
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 4a1.5 1.5 0 011.5-1.5h3L8 4h5.5A1.5 1.5 0 0115 5.5v7a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 011 12.5V4z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            项目库
+                        </h4>
+                        <p>输入项目名称后点击「保存到项目库」，数据存储在浏览器本地。支持分类管理、覆盖保存、搜索筛选和排序。</p>
+                        <p>点击顶部的文件夹图标打开项目库页面，可以查看所有已保存的项目、上传自定义预览图、重命名、删除和批量导出。</p>
+                        <p><strong>加载项目时提供两种方式：</strong></p>
+                        <p>· <strong>覆盖画板</strong>：清空当前画布，完整加载项目内容</p>
+                        <p>· <strong>导入为图层</strong>：将项目内容添加为一个新图层，叠加到当前画布上。适合将多个项目素材组合到一起</p>
+                        <p>系统每 30 秒自动保存画布数据，下次打开时可恢复未保存的内容。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 11l2-3 1.5 1.5 2.5-3 3 4.5H2z" fill="currentColor" opacity="0.2"/></svg>
+                            导出图纸
+                        </h4>
+                        <p><strong>色块图纸 PNG</strong>：带色号标注、坐标标尺和用料清单的标准图纸，图中嵌入了隐形数据可用于还原编辑。</p>
+                        <p><strong>仿真豆子 PNG</strong>：模拟拼豆实物效果，每格显示为圆形豆子，适合预览成品和分享。</p>
+                        <p><strong>分板切割图纸</strong>：画布大于一块板时，按指定板尺寸（26/29/52格）分割为多张子图纸分别导出，每张独立标注板号和用料。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v8M5 6l3-4 3 4M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            导入与备份
+                        </h4>
+                        <p><strong>导入图纸图片</strong>：上传由 Cat Peas 导出的原始 PNG 图纸，自动从隐形像素数据中还原画布。注意：图片必须是未经压缩的原始文件，微信/QQ 传输、截图、转 JPG 都会破坏数据。</p>
+                        <p><strong>导出/导入 JSON</strong>：项目数据的完整备份，可在不同设备间传输。「导出全部」可一次性备份整个项目库。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><rect x="2" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="9" y="2" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="2" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="9" y="9" width="5" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                            辅助拼豆模式
+                        </h4>
+                        <p>点击顶部方块图标进入。画布变为标记模式，选中某颜色后该颜色高亮显示，其余颜色被半透明遮罩覆盖，帮助你在实际拼豆时快速定位。</p>
+                        <p>· <strong>标记已拼</strong>：在辅助模式下直接点击画布上的格子，即可标记该格为"已拼完"（显示绿色对勾）。再次点击取消标记。</p>
+                        <p>· <strong>批量标记</strong>：选中某颜色后点击"标记当前颜色全部已拼"，一键标记该颜色所有格子。</p>
+                        <p>· <strong>进度追踪</strong>：底部进度条实时显示已拼进度百分比，选中颜色时显示该颜色的进度，未选中时显示总进度。</p>
+                        <p>· <strong>连续计数</strong>：每段连续同色区域标注数字（支持纵向/横向切换），大幅提升拼豆效率。</p>
+                        <p>· <strong>计时器</strong>：内置计时功能，记录拼豆用时。</p>
+                        <p>· <strong>悬浮小窗</strong>：可缩小为悬浮小窗拖拽到任意位置，上下箭头快速切换颜色。</p>
+                    </div>
+                    <div class="help-block">
+                        <h4>
+                            <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="5" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="11" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                            主题与自定义
+                        </h4>
+                        <p>点击顶部太阳图标切换预设主题（雾霾粉紫、海洋蓝、森林绿、落日橘、樱花和风、暗夜模式）。点击三圆图标可自定义配色和编写自定义 CSS。所有设置自动保存在浏览器中。</p>
+                    </div>
+                </div>
+
+                <!-- ========== 快捷键 ========== -->
+                <div class="help-content" data-content="shortcut">
+                    <div class="help-shortcut-list">
+                        <div class="help-shortcut-item">
+                            <span class="help-key">B</span>
+                            <span class="help-key-desc">画笔工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">E</span>
+                            <span class="help-key-desc">橡皮工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">I</span>
+                            <span class="help-key-desc">吸色工具（从画布取色）</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">F</span>
+                            <span class="help-key-desc">油漆桶 / 填充工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">G</span>
+                            <span class="help-key-desc">全局换色工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">H</span>
+                            <span class="help-key-desc">抓手工具（拖拽平移画布）</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">M</span>
+                            <span class="help-key-desc">框选工具</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">[</span> <span class="help-key">]</span>
+                            <span class="help-key-desc">缩小 / 放大画笔</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">1</span> ~ <span class="help-key">9</span>
+                            <span class="help-key-desc">快速选择前 9 个颜色</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Home</span>
+                            <span class="help-key-desc">画布居中适应屏幕</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Ctrl</span>+<span class="help-key">Z</span>
+                            <span class="help-key-desc">撤销（最多 80 步）</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Ctrl</span>+<span class="help-key">Y</span>
+                            <span class="help-key-desc">重做</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Ctrl</span>+<span class="help-key">S</span>
+                            <span class="help-key-desc">保存到项目库</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Ctrl</span>+<span class="help-key">C</span>
+                            <span class="help-key-desc">复制选区</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Ctrl</span>+<span class="help-key">V</span>
+                            <span class="help-key-desc">粘贴选区</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Delete</span>
+                            <span class="help-key-desc">删除选区内容</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">Esc</span>
+                            <span class="help-key-desc">取消选区</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">↑↓←→</span>
+                            <span class="help-key-desc">逐格移动选区内容</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">滚轮</span>
+                            <span class="help-key-desc">缩放画布</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">中键拖拽</span>
+                            <span class="help-key-desc">平移画布（任意工具下）</span>
+                        </div>
+                        <div class="help-shortcut-item">
+                            <span class="help-key">双指捏合</span>
+                            <span class="help-key-desc">移动端缩放画布</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="help-modal-footer">
+                <span class="disclaimer-version" id="helpVersion"></span>
+                <button class="btn btn-sm" id="helpShowDisclaimer">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4M8 11h.01" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>
+                    查看免责声明
+                </button>
+                <button class="btn btn-apply" id="helpModalConfirm">我知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 网格对齐弹窗（新版两点标定） -->
+    <div class="grid-align-modal" id="gridAlignModal">
+        <div class="grid-align-inner">
+            <div class="grid-align-header">
+                <svg viewBox="0 0 20 20" width="16" height="16">
+                    <rect x="2" y="2" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                    <path d="M2 7h16M2 12h16M7 2v16M12 2v16" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+                </svg>
+                <span>网格对齐调整</span>
+                <button class="grid-align-close" id="gridAlignClose">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+                </button>
+            </div>
+            <div class="grid-align-body">
+                <!-- 步骤提示 -->
+                <div class="ga-step-info" id="gaStepInfo">
+                    <div class="ga-step-badge" id="gaStepBadge">步骤 1/3</div>
+                    <div class="ga-step-text" id="gaStepText">请在图片上点击【左上角第一个格子的角点】</div>
+                </div>
+
+                <!-- 模式切换：两点标定 / 手动调整 -->
+                <div class="ga-mode-tabs">
+                    <button class="ga-tab active" id="gaTabAuto" data-tab="auto">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><circle cx="4" cy="4" r="2" fill="currentColor"/><circle cx="12" cy="4" r="2" fill="currentColor"/><path d="M4 4h8" stroke="currentColor" stroke-width="1" stroke-dasharray="2 1"/></svg>
+                        两点标定（推荐）
+                    </button>
+                    <button class="ga-tab" id="gaTabManual" data-tab="manual">
+                        <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 8h12M8 2v12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                        手动调整
+                    </button>
+                </div>
+
+                <!-- 两点标定模式 -->
+                <div class="ga-auto-panel" id="gaAutoPanel">
+                    <div class="ga-points-display" id="gaPointsDisplay">
+                        <div class="ga-point-item" id="gaPoint1Info">
+                            <span class="ga-point-dot" style="background:#e54b4f;">1</span>
+                            <span class="ga-point-label">未标记</span>
+                            <button class="btn btn-sm ga-point-clear" id="gaClearPoint1" style="display:none;">清除</button>
+                        </div>
+                        <div class="ga-point-item" id="gaPoint2Info">
+                            <span class="ga-point-dot" style="background:#3677d2;">2</span>
+                            <span class="ga-point-label">未标记</span>
+                            <button class="btn btn-sm ga-point-clear" id="gaClearPoint2" style="display:none;">清除</button>
+                        </div>
+                    </div>
+                    <div class="ga-grid-count-row" id="gaGridCountRow" style="display:none;">
+                        <label>两点之间横跨多少格？</label>
+                        <input type="number" id="gaGridCount" value="52" min="2" max="200" class="custom-input" style="width:60px;text-align:center;">
+                        <button class="btn btn-apply btn-sm" id="gaCalcGrid">计算并预览</button>
+                    </div>
+                    <div class="ga-auto-result" id="gaAutoResult" style="display:none;">
+                        <span>检测到每格约 <strong id="gaDetectedPx">--</strong> 像素</span>
+                        <button class="btn btn-sm" id="gaAutoReset">重新标记</button>
+                    </div>
+                </div>
+
+                <!-- 手动调整面板 -->
+                <div class="ga-manual-panel" id="gaManualPanel" style="display:none;">
+                    <div class="grid-align-controls">
+                        <!-- 拖拽目标切换 -->
+                        <div class="ga-drag-target-row">
+                            <label style="font-size:10px;font-weight:600;color:var(--text-secondary);">拖拽对象：</label>
+                            <div class="ga-drag-target-btns">
+                                <button class="btn btn-sm ga-drag-btn active" data-target="image">
+                                    <svg viewBox="0 0 16 16" width="12" height="12"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="6" cy="6" r="1.5" fill="currentColor" opacity="0.4"/><path d="M2 11l3-3 2 2 3-3 4 5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/></svg>
+                                    拖拽图片
+                                </button>
+                                <button class="btn btn-sm ga-drag-btn" data-target="grid">
+                                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M2 6h12M2 10h12M6 2v12M10 2v12" stroke="currentColor" stroke-width="1" opacity="0.5"/><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+                                    拖拽网格
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid-align-slider-row">
+                            <label>网格格子间距：<strong id="gaCellSizeVal">16.0 px</strong></label>
+                            <input type="range" id="gaCellSizeSlider" min="30" max="500" value="160" step="1" class="slider">
+                            <div class="ga-nudge-btns">
+                                <button class="btn btn-sm ga-nudge-btn" id="gaCellDec1" title="-1.0px">−1</button>
+                                <button class="btn btn-sm ga-nudge-btn" id="gaCellDec01" title="-0.1px">−.1</button>
+                                <button class="btn btn-sm ga-nudge-btn" id="gaCellInc01" title="+0.1px">+.1</button>
+                                <button class="btn btn-sm ga-nudge-btn" id="gaCellInc1" title="+1.0px">+1</button>
+                            </div>
+                        </div>
+                        <div class="grid-align-slider-row">
+                            <label>精确格子间距：</label>
+                            <input type="number" id="gaCellSizeInput" value="16.0" min="3" max="50" step="0.1" class="custom-input" style="width:70px;text-align:center;">
+                            <span style="font-size:10px;color:var(--text-muted);">px</span>
+                            <button class="btn btn-sm" id="gaAutoDetect">自动检测</button>
+                        </div>
+                        <div class="grid-align-slider-row">
+                            <label>图片缩放：<strong id="gaScaleVal">100%</strong></label>
+                            <input type="range" id="gaScaleSlider" min="20" max="500" value="100" class="slider">
+                        </div>
+                        <!-- 偏移微调 - 支持步长选择 -->
+                        <div class="ga-offset-step-row">
+                            <label style="font-size:10px;font-weight:600;color:var(--text-secondary);">偏移步长：</label>
+                            <div class="ga-offset-step-btns">
+                                <button class="btn btn-sm ga-step-btn" data-step="0.5">0.5</button>
+                                <button class="btn btn-sm ga-step-btn active" data-step="1">1px</button>
+                                <button class="btn btn-sm ga-step-btn" data-step="5">5px</button>
+                                <button class="btn btn-sm ga-step-btn" data-step="10">10px</button>
+                            </div>
+                        </div>
+                        <div class="grid-align-offset-row">
+                            <div class="ga-offset-group">
+                                <label>图片偏移：</label>
+                                <div class="ga-offset-btns">
+                                    <button class="btn btn-sm" id="gaImgUp">↑</button>
+                                    <button class="btn btn-sm" id="gaImgDown">↓</button>
+                                    <button class="btn btn-sm" id="gaImgLeft">←</button>
+                                    <button class="btn btn-sm" id="gaImgRight">→</button>
+                                </div>
+                            </div>
+                            <div class="ga-offset-group">
+                                <label>网格偏移：</label>
+                                <div class="ga-offset-btns">
+                                    <button class="btn btn-sm" id="gaGridUp">↑</button>
+                                    <button class="btn btn-sm" id="gaGridDown">↓</button>
+                                    <button class="btn btn-sm" id="gaGridLeft">←</button>
+                                    <button class="btn btn-sm" id="gaGridRight">→</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid-align-offset-row">
+                            <span class="ga-offset-info" id="gaOffsetInfo">图片偏移: (0, 0) | 网格偏移: (0, 0)</span>
+                            <button class="btn btn-sm" id="gaResetOffset">重置全部</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 通用控制：网格线外观 -->
+                <div class="ga-grid-style-row">
+                    <label style="font-size:10px;font-weight:600;color:var(--text-secondary);">网格线：</label>
+                    <div class="ga-grid-color-btns">
+                        <button class="btn btn-sm ga-color-btn active" data-color="red" style="color:#e54b4f;">红</button>
+                        <button class="btn btn-sm ga-color-btn" data-color="blue" style="color:#3677d2;">蓝</button>
+                        <button class="btn btn-sm ga-color-btn" data-color="green" style="color:#35e352;">绿</button>
+                        <button class="btn btn-sm ga-color-btn" data-color="white" style="color:#888;">白</button>
+                    </div>
+                    <label style="font-size:10px;color:var(--text-muted);margin-left:8px;">透明度</label>
+                    <input type="range" id="gaGridOpacitySlider" min="10" max="100" value="60" class="slider" style="width:80px;">
+                    <strong id="gaGridOpacityVal" style="font-size:10px;color:var(--iris-dark);min-width:28px;">60%</strong>
+                </div>
+
+                <!-- 预览区域 -->
+                <div class="grid-align-preview-wrap" id="gaPreviewWrap">
+                    <canvas id="gaPreviewCanvas"></canvas>
+                </div>
+                <div class="grid-align-zoom-bar">
+                    <button class="btn btn-sm" id="gaZoomOut">−</button>
+                    <span id="gaZoomVal">100%</span>
+                    <button class="btn btn-sm" id="gaZoomIn">+</button>
+                    <button class="btn btn-sm" id="gaZoomFit">适应</button>
+                    <span class="ga-hint">滚轮缩放 · 右键拖拽平移 · 左键标点/拖图</span>
+                </div>
+            </div>
+            <div class="grid-align-footer">
+                <button class="btn" id="gaCancel">取消</button>
+                <button class="btn btn-apply" id="gaApply">
+                    <svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    确认对齐
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义弹窗系统（替代 alert/confirm/prompt） -->
+    <div class="cd-overlay" id="cdOverlay">
+        <div class="cd-box" id="cdBox">
+            <div class="cd-header" id="cdHeader">
+                <div class="cd-icon cd-icon-info" id="cdIcon">
+                    <svg viewBox="0 0 24 24" width="22" height="22">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <span class="cd-title" id="cdTitle">提示</span>
+            </div>
+            <div class="cd-body" id="cdBody">消息内容</div>
+            <div class="cd-input-wrap" id="cdInputWrap">
+                <input type="text" class="cd-input" id="cdInput" placeholder="">
+            </div>
+            <div class="cd-footer" id="cdFooter">
+                <button class="btn cd-btn-cancel" id="cdCancel">取消</button>
+                <button class="btn btn-apply cd-btn-ok" id="cdOk">确定</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Toast 提示 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="palette.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

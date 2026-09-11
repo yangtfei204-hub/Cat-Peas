@@ -1,0 +1,106 @@
+/* ========================================
+   Cat Peas · common.css
+   公共主题变量 · 重置 · 通用组件
+   ======================================== */
+
+/* ---------- Variables ---------- */
+:root {
+    --pink: #dba8ad;
+    --pink-light: #f0d4d7;
+    --pink-lighter: #f8ecee;
+    --pink-dark: #c48a90;
+    --iris: #b0a0c4;
+    --iris-light: #d3c9e2;
+    --iris-lighter: #eae5f1;
+    --iris-dark: #8d7baa;
+    --bg: #f9f6f4;
+    --bg-panel: rgba(246, 241, 238, 0.98);
+    --bg-card: #ffffff;
+    --text: #3e3640;
+    --text-secondary: #6e6472;
+    --text-muted: #a69caa;
+    --border: #e6e0de;
+    --border-light: #f0ebe9;
+    --shadow-sm: 0 1px 4px rgba(140, 120, 130, 0.08);
+    --shadow: 0 2px 12px rgba(140, 120, 130, 0.1);
+    --shadow-lg: 0 8px 32px rgba(140, 120, 130, 0.14);
+    --shadow-hover: 0 4px 16px rgba(140, 120, 130, 0.18);
+    --accent: #c5a0d8;
+    --accent-light: #e0cff0;
+    --danger: #cf7a80;
+    --danger-light: #f5dfe0;
+    --success: #8ebf8e;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-xs: 4px;
+    --transition: 0.2s ease;
+    --font-base: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: var(--font-base);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--iris-light); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--iris); }
+
+/* ---------- Dark Theme ---------- */
+[data-theme="dark"] {
+    --pink: #b48ead; --pink-light: #c9a8c4; --pink-lighter: #3b3545; --pink-dark: #9b6e94;
+    --iris: #88c0d0; --iris-light: #6b8fa0; --iris-lighter: #353d48; --iris-dark: #a0d4e4;
+    --bg: #2e3440; --bg-panel: rgba(46,52,64,0.98); --bg-card: #3b4252;
+    --text: #d8dee9; --text-secondary: #b0b8c8; --text-muted: #7a8498;
+    --border: #434c5e; --border-light: #3b4252;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.2); --shadow: 0 2px 12px rgba(0,0,0,0.25);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.3); --shadow-hover: 0 4px 16px rgba(0,0,0,0.3);
+    --accent: #a3be8c; --accent-light: #b5d4a0;
+    --danger: #bf616a; --danger-light: #4a3538; --success: #a3be8c;
+}
+
+[data-theme="ocean"] {
+    --pink: #5b9bd5; --pink-light: #a8ccec; --pink-lighter: #e8f1f9; --pink-dark: #3a7bc0;
+    --iris: #70c1b3; --iris-light: #a8ddd2; --iris-lighter: #e4f5f1; --iris-dark: #4a9e8f;
+    --bg: #f4f8fb; --bg-panel: rgba(240,246,250,0.98); --bg-card: #ffffff;
+    --text: #2c3e50; --text-secondary: #546e7a; --text-muted: #90a4ae;
+    --border: #d4e3ed; --border-light: #e8f0f5;
+    --accent: #45b7d1; --danger: #e57373; --danger-light: #fde0e0;
+}
+
+[data-theme="forest"] {
+    --pink: #7baa6e; --pink-light: #b0d4a0; --pink-lighter: #ecf3e8; --pink-dark: #5c8a50;
+    --iris: #c4a86e; --iris-light: #ddd0a8; --iris-lighter: #f5f0e4; --iris-dark: #a08840;
+    --bg: #f6f8f4; --bg-panel: rgba(244,248,240,0.98); --bg-card: #ffffff;
+    --text: #3a4030; --text-secondary: #5e6b52; --text-muted: #98a48c;
+    --border: #d8e0d0; --border-light: #e8ede4;
+    --accent: #8cb878; --danger: #c47a6e; --danger-light: #f5dfd8;
+}
+
+[data-theme="sunset"] {
+    --pink: #e8956d; --pink-light: #f0c0a0; --pink-lighter: #fdf0e8; --pink-dark: #d07848;
+    --iris: #d4789c; --iris-light: #e8a8c0; --iris-lighter: #f8e4ee; --iris-dark: #b85880;
+    --bg: #fdf7f4; --bg-panel: rgba(252,244,240,0.98); --bg-card: #ffffff;
+    --text: #4a3830; --text-secondary: #7a5e52; --text-muted: #b0988c;
+    --border: #e8d8d0; --border-light: #f0e8e4;
+    --accent: #e0a060; --danger: #d07060; --danger-light: #f5ddd8;
+}
+
+[data-theme="sakura"] {
+    --pink: #f0a0b0; --pink-light: #f8c8d0; --pink-lighter: #fef0f2; --pink-dark: #d88090;
+    --iris: #d4a0a0; --iris-light: #e8c8c8; --iris-lighter: #f8eded; --iris-dark: #c08888;
+    --bg: #fef8f6; --bg-panel: rgba(254,246,244,0.98); --bg-card: #ffffff;
+    --text: #4a3640; --text-secondary: #7a606a; --text-muted: #b89aa0;
+    --border: #f0d8dc; --border-light: #f8e8ec;
+    --accent: #e8a8b8; --danger: #d08080; --danger-light: #f8e0e0;
+}

@@ -86,6 +86,35 @@ body {
     flex-shrink: 0;
 }
 
+.editor-home-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: var(--transition);
+    margin-right: 4px;
+}
+
+.editor-home-btn:hover {
+    border-color: var(--iris);
+    color: var(--iris-dark);
+    background: var(--iris-lighter);
+}
+
+@media (max-width: 960px) {
+    .editor-home-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
 .logo {
     display: flex;
     align-items: center;
