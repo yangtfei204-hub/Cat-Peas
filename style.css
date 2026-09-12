@@ -6844,3 +6844,32 @@ body {
     color: var(--success);
     background: rgba(142, 191, 142, 0.1);
 }
+
+
+.legend-sort-btn {
+    width: 22px;
+    height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg-card);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: var(--transition);
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.legend-sort-btn:hover {
+    background: var(--iris-lighter);
+    color: var(--iris-dark);
+    border-color: var(--iris);
+}
+
+
+/* 辅助模式标尺可点击提示 */
+.assist-ruler-hint .ruler {
+    cursor: pointer;
+}

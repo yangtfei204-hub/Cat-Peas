@@ -484,3 +484,21 @@ body { overflow-y: auto; overflow-x: hidden; min-height: 100vh; }
         font-size: 12px;
     }
 }
+
+
+/* 历史记录编辑按钮 */
+.tb-history-item:hover .tb-history-edit-btn {
+    opacity: 1 !important;
+}
+
+.tb-history-edit-btn:hover {
+    background: var(--iris-lighter) !important;
+    color: var(--iris-dark) !important;
+    border-color: var(--iris) !important;
+}
+
+@media (max-width: 640px) {
+    .tb-history-edit-btn {
+        opacity: 0.6 !important;
+    }
+}

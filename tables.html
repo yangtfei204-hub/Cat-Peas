@@ -233,6 +233,52 @@
         </div>
     </div>
 
+    <!-- ========== 编辑历史记录弹窗 ========== -->
+    <div class="tb-modal-overlay" id="editHistoryModal">
+        <div class="tb-modal">
+            <div class="tb-modal-header">
+                <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13.586 3.586a2 2 0 112.828 2.828l-8.486 8.486L4 16l1.1-3.928 8.486-8.486z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                <span id="editHistoryTitle">编辑历史记录</span>
+                <button class="tb-modal-close" id="editHistoryClose">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+            <div class="tb-modal-body">
+                <div class="tb-form-section">
+                    <label class="tb-form-label">客人人数</label>
+                    <div class="tb-counter">
+                        <button class="tb-counter-btn" id="ehGuestDec">-</button>
+                        <input type="number" class="tb-counter-input" id="ehGuestCount" value="1" min="1">
+                        <button class="tb-counter-btn" id="ehGuestInc">+</button>
+                    </div>
+                </div>
+                <div class="tb-form-section">
+                    <label class="tb-form-label">价格</label>
+                    <div class="tb-price-row">
+                        <input type="number" class="tb-input" id="ehPrice" placeholder="0" min="0" step="0.01">
+                        <span class="tb-price-unit">元</span>
+                    </div>
+                </div>
+                <div class="tb-form-section">
+                    <label class="tb-form-label">客人备注</label>
+                    <textarea class="tb-textarea" id="ehGuestNote" rows="2"></textarea>
+                </div>
+                <div class="tb-form-section">
+                    <label class="tb-form-label">拼豆图案</label>
+                    <input type="text" class="tb-input" id="ehPattern">
+                </div>
+                <div class="tb-form-section">
+                    <label class="tb-form-label">结束备注</label>
+                    <input type="text" class="tb-input" id="ehEndNote">
+                </div>
+            </div>
+            <div class="tb-modal-footer">
+                <button class="tb-btn" id="editHistoryCancelBtn">取消</button>
+                <button class="tb-btn tb-btn-primary" id="editHistorySaveBtn">保存修改</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ========== 历史记录弹窗 ========== -->
     <div class="tb-modal-overlay" id="historyModal">
         <div class="tb-modal tb-modal-wide">

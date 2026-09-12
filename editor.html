@@ -537,7 +537,7 @@
                         <button class="btn btn-sm" id="addProjectCategory">新建</button>
                         <button class="btn btn-sm" id="manageCategoryBtn" title="管理分类">管理</button>
                     </div>
-                    <button class="btn btn-full btn-apply" id="saveToProject" style="margin-top:8px;">
+                    <button class="btn btn-full btn-apply" id="saveToProject" style="margin-top:8px;" title="快捷键: Ctrl+S">
                         <svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 3h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 3v5h6V3M7 14h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
                         保存到项目库
                     </button>
@@ -930,12 +930,12 @@
                             <label class="assist-color-label" style="font-size:10px;margin-bottom:0;">按行/列标记：</label>
                             <div style="display:flex;gap:3px;align-items:center;">
                                 <label style="font-size:10px;color:var(--text-muted);flex-shrink:0;">行号</label>
-                                <input type="number" id="assistMarkRow" min="0" class="custom-input" style="width:46px;text-align:center;padding:4px 2px;font-size:11px;" placeholder="0">
+                                <input type="number" id="assistMarkRow" min="0" class="custom-input" style="width:46px;text-align:center;padding:4px 2px;font-size:11px;" placeholder="行">
                                 <button class="btn btn-sm" id="assistMarkRowBtn" style="padding:4px 8px;font-size:10px;">标记行</button>
                             </div>
                             <div style="display:flex;gap:3px;align-items:center;">
                                 <label style="font-size:10px;color:var(--text-muted);flex-shrink:0;">列号</label>
-                                <input type="number" id="assistMarkCol" min="0" class="custom-input" style="width:46px;text-align:center;padding:4px 2px;font-size:11px;" placeholder="0">
+                                <input type="number" id="assistMarkCol" min="0" class="custom-input" style="width:46px;text-align:center;padding:4px 2px;font-size:11px;" placeholder="列">
                                 <button class="btn btn-sm" id="assistMarkColBtn" style="padding:4px 8px;font-size:10px;">标记列</button>
                             </div>
                         </div>
@@ -950,6 +950,11 @@
                     </button>
                 </div>
             </div>
+                <label class="toggle-item" style="margin-top:4px;">
+                    <input type="checkbox" id="assistShowCheckmarks" checked>
+                    <span class="toggle-slider"></span>
+                    <span>显示已拼对勾标记</span>
+                </label>
             <!-- 进度 -->
             <div class="assist-progress">
                 <div class="assist-progress-bar-wrap">

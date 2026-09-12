@@ -225,7 +225,10 @@
         assistTimerInterval: null,
         assistMiniMode: false,
         assistMarked: null, // 已标记拼完的格子，二维数组 [row][col] = true/false
+        assistShowCheckmarks: true,
         showSplitLine: false,
+        legendSortMode: 'alpha',
+        usageSortMode: 'count',
         splitSize: 52,
         // 选区状态
         selection: null,
@@ -1204,8 +1207,9 @@
             updateLegend();
             if (S.assistMode) buildAssistColorGrid();
         }, 200);
-        // 小地图单独更低频率更新
-        updateMinimap();
+        // 小地图更低频率更新
+        clearTimeout(window._minimapTimer);
+        window._minimapTimer = setTimeout(updateMinimap, 300);
     }
 
     function renderBg() {
@@ -1443,7 +1447,7 @@
         // 即使没有选中高亮颜色，也要绘制已标记的对勾
         if (S.assistHighlightIdx < 0) {
             const cs = S.cellSize;
-            if (S.assistMarked) {
+            if (S.assistMarked && S.assistShowCheckmarks) {
                 for (let r = 0; r < S.gridH; r++) {
                     if (!S.assistMarked[r]) continue;
                     for (let c = 0; c < S.gridW; c++) {
@@ -1550,7 +1554,7 @@
         }
 
         // 绘制已标记的对勾
-        if (S.assistMarked) {
+        if (S.assistMarked && S.assistShowCheckmarks) {
             for (let r = 0; r < S.gridH; r++) {
                 if (!S.assistMarked[r]) continue;
                 for (let c = 0; c < S.gridW; c++) {
@@ -1734,6 +1738,16 @@
                 lCtx.fillText(String(r), rs - 4, r * cs - 2);
             }
         }
+
+        // 辅助模式下给标尺添加点击标记事件
+        if (S.assistMode) {
+            rulerTop.style.cursor = 'pointer';
+            rulerLeft.style.cursor = 'pointer';
+        } else {
+            rulerTop.style.cursor = '';
+            rulerLeft.style.cursor = '';
+        }
+
     }
 
     // 色板分组数据缓存
@@ -2162,6 +2176,7 @@
     //  Usage & Legend
     // ===========================
     function updateUsage() {
+        var _usageLastHash = window._usageLastHash || '';
         const counts = {};
         let total = 0;
         for (let r = 0; r < S.gridH; r++) {
@@ -2174,12 +2189,42 @@
             }
         }
         $('totalBeads').textContent = total;
+        // 简单哈希判断是否需要重建列表
+        var hashParts = [];
+        Object.keys(counts).sort().forEach(function (k) { hashParts.push(k + ':' + counts[k]); });
+        var newHash = hashParts.join(',') + '_' + S.usageSortMode;
+        if (newHash === window._usageLastHash) {
+            syncDrawerSelection();
+            return;
+        }
+        window._usageLastHash = newHash;
+        // 用料排序按钮
+        if (!$('usageSortBtn')) {
+            var usageSortBtn = document.createElement('button');
+            usageSortBtn.id = 'usageSortBtn';
+            usageSortBtn.className = 'legend-sort-btn';
+            usageSortBtn.title = '切换排序：数量/色号';
+            usageSortBtn.style.cssText = 'margin-left:auto;';
+            usageSortBtn.innerHTML = '<svg viewBox="0 0 14 14" width="10" height="10"><path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+            usageSortBtn.addEventListener('click', function () {
+                S.usageSortMode = S.usageSortMode === 'alpha' ? 'count' : 'alpha';
+                updateUsage();
+            });
+            $('totalBeads').parentElement.appendChild(usageSortBtn);
+        }
+
 
         const list = $('usageList');
         list.innerHTML = '';
-        Object.entries(counts)
-            .sort((a, b) => b[1] - a[1])
-            .forEach(([ci, count]) => {
+        var sortedEntries = Object.entries(counts);
+        if (S.usageSortMode === 'alpha') {
+            sortedEntries.sort(function (a, b) {
+                return PALETTE[a[0]].id.localeCompare(PALETTE[b[0]].id);
+            });
+        } else {
+            sortedEntries.sort(function (a, b) { return b[1] - a[1]; });
+        }
+        sortedEntries.forEach(([ci, count]) => {
                 const color = PALETTE[ci];
                 const div = document.createElement('div');
                 div.className = 'usage-item';
@@ -2194,14 +2239,43 @@
     }
 
     function updateLegend() {
-        const used = new Set();
+        const used = new Map();
         for (let r = 0; r < S.gridH; r++)
             for (let c = 0; c < S.gridW; c++)
-                if (S.grid[r][c] !== null) used.add(S.grid[r][c]);
+                if (S.grid[r][c] !== null) {
+                    var ci = S.grid[r][c];
+                    used.set(ci, (used.get(ci) || 0) + 1);
+                }
+
+        var entries = Array.from(used.entries());
+        if (S.legendSortMode === 'alpha') {
+            entries.sort(function (a, b) {
+                return PALETTE[a[0]].id.localeCompare(PALETTE[b[0]].id);
+            });
+        } else {
+            entries.sort(function (a, b) { return b[1] - a[1]; });
+        }
 
         const legend = $('colorLegend');
+        // 保留排序按钮
+        var sortBtn = $('legendSortBtn');
         legend.innerHTML = '';
-        used.forEach(ci => {
+        if (sortBtn) legend.appendChild(sortBtn);
+        else {
+            sortBtn = document.createElement('button');
+            sortBtn.id = 'legendSortBtn';
+            sortBtn.className = 'legend-sort-btn';
+            sortBtn.title = '切换排序方式';
+            sortBtn.innerHTML = '<svg viewBox="0 0 14 14" width="10" height="10"><path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+            sortBtn.addEventListener('click', function () {
+                S.legendSortMode = S.legendSortMode === 'alpha' ? 'count' : 'alpha';
+                updateLegend();
+            });
+            legend.appendChild(sortBtn);
+        }
+
+        entries.forEach(function (entry) {
+            var ci = entry[0];
             const color = PALETTE[ci];
             const div = document.createElement('div');
             div.className = 'legend-item';
@@ -2471,7 +2545,13 @@
 
     function pickColorAt(row, col) {
         const ci = S.grid[row][col];
-        if (ci !== null) selectColor(ci);
+        if (ci !== null) {
+            selectColor(ci);
+            var color = PALETTE[ci];
+            showToast('已吸取 ' + color.id + ' ' + color.name, 'success', 1200);
+        } else {
+            showToast('该格子为空', 'info', 1000);
+        }
         setTool('pen');
     }
 
@@ -2538,6 +2618,8 @@
         _paletteLabCache = null;
         var bestI = findClosestPaletteColor(avgR, avgG, avgB);
         selectColor(bestI);
+        var matchedColor = PALETTE[bestI];
+        showToast('底图匹配: ' + matchedColor.id + ' ' + matchedColor.name, 'success', 1500);
         setTool('pen');
     }
 
@@ -2786,6 +2868,76 @@
                 }, 300);
             }
         }, { passive: false });
+
+        // 辅助模式：点击标尺标记整行/整列
+        rulerLeft.addEventListener('click', function (e) {
+            if (!S.assistMode) return;
+            var rect = rulerLeft.getBoundingClientRect();
+            var y = (e.clientY - rect.top) * (S.gridH * S.cellSize) / rect.height;
+            var row = Math.floor(y / S.cellSize);
+            if (row < 0 || row >= S.gridH) return;
+            if (!S.assistMarked) {
+                S.assistMarked = [];
+                for (var r = 0; r < S.gridH; r++) {
+                    S.assistMarked[r] = new Array(S.gridW).fill(false);
+                }
+            }
+            // 检查该行是否已全部标记，如果是则取消标记
+            var allMarked = true;
+            var count = 0;
+            for (var c = 0; c < S.gridW; c++) {
+                if (S.grid[row][c] !== null) {
+                    if (S.assistHighlightIdx >= 0 && S.grid[row][c] !== S.assistHighlightIdx) continue;
+                    count++;
+                    if (!S.assistMarked[row][c]) allMarked = false;
+                }
+            }
+            if (count === 0) return;
+            var newState = !allMarked;
+            for (var c2 = 0; c2 < S.gridW; c2++) {
+                if (S.grid[row][c2] !== null) {
+                    if (S.assistHighlightIdx >= 0 && S.grid[row][c2] !== S.assistHighlightIdx) continue;
+                    S.assistMarked[row][c2] = newState;
+                }
+            }
+            renderMain();
+            updateAssistProgress();
+            showToast((newState ? '已标记' : '已取消') + '第 ' + row + ' 行（' + count + ' 格）', 'success', 1500);
+        });
+
+        rulerTop.addEventListener('click', function (e) {
+            if (!S.assistMode) return;
+            var rect = rulerTop.getBoundingClientRect();
+            var x = (e.clientX - rect.left) * (S.gridW * S.cellSize) / rect.width;
+            var col = Math.floor(x / S.cellSize);
+            if (col < 0 || col >= S.gridW) return;
+            if (!S.assistMarked) {
+                S.assistMarked = [];
+                for (var r = 0; r < S.gridH; r++) {
+                    S.assistMarked[r] = new Array(S.gridW).fill(false);
+                }
+            }
+            var allMarked = true;
+            var count = 0;
+            for (var r = 0; r < S.gridH; r++) {
+                if (S.grid[r][col] !== null) {
+                    if (S.assistHighlightIdx >= 0 && S.grid[r][col] !== S.assistHighlightIdx) continue;
+                    count++;
+                    if (!S.assistMarked[r][col]) allMarked = false;
+                }
+            }
+            if (count === 0) return;
+            var newState = !allMarked;
+            for (var r2 = 0; r2 < S.gridH; r2++) {
+                if (S.grid[r2][col] !== null) {
+                    if (S.assistHighlightIdx >= 0 && S.grid[r2][col] !== S.assistHighlightIdx) continue;
+                    S.assistMarked[r2][col] = newState;
+                }
+            }
+            renderMain();
+            updateAssistProgress();
+            showToast((newState ? '已标记' : '已取消') + '第 ' + col + ' 列（' + count + ' 格）', 'success', 1500);
+        });
 
         // Toggles
         $('toggleGrid').addEventListener('change', e => { S.showGrid = e.target.checked; renderMain(); });
@@ -3291,6 +3443,13 @@
             });
         }
 
+        if ($('assistShowCheckmarks')) {
+            $('assistShowCheckmarks').addEventListener('change', function (e) {
+                S.assistShowCheckmarks = e.target.checked;
+                renderMain();
+            });
+        }
+
         // 标记整行
         if ($('assistMarkRowBtn')) {
             $('assistMarkRowBtn').addEventListener('click', function () {
@@ -3678,7 +3837,18 @@
         });
 
         // 页面关闭前保存辅助模式进度
-        window.addEventListener('beforeunload', function () {
+        window.addEventListener('beforeunload', function (e) {
+            // 检查画布是否有内容
+            var hasContent = false;
+            for (var cr = 0; cr < S.gridH && !hasContent; cr++) {
+                for (var cc = 0; cc < S.gridW && !hasContent; cc++) {
+                    if (S.grid[cr][cc] !== null) hasContent = true;
+                }
+            }
+            if (hasContent) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
             if (S.assistMode && S.currentProjectId) {
                 try {
                     var exitData = {
@@ -4298,6 +4468,16 @@
         if (!w || !h || w < 4 || w > 200 || h < 4 || h > 200) {
             alert('尺寸范围须在 4 ~ 200 之间');
             return;
+        }
+        // 检查画布是否有内容，如果新尺寸会裁掉内容则提示
+        var hasContent = false;
+        for (var cr = 0; cr < S.gridH && !hasContent; cr++) {
+            for (var cc = 0; cc < S.gridW && !hasContent; cc++) {
+                if (S.grid[cr][cc] !== null) hasContent = true;
+            }
+        }
+        if (hasContent && (w < S.gridW || h < S.gridH)) {
+            if (!confirm('新尺寸小于当前画布，超出部分的内容将被裁掉。确定应用吗？')) return;
         }
         // 保留已有内容
         const oldGrid = S.grid;
@@ -5110,6 +5290,7 @@
     //  Export
     // ===========================
     function doExport(beadMode) {
+        showToast('正在生成图纸...', 'info', 1500);
 
         // 如果还没有设置项目名称，提示用户输入一个
         if (!S.currentProjectName && $('projectName').value.trim()) {
@@ -5978,8 +6159,9 @@
     async function saveProject() {
         var name = $('projectName').value.trim();
         if (!name) {
-            cdAlert('请输入项目名称', { type: 'warn', title: '保存项目' });
-            return;
+            var now = new Date();
+            name = '未命名_' + (now.getMonth() + 1) + '月' + now.getDate() + '日_' + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+            $('projectName').value = name;
         }
         var category = $('projectCategory').value || 'default';
         var now = Date.now();
@@ -7443,6 +7625,36 @@
         $('assistProgressBar').style.width = pct2 + '%';
         var color = PALETTE[hi];
         $('assistProgressText').textContent = (color ? color.id + ' ' + color.name + ' · ' : '') + colorMarked + ' / ' + colorTotal + ' 颗 (' + pct2 + '%)';
+
+        // 同步进度到顶部按钮
+        var totalAll = 0, markedAll = 0;
+        for (var tr = 0; tr < S.gridH; tr++) {
+            for (var tc = 0; tc < S.gridW; tc++) {
+                if (S.grid[tr][tc] !== null) {
+                    totalAll++;
+                    if (S.assistMarked && S.assistMarked[tr] && S.assistMarked[tr][tc]) {
+                        markedAll++;
+                    }
+                }
+            }
+        }
+        var totalPct = totalAll > 0 ? Math.round(markedAll / totalAll * 100) : 0;
+        var assistBtn = $('assistModeBtn');
+        var pctBadge = $('assistPctBadge');
+        if (!pctBadge) {
+            pctBadge = document.createElement('span');
+            pctBadge.id = 'assistPctBadge';
+            pctBadge.style.cssText = 'position:absolute;top:-4px;right:-4px;font-size:8px;font-weight:800;background:linear-gradient(135deg,var(--pink),var(--iris));color:#fff;border-radius:8px;padding:1px 5px;line-height:1.3;pointer-events:none;min-width:18px;text-align:center;';
+            assistBtn.style.position = 'relative';
+            assistBtn.appendChild(pctBadge);
+        }
+        if (totalAll > 0 && markedAll > 0) {
+            pctBadge.textContent = totalPct + '%';
+            pctBadge.style.display = '';
+        } else {
+            pctBadge.style.display = 'none';
+        }
+
     }
 
     var _assistBlockTimer = null;
@@ -8106,7 +8318,11 @@
         // 清空画布
         var mobClear = container.querySelector('[data-original-id="clearCanvasBtn"]');
         if (mobClear) mobClear.addEventListener('click', function () {
-            cdConfirm('确定要清空整个画布吗？此操作可以撤销。', { title: '清空画布', danger: true, okText: '清空' }).then(function (ok) {
+            var warnMsg = '确定要清空整个画布吗？此操作可以撤销。';
+            if (!S.currentProjectId) {
+                warnMsg = '当前画布尚未保存到项目库。\n\n确定要清空整个画布吗？此操作可以撤销。';
+            }
+            cdConfirm(warnMsg, { title: '清空画布', danger: true, okText: '清空' }).then(function (ok) {
                 if (!ok) return;
                 for (var r = 0; r < S.gridH; r++)
                     for (var c = 0; c < S.gridW; c++)

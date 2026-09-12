@@ -109,6 +109,7 @@
         autoClear: false
     };
     var currentModalTableId = null;
+    var currentEditHistoryId = null;
     var timerInterval = null;
 
     // ===========================
@@ -302,7 +303,11 @@
             }
             if (session.status === 'paused') {
                 var pausedSince = session.pauseStartTime ? (Date.now() - session.pauseStartTime) / 1000 : 0;
-                timerLabel = '已暂停' + (pausedSince > 60 ? ' ' + fmtTimer(pausedSince) : '');
+                var totalPaused = (session.totalPausedTime || 0) + pausedSince;
+                timerLabel = '已暂离 ' + fmtTimer(pausedSince);
+                if (session.totalPausedTime > 0) {
+                    timerLabel += ' (累计暂离 ' + fmtTimer(totalPaused) + ')';
+                }
             }
             if (session.status === 'finished') timerLabel = '总用时';
 
@@ -715,6 +720,9 @@
                         (r.guestNote ? escapeHtml(r.guestNote) : '') +
                         (r.endNote ? '  [' + escapeHtml(r.endNote) + ']' : '') +
                     '</div>' +
+                    '<button class="tb-history-edit-btn" data-hid="' + r.id + '" title="编辑此记录" style="position:absolute;top:8px;right:34px;width:22px;height:22px;border:1px solid transparent;border-radius:var(--radius-xs);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);transition:var(--transition);opacity:0;">' +
+                        '<svg viewBox="0 0 16 16" width="11" height="11"><path d="M10.5 2.5l3 3-7.5 7.5H3v-3L10.5 2.5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                    '</button>' +
                     '<button class="tb-history-del-btn" data-hid="' + r.id + '" title="删除此记录">' +
                         '<svg viewBox="0 0 16 16" width="11" height="11"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
                     '</button>';
@@ -739,6 +747,58 @@
                 });
             });
 
+            // 绑定编辑按钮
+            list.querySelectorAll('.tb-history-edit-btn').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openEditHistory(btn.dataset.hid);
+                });
+            });
+
+        });
+    }
+
+
+    function openEditHistory(hid) {
+        currentEditHistoryId = hid;
+        openDB().then(function (db) {
+            var tx = db.transaction(STORE_HISTORY, 'readonly');
+            var req = tx.objectStore(STORE_HISTORY).get(hid);
+            req.onsuccess = function () {
+                var r = req.result;
+                if (!r) return;
+                $('editHistoryTitle').textContent = '编辑记录 - ' + escapeHtml(r.tableName);
+                $('ehGuestCount').value = r.guestCount || 1;
+                $('ehPrice').value = r.price || '';
+                $('ehGuestNote').value = r.guestNote || '';
+                $('ehPattern').value = r.pattern || '';
+                $('ehEndNote').value = r.endNote || '';
+                $('editHistoryModal').classList.add('active');
+            };
+        });
+    }
+
+    function saveEditHistory() {
+        if (!currentEditHistoryId) return;
+        openDB().then(function (db) {
+            var tx = db.transaction(STORE_HISTORY, 'readwrite');
+            var store = tx.objectStore(STORE_HISTORY);
+            var req = store.get(currentEditHistoryId);
+            req.onsuccess = function () {
+                var r = req.result;
+                if (!r) return;
+                r.guestCount = parseInt($('ehGuestCount').value) || 1;
+                r.price = parseFloat($('ehPrice').value) || 0;
+                r.guestNote = $('ehGuestNote').value.trim();
+                r.pattern = $('ehPattern').value.trim();
+                r.endNote = $('ehEndNote').value.trim();
+                store.put(r);
+                tx.oncomplete = function () {
+                    $('editHistoryModal').classList.remove('active');
+                    refreshHistory();
+                    showToast('记录已更新', 'success');
+                };
+            };
         });
     }
 
@@ -1022,6 +1082,14 @@
             endTable(currentModalTableId, $('endNote').value.trim());
             closeEndModal();
         });
+
+        // Edit History modal
+        $('editHistoryClose').addEventListener('click', function () { $('editHistoryModal').classList.remove('active'); });
+        $('editHistoryCancelBtn').addEventListener('click', function () { $('editHistoryModal').classList.remove('active'); });
+        $('editHistoryModal').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('active'); });
+        $('ehGuestDec').addEventListener('click', function () { var v = parseInt($('ehGuestCount').value) || 1; if (v > 1) $('ehGuestCount').value = v - 1; });
+        $('ehGuestInc').addEventListener('click', function () { $('ehGuestCount').value = (parseInt($('ehGuestCount').value) || 0) + 1; });
+        $('editHistorySaveBtn').addEventListener('click', saveEditHistory);
 
 
         // Help

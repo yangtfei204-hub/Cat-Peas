@@ -104,6 +104,7 @@
     var stockData = [];
     var recordData = [];
     var checkItems = [], checkIndex = 0, checkChanges = [];
+    var _expandedGroups = {};
 
     // ===========================
     //  Tabs
@@ -202,20 +203,24 @@
                     badgeHtml +
                     '<svg class="inv-group-arrow" viewBox="0 0 12 12" width="10" height="10"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+                groupHeader.dataset.prefix = prefix;
                 groupHeader.addEventListener('click', function () {
                     var container = groupHeader.nextElementSibling;
                     if (container) {
                         var collapsed = container.classList.toggle('inv-stock-group-collapsed');
                         groupHeader.classList.toggle('collapsed', collapsed);
+                        _expandedGroups[prefix] = !collapsed;
                     }
                 });
-                groupHeader.classList.add('collapsed');
+                if (!_expandedGroups[prefix]) {
+                    groupHeader.classList.add('collapsed');
+                }
                 groupHeader.style.cursor = 'pointer';
                 list.appendChild(groupHeader);
 
-                // 色号卡片容器（默认折叠）
+                // 色号卡片容器
                 var groupContainer = document.createElement('div');
-                groupContainer.className = 'inv-stock-group-container inv-stock-group-collapsed';
+                groupContainer.className = 'inv-stock-group-container' + (!_expandedGroups[prefix] ? ' inv-stock-group-collapsed' : '');
 
                 groupItems.forEach(function (item) {
                     groupContainer.appendChild(createStockCard(item));
@@ -860,6 +865,7 @@
         $('addAllPaletteBtn').addEventListener('click', function () {
             var existingIds = new Set();
             stockData.forEach(function (s) { existingIds.add(s.colorId); });
+            if (!confirm('确定要添加所有未在库存中的色号吗？')) return;
             var added = 0;
             var promises = [];
             MARD_PALETTE.forEach(function (c) {

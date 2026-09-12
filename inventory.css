@@ -954,10 +954,11 @@ body {
 }
 
 .inv-check-swatch {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
-    border: 2px solid var(--border);
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    border: 3px solid var(--border);
+    box-shadow: var(--shadow);
 }
 
 .inv-check-color-id {
