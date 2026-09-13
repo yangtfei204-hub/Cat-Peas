@@ -642,7 +642,7 @@
                             existProj.gridW = S.gridW;
                             existProj.gridH = S.gridH;
                             existProj.thumbnail = autoThumb;
-                            existProj.totalBeads = total;
+                            existProj.totalBeads = autoTotal;
                             existProj.updatedAt = Date.now();
                             existProj.paletteSnapshot = autoPalSnap;
                             existProj.progressPercent = autoPercent;
@@ -1986,7 +1986,7 @@
                     return;
                 }
                 // 如果差异不大（少于总格子数 30%），使用增量
-                if (diffs.length / 2 < S.gridW * S.gridH * 0.3) {
+                if (diffs.length / 2 < S.gridW * S.gridH * 0.15) {
                     S.history.push({
                         w: S.gridW,
                         h: S.gridH,
@@ -2031,7 +2031,7 @@
             for (var i = S.history.length - 1; i >= 0; i--) {
                 if (S.history[i].grid) { lastFull = i; break; }
             }
-            if (S.history.length - 1 - lastFull >= 3) {
+            if (S.history.length - 1 - lastFull >= 2) {
                 var lastEntry = S.history[S.history.length - 1];
                 if (!lastEntry.grid) {
                     lastEntry.grid = compactGrid(S.grid, S.gridW, S.gridH);
@@ -2064,10 +2064,11 @@
         // 先收集需要回溯的增量链
         var chain = [];
         var cur = idx;
-        var maxChain = 10; // 限制回溯深度，防止卡顿
+        var maxChain = 20; // 限制回溯深度，防止卡顿
         while (cur >= 0 && S.history[cur] && !S.history[cur].grid && maxChain > 0) {
             chain.push(cur);
             cur = S.history[cur]._baseIdx;
+            if (cur === undefined || cur === null || cur < 0) break;
             maxChain--;
         }
         // cur 现在指向一个全量快照
