@@ -205,7 +205,7 @@
         showBead: false,
         history: [],
         historyIdx: -1,
-        maxHistory: 80,
+        maxHistory: (window.innerWidth <= 960) ? 30 : 80,
         isPanning: false,
         panStart: null,
         isDrawing: false,
@@ -1965,82 +1965,56 @@
     function pushHistory(actionLabel) {
         S.history = S.history.slice(0, S.historyIdx + 1);
 
-        // 增量记录：只记录变化的格子
-        if (S.history.length > 0) {
-            var prev = S.history[S.historyIdx];
-            if (prev.w === S.gridW && prev.h === S.gridH) {
-                // 尺寸没变，计算差异
-                var diffs = [];
-                var prevGrid = reconstructGrid(S.historyIdx);
-                for (var r = 0; r < S.gridH; r++) {
-                    for (var c = 0; c < S.gridW; c++) {
-                        if (S.grid[r][c] !== prevGrid[r][c]) {
-                            diffs.push(r * S.gridW + c);
-                            diffs.push(S.grid[r][c] === null ? -1 : S.grid[r][c]);
-                        }
-                    }
-                }
-                // 如果没有实际变化，不记录
-                if (diffs.length === 0) {
-                    updateHistoryUI();
-                    return;
-                }
-                // 如果差异不大（少于总格子数 30%），使用增量
-                if (diffs.length / 2 < S.gridW * S.gridH * 0.15) {
-                    S.history.push({
-                        w: S.gridW,
-                        h: S.gridH,
-                        _diffs: diffs,
-                        _baseIdx: S.historyIdx,
-                        _label: actionLabel || ('编辑 x' + (diffs.length / 2) + '格')
-                    });
+        // 始终存全量快照，用 RLE 压缩减少内存
+        var rle = [];
+        var i = 0;
+        var total = S.gridW * S.gridH;
+        var prev = S.grid[0] ? (S.grid[0][0] === null ? -1 : S.grid[0][0]) : -1;
+        var count = 0;
+
+        for (var r = 0; r < S.gridH; r++) {
+            for (var c = 0; c < S.gridW; c++) {
+                var v = S.grid[r][c];
+                var val = v === null ? -1 : v;
+                if (val === prev && count < 65535) {
+                    count++;
                 } else {
-                    // 差异太大，存全量但用紧凑格式
-                    S.history.push({
-                        grid: compactGrid(S.grid, S.gridW, S.gridH),
-                        w: S.gridW,
-                        h: S.gridH,
-                        _compact: true,
-                        _label: actionLabel || '编辑'
-                    });
+                    if (count > 0) {
+                        rle.push(count, prev);
+                    }
+                    prev = val;
+                    count = 1;
                 }
-            } else {
-                // 尺寸变了，存全量
-                S.history.push({
-                    grid: compactGrid(S.grid, S.gridW, S.gridH),
-                    w: S.gridW,
-                    h: S.gridH,
-                    _compact: true,
-                    _label: actionLabel || '调整尺寸'
-                });
             }
-        } else {
-            // 第一条，存全量
-            S.history.push({
-                grid: compactGrid(S.grid, S.gridW, S.gridH),
-                w: S.gridW,
-                h: S.gridH,
-                _compact: true,
-                _label: actionLabel || '初始状态'
-            });
+        }
+        if (count > 0) {
+            rle.push(count, prev);
         }
 
-        // 增量链太长时，每隔 3 步强制存一个全量快照
-        if (S.history.length > 3) {
-            var lastFull = -1;
-            for (var i = S.history.length - 1; i >= 0; i--) {
-                if (S.history[i].grid) { lastFull = i; break; }
-            }
-            if (S.history.length - 1 - lastFull >= 2) {
-                var lastEntry = S.history[S.history.length - 1];
-                if (!lastEntry.grid) {
-                    lastEntry.grid = compactGrid(S.grid, S.gridW, S.gridH);
-                    lastEntry._compact = true;
-                    delete lastEntry._diffs;
-                    delete lastEntry._baseIdx;
+        // 检查是否与上一条记录完全相同（跳过无变化的记录）
+        if (S.history.length > 0) {
+            var lastSnap = S.history[S.historyIdx];
+            if (lastSnap && lastSnap.w === S.gridW && lastSnap.h === S.gridH && lastSnap._rle) {
+                var lastRle = lastSnap._rle;
+                if (lastRle.length === rle.length) {
+                    var same = true;
+                    for (var si = 0; si < rle.length; si++) {
+                        if (rle[si] !== lastRle[si]) { same = false; break; }
+                    }
+                    if (same) {
+                        updateHistoryUI();
+                        return;
+                    }
                 }
             }
         }
+
+        S.history.push({
+            w: S.gridW,
+            h: S.gridH,
+            _rle: rle,
+            _label: actionLabel || '编辑'
+        });
 
         if (S.history.length > S.maxHistory + 1) S.history.shift();
         S.historyIdx = S.history.length - 1;
@@ -2059,61 +2033,88 @@
         return arr;
     }
 
-    function reconstructGrid(idx) {
-        // 从历史记录中重建指定索引的完整 grid
-        // 先收集需要回溯的增量链
-        var chain = [];
-        var cur = idx;
-        var maxChain = 20; // 限制回溯深度，防止卡顿
-        while (cur >= 0 && S.history[cur] && !S.history[cur].grid && maxChain > 0) {
-            chain.push(cur);
-            cur = S.history[cur]._baseIdx;
-            if (cur === undefined || cur === null || cur < 0) break;
-            maxChain--;
-        }
-        // cur 现在指向一个全量快照
-        var baseGrid;
-        if (cur >= 0 && S.history[cur] && S.history[cur].grid) {
-            var snap = S.history[cur];
-            if (snap._compact) {
-                // 从紧凑格式还原
-                baseGrid = [];
-                var arr = snap.grid;
-                for (var rr = 0; rr < snap.h; rr++) {
-                    baseGrid[rr] = [];
-                    for (var cc = 0; cc < snap.w; cc++) {
-                        var v = arr[rr * snap.w + cc];
-                        baseGrid[rr][cc] = v < 0 ? null : v;
+
+    function gridFromRLE(rle, w, h) {
+        var grid = [];
+        var rleIdx = 0;
+        var remaining = 0;
+        var currentVal = -1;
+        for (var r = 0; r < h; r++) {
+            grid[r] = new Array(w);
+            for (var c = 0; c < w; c++) {
+                if (remaining <= 0) {
+                    if (rleIdx < rle.length) {
+                        remaining = rle[rleIdx];
+                        currentVal = rle[rleIdx + 1];
+                        rleIdx += 2;
+                    } else {
+                        remaining = 1;
+                        currentVal = -1;
                     }
                 }
-            } else {
-                baseGrid = snap.grid.map(function (r) { return r.slice(); });
-            }
-        } else {
-            // 兜底：创建空 grid
-            baseGrid = [];
-            var w = S.history[idx].w;
-            var h = S.history[idx].h;
-            for (var rr2 = 0; rr2 < h; rr2++) {
-                baseGrid[rr2] = new Array(w).fill(null);
+                grid[r][c] = currentVal < 0 ? null : currentVal;
+                remaining--;
             }
         }
-        // 从最早的增量开始依次应用
-        for (var i = chain.length - 1; i >= 0; i--) {
-            var diffSnap = S.history[chain[i]];
-            var diffs = diffSnap._diffs;
-            if (!diffs) continue;
-            for (var d = 0; d < diffs.length; d += 2) {
-                var pos = diffs[d];
-                var val = diffs[d + 1];
-                var row = Math.floor(pos / diffSnap.w);
-                var col = pos % diffSnap.w;
-                if (row < baseGrid.length && col < baseGrid[0].length) {
-                    baseGrid[row][col] = val < 0 ? null : val;
+        return grid;
+    }
+
+    function reconstructGrid(idx) {
+        var snap = S.history[idx];
+        if (!snap) {
+            var grid = [];
+            for (var r = 0; r < S.gridH; r++) {
+                grid[r] = new Array(S.gridW).fill(null);
+            }
+            return grid;
+        }
+
+        // 新格式：RLE
+        if (snap._rle) {
+            return gridFromRLE(snap._rle, snap.w, snap.h);
+        }
+
+        // 旧格式兼容：_compact + grid (Int16Array)
+        if (snap._compact && snap.grid) {
+            var baseGrid = [];
+            var arr = snap.grid;
+            for (var rr = 0; rr < snap.h; rr++) {
+                baseGrid[rr] = [];
+                for (var cc = 0; cc < snap.w; cc++) {
+                    var v = arr[rr * snap.w + cc];
+                    baseGrid[rr][cc] = v < 0 ? null : v;
                 }
             }
+            return baseGrid;
         }
-        return baseGrid;
+
+        // 旧格式兼容：普通二维数组
+        if (snap.grid) {
+            return snap.grid.map(function (row) { return row.slice(); });
+        }
+
+        // 旧格式兼容：增量记录
+        if (snap._diffs && snap._baseIdx !== undefined) {
+            var base = reconstructGrid(snap._baseIdx);
+            var diffs = snap._diffs;
+            for (var d = 0; d < diffs.length; d += 2) {
+                var pos = diffs[d];
+                var val2 = diffs[d + 1];
+                var row2 = Math.floor(pos / snap.w);
+                var col2 = pos % snap.w;
+                if (row2 < base.length && col2 < base[0].length) {
+                    base[row2][col2] = val2 < 0 ? null : val2;
+                }
+            }
+            return base;
+        }
+
+        // 兜底
+        var fallback = [];
+        for (var fr = 0; fr < (snap.h || S.gridH); fr++) {
+            fallback[fr] = new Array(snap.w || S.gridW).fill(null);
+        }
+        return fallback;
     }
 
     function undo() {
@@ -2649,29 +2650,61 @@
         if (oldCI === newCI) return;
 
         const w = S.gridW;
-        const visited = new Uint8Array(S.gridH * w);
-        const stack = [[startRow, startCol]];
-        visited[startRow * w + startCol] = 1;
+        const h = S.gridH;
+        // 使用扫描线算法，比逐像素压栈更省内存
+        var layerGrid = S.layers[S.activeLayer].grid;
+        var stack = [[startRow, startCol]];
+        // 直接用 grid 本身做标记（已改为 newCI 的格子不会再入栈）
 
         while (stack.length > 0) {
-            const [r, c] = stack.pop();
-            S.grid[r][c] = newCI;
-            if (S.layers[S.activeLayer].grid) S.layers[S.activeLayer].grid[r][c] = newCI;
+            var pt = stack.pop();
+            var r = pt[0], c = pt[1];
+            if (r < 0 || r >= h || c < 0 || c >= w) continue;
+            if (S.grid[r][c] !== oldCI) continue;
 
-            const neighbors = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
-            for (const [nr, nc] of neighbors) {
-                if (nr < 0 || nr >= S.gridH || nc < 0 || nc >= w) continue;
-                const idx = nr * w + nc;
-                if (visited[idx]) continue;
-                if (S.grid[nr][nc] !== oldCI) continue;
-                visited[idx] = 1;
-                stack.push([nr, nc]);
+            // 向左扫描找到行起点
+            var left = c;
+            while (left > 0 && S.grid[r][left - 1] === oldCI) left--;
+
+            // 向右填充
+            var right = left;
+            var checkAbove = true, checkBelow = true;
+            while (right < w && S.grid[r][right] === oldCI) {
+                S.grid[r][right] = newCI;
+                if (layerGrid && layerGrid[r]) layerGrid[r][right] = newCI;
+
+                // 检查上方
+                if (r > 0) {
+                    if (S.grid[r - 1][right] === oldCI) {
+                        if (checkAbove) {
+                            stack.push([r - 1, right]);
+                            checkAbove = false;
+                        }
+                    } else {
+                        checkAbove = true;
+                    }
+                }
+
+                // 检查下方
+                if (r < h - 1) {
+                    if (S.grid[r + 1][right] === oldCI) {
+                        if (checkBelow) {
+                            stack.push([r + 1, right]);
+                            checkBelow = false;
+                        }
+                    } else {
+                        checkBelow = true;
+                    }
+                }
+
+                right++;
             }
         }
 
-        pushHistory();
+        pushHistory('填充');
         render();
     }
+
 
     function setTool(t) {
         S.tool = t;
