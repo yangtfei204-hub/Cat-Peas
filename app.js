@@ -2874,13 +2874,21 @@
                 var dx = t0x - t1x;
                 var dy = t0y - t1y;
                 var dist = Math.sqrt(dx * dx + dy * dy);
-                S.zoom = Math.min(Math.max(pinchStartZoom * (dist / pinchStartDist), 0.05), 6);
+                var newZoom = Math.min(Math.max(pinchStartZoom * (dist / pinchStartDist), 0.05), 6);
                 if (panTouchStart) {
                     var mx = (t0x + t1x) / 2;
                     var my = (t0y + t1y) / 2;
-                    S.panX = mx - panTouchStart.x;
-                    S.panY = my - panTouchStart.y;
+                    // 以双指中心为缩放原点
+                    var wrapRect = canvasWrapper.getBoundingClientRect();
+                    var centerX = wrapRect.width / 2;
+                    var centerY = wrapRect.height / 2;
+                    var focusX = mx - wrapRect.left - centerX;
+                    var focusY = my - wrapRect.top - centerY;
+                    var scaleChange = newZoom / S.zoom;
+                    S.panX = focusX - (focusX - S.panX) * scaleChange;
+                    S.panY = focusY - (focusY - S.panY) * scaleChange;
                 }
+                S.zoom = newZoom;
                 canvasScroller.style.transform = 'translate(' + S.panX + 'px,' + S.panY + 'px) scale(' + S.zoom + ')';
                 $('zoomValue').textContent = Math.round(S.zoom * 100) + '%';
             }
@@ -3099,6 +3107,9 @@
         });
         $('bgToleranceSlider').addEventListener('input', function (e) {
             $('bgToleranceVal').textContent = e.target.value;
+        });
+        $('extractColorsBtn').addEventListener('click', function () {
+            extractDominantColors();
         });
         $('convertBtn').addEventListener('click', function () {
             if (!S.refImage) { alert('请先上传参考底图'); return; }
@@ -3942,12 +3953,27 @@
         if (S.tool !== 'fill' || S.isDrawing) return;
         if (!cell) {
             if (S.fillPreviewIdx >= 0) { S.fillPreviewIdx = -1; renderMain(); }
+            $('coordColor').textContent = '';
             return;
         }
         var ci2 = S.grid[cell.row][cell.col];
         if (ci2 !== S.fillPreviewIdx) {
             S.fillPreviewIdx = (ci2 !== null) ? ci2 : -1;
             renderMain();
+            // 显示将被替换的格子数量
+            if (S.fillPreviewIdx >= 0 && PALETTE[S.fillPreviewIdx]) {
+                var replaceCount = 0;
+                for (var fr = 0; fr < S.gridH; fr++) {
+                    for (var fc = 0; fc < S.gridW; fc++) {
+                        if (S.grid[fr][fc] === S.fillPreviewIdx) replaceCount++;
+                    }
+                }
+                var fromColor = PALETTE[S.fillPreviewIdx];
+                var toColor = PALETTE[S.currentColorIdx];
+                $('coordColor').innerHTML = '<span class="coord-color-swatch" style="background:' + fromColor.hex + '"></span>' +
+                    fromColor.id + ' (' + replaceCount + '格) -> ' +
+                    (toColor ? toColor.id : '--');
+            }
         }
     }
 
@@ -5334,6 +5360,14 @@
         const prevBead = S.showBead;
         const prevGrid = S.showGrid;
         const prevNum = S.showNumbers;
+        // 读取导出选项
+        if (!beadMode) {
+            var expRuler = $('exportWithRuler');
+            var expGrid = $('exportWithGrid');
+            var expNums = $('exportWithNumbers');
+            if (expGrid && !expGrid.checked) S.showGrid = false;
+            if (expNums && !expNums.checked) S.showNumbers = false;
+        }
 
         var prevCellOpacity = S.cellOpacity;
         S.cellOpacity = 1;  // 导出时色块不透明
@@ -5342,7 +5376,8 @@
         renderMain();
 
         const cs = S.cellSize;
-        const rs = S.showRuler ? 30 : 0;
+        var exportRuler = beadMode ? false : (!$('exportWithRuler') || $('exportWithRuler').checked);
+        const rs = exportRuler ? 30 : 0;
 
         // 计算用色统计
         const counts = {};
@@ -5454,7 +5489,7 @@
         }
 
         // 标尺
-        if (S.showRuler) {
+        if (exportRuler) {
             ec.fillStyle = '#f6f1ee';
             ec.fillRect(0, 0, rs, rs + S.gridH * cs);
             ec.fillRect(0, 0, rs + S.gridW * cs, rs);
@@ -7087,6 +7122,117 @@
         }).catch(function (err) {
             alert('导出失败：' + err.message);
         });
+    }
+
+
+    function extractDominantColors() {
+        if (!S.refImage) { cdAlert('请先上传参考底图', { type: 'warn' }); return; }
+
+        var img = S.refImage;
+        var sampleSize = 100; // 缩小到100px采样
+        var tmp = document.createElement('canvas');
+        var ratio = Math.min(sampleSize / img.naturalWidth, sampleSize / img.naturalHeight, 1);
+        tmp.width = Math.round(img.naturalWidth * ratio);
+        tmp.height = Math.round(img.naturalHeight * ratio);
+        var tc = tmp.getContext('2d');
+        tc.drawImage(img, 0, 0, tmp.width, tmp.height);
+        var data = tc.getImageData(0, 0, tmp.width, tmp.height).data;
+
+        // 收集所有不透明像素
+        var pixels = [];
+        for (var i = 0; i < data.length; i += 4) {
+            if (data[i + 3] < 100) continue;
+            pixels.push([data[i], data[i + 1], data[i + 2]]);
+        }
+
+        if (pixels.length === 0) {
+            cdAlert('图片中没有有效像素', { type: 'warn' });
+            return;
+        }
+
+        // 简单的中位切分量化（取前12种主色）
+        var maxColors = 12;
+        var buckets = [pixels];
+
+        while (buckets.length < maxColors) {
+            // 找到范围最大的桶
+            var maxRange = -1;
+            var maxIdx = 0;
+            for (var bi = 0; bi < buckets.length; bi++) {
+                var bucket = buckets[bi];
+                if (bucket.length < 2) continue;
+                var ranges = [0, 0, 0];
+                for (var ch = 0; ch < 3; ch++) {
+                    var minV = 255, maxV = 0;
+                    for (var pi = 0; pi < bucket.length; pi++) {
+                        if (bucket[pi][ch] < minV) minV = bucket[pi][ch];
+                        if (bucket[pi][ch] > maxV) maxV = bucket[pi][ch];
+                    }
+                    ranges[ch] = maxV - minV;
+                }
+                var totalRange = Math.max(ranges[0], ranges[1], ranges[2]);
+                if (totalRange > maxRange) {
+                    maxRange = totalRange;
+                    maxIdx = bi;
+                }
+            }
+
+            if (maxRange <= 0) break;
+
+            // 沿最大范围的通道切分
+            var splitBucket = buckets[maxIdx];
+            var splitRanges = [0, 0, 0];
+            for (var sch = 0; sch < 3; sch++) {
+                var sMin = 255, sMax = 0;
+                for (var spi = 0; spi < splitBucket.length; spi++) {
+                    if (splitBucket[spi][sch] < sMin) sMin = splitBucket[spi][sch];
+                    if (splitBucket[spi][sch] > sMax) sMax = splitBucket[spi][sch];
+                }
+                splitRanges[sch] = sMax - sMin;
+            }
+            var splitChannel = 0;
+            if (splitRanges[1] > splitRanges[0]) splitChannel = 1;
+            if (splitRanges[2] > splitRanges[splitChannel]) splitChannel = 2;
+
+            splitBucket.sort(function (a, b) { return a[splitChannel] - b[splitChannel]; });
+            var mid = Math.floor(splitBucket.length / 2);
+            buckets.splice(maxIdx, 1, splitBucket.slice(0, mid), splitBucket.slice(mid));
+        }
+
+        // 计算每个桶的平均色并匹配色板
+        _paletteLabCache = null;
+        var results = [];
+        var usedPaletteIdx = new Set();
+
+        buckets.forEach(function (bucket) {
+            if (bucket.length === 0) return;
+            var sr = 0, sg = 0, sb = 0;
+            bucket.forEach(function (p) { sr += p[0]; sg += p[1]; sb += p[2]; });
+            var avgR = Math.round(sr / bucket.length);
+            var avgG = Math.round(sg / bucket.length);
+            var avgB = Math.round(sb / bucket.length);
+            var bestIdx = findClosestPaletteColor(avgR, avgG, avgB);
+            if (!usedPaletteIdx.has(bestIdx)) {
+                usedPaletteIdx.add(bestIdx);
+                results.push({
+                    paletteIdx: bestIdx,
+                    color: PALETTE[bestIdx],
+                    pixelCount: bucket.length,
+                    percent: Math.round(bucket.length / pixels.length * 100)
+                });
+            }
+        });
+
+        results.sort(function (a, b) { return b.pixelCount - a.pixelCount; });
+
+        var lines = ['底图主色调分析（匹配到色板）：\n'];
+        results.forEach(function (r, i) {
+            lines.push((i + 1) + '. ' + r.color.id + ' ' + r.color.name + '  占比约' + r.percent + '%');
+        });
+        lines.push('\n共检测到 ' + results.length + ' 种主要颜色');
+        lines.push('提示：点击色板中对应色号即可选中使用');
+
+        cdAlert(lines.join('\n'), { type: 'success', title: '主色调提取结果' });
     }
 
     // ===========================
