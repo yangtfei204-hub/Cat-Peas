@@ -747,7 +747,7 @@
             } else {
                 list.innerHTML = '';
                 pending.forEach(function (item) {
-                    list.appendChild(createTaskItem(item));
+                    list.appendChild(createTaskItem(item, data));
                 });
             }
 
@@ -756,17 +756,20 @@
                 doneCount.textContent = done.length;
                 doneList.innerHTML = '';
                 done.forEach(function (item) {
-                    doneList.appendChild(createTaskItem(item));
+                    doneList.appendChild(createTaskItem(item, data));
                 });
             } else {
                 doneSection.style.display = 'none';
             }
         }
 
-        function createTaskItem(item) {
+        function createTaskItem(item, data) {
             var el = document.createElement('div');
             el.className = 'tasks-item' + (item.done ? ' done' : '');
             el.innerHTML =
+                '<div class="tasks-item-drag" title="拖拽排序" style="cursor:grab;color:var(--text-muted);flex-shrink:0;display:flex;align-items:center;padding:0 2px;">' +
+                    '<svg viewBox="0 0 12 16" width="10" height="14"><circle cx="4" cy="3" r="1.2" fill="currentColor"/><circle cx="8" cy="3" r="1.2" fill="currentColor"/><circle cx="4" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="4" cy="13" r="1.2" fill="currentColor"/><circle cx="8" cy="13" r="1.2" fill="currentColor"/></svg>' +
+                '</div>' +
                 '<div class="tasks-item-check"></div>' +
                 '<span class="tasks-item-text">' + escapeHtmlTask(item.text) + '</span>' +
                 '<button class="tasks-item-del" title="删除">' +
@@ -795,6 +798,34 @@
                     saveTasksStore();
                     renderTasks();
                 }
+            });
+
+            // 拖拽排序
+            el.setAttribute('draggable', 'true');
+            el.addEventListener('dragstart', function (ev) {
+                ev.dataTransfer.setData('text/plain', data.items.indexOf(item).toString());
+                el.style.opacity = '0.5';
+            });
+            el.addEventListener('dragend', function () {
+                el.style.opacity = '1';
+            });
+            el.addEventListener('dragover', function (ev) {
+                ev.preventDefault();
+                el.style.borderTop = '2px solid var(--iris)';
+            });
+            el.addEventListener('dragleave', function () {
+                el.style.borderTop = '';
+            });
+            el.addEventListener('drop', function (ev) {
+                ev.preventDefault();
+                el.style.borderTop = '';
+                var fromIdx = parseInt(ev.dataTransfer.getData('text/plain'));
+                var toIdx = data.items.indexOf(item);
+                if (isNaN(fromIdx) || fromIdx === toIdx) return;
+                var moved = data.items.splice(fromIdx, 1)[0];
+                data.items.splice(toIdx, 0, moved);
+                saveTasksStore();
+                renderTasks();
             });
 
             return el;
