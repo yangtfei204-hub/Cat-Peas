@@ -228,6 +228,7 @@
         assistShowCheckmarks: true,
         showSplitLine: false,
         legendSortMode: 'alpha',
+        recentColors: [],
         usageSortMode: 'count',
         splitSize: 52,
         // 选区状态
@@ -536,6 +537,11 @@
         showDisclaimer();
         initGrid();
         loadCustomColors();
+        // 加载历史用色
+        try {
+            var savedRecent = localStorage.getItem('catpeas_recent_colors');
+            if (savedRecent) S.recentColors = JSON.parse(savedRecent);
+        } catch (e) {}
         buildPalette();
         selectColor(0);
         loadAutoSave();
@@ -1909,9 +1915,99 @@
                 grid.appendChild(wrapper);
             });
         }
+        bindPaletteSearch();
 
         buildCustomColorList();
         syncDrawerPalette();
+    }
+
+
+    function bindPaletteSearch() {
+        var input = $('paletteSearchInput');
+        var clearBtn = $('paletteSearchClear');
+        var resultsEl = $('paletteSearchResults');
+        var gridEl = $('paletteGrid');
+        if (!input || !resultsEl) return;
+
+        // 移除旧事件（通过克隆替换）
+        var newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        input = newInput;
+
+        var newClear = clearBtn.cloneNode(true);
+        clearBtn.parentNode.replaceChild(newClear, clearBtn);
+        clearBtn = newClear;
+
+        var _searchTimer = null;
+
+        input.addEventListener('input', function () {
+            clearTimeout(_searchTimer);
+            var val = input.value.trim().toLowerCase();
+            clearBtn.style.display = val ? '' : 'none';
+            if (!val) {
+                resultsEl.style.display = 'none';
+                resultsEl.classList.remove('active');
+                gridEl.style.display = '';
+                return;
+            }
+            _searchTimer = setTimeout(function () {
+                doSearch(val);
+            }, 150);
+        });
+
+        clearBtn.addEventListener('click', function () {
+            input.value = '';
+            clearBtn.style.display = 'none';
+            resultsEl.style.display = 'none';
+            resultsEl.classList.remove('active');
+            gridEl.style.display = '';
+            input.focus();
+        });
+
+        function doSearch(keyword) {
+            var matches = [];
+            for (var i = 0; i < PALETTE.length; i++) {
+                var c = PALETTE[i];
+                if (c.id.toLowerCase().indexOf(keyword) >= 0 ||
+                    c.name.toLowerCase().indexOf(keyword) >= 0 ||
+                    c.hex.toLowerCase().indexOf(keyword) >= 0) {
+                    matches.push({ color: c, index: i });
+                }
+            }
+
+            resultsEl.innerHTML = '';
+
+            if (matches.length === 0) {
+                resultsEl.innerHTML = '<div class="palette-search-empty">未找到匹配的颜色</div>';
+                resultsEl.style.display = '';
+                resultsEl.classList.add('active');
+                gridEl.style.display = 'none';
+                return;
+            }
+
+            matches.forEach(function (item) {
+                var div = document.createElement('div');
+                div.className = 'palette-search-item' + (item.index === S.currentColorIdx ? ' active' : '');
+                div.innerHTML =
+                    '<div class="palette-search-swatch" style="background:' + item.color.hex + '"></div>' +
+                    '<span class="palette-search-id">' + item.color.id + '</span>' +
+                    '<span class="palette-search-name">' + item.color.name + '</span>' +
+                    '<span class="palette-search-hex">' + item.color.hex + '</span>';
+                div.addEventListener('click', function () {
+                    selectColor(item.index);
+                    // 更新搜索结果中的选中状态
+                    resultsEl.querySelectorAll('.palette-search-item').forEach(function (el) {
+                        el.classList.remove('active');
+                    });
+                    div.classList.add('active');
+                });
+                resultsEl.appendChild(div);
+            });
+
+            resultsEl.style.display = '';
+            resultsEl.classList.add('active');
+            gridEl.style.display = 'none';
+        }
     }
 
     function selectColor(idx) {
@@ -1943,6 +2039,7 @@
 
         updateDrawerHandle();
         syncDrawerSelection();
+        renderRecentColors();
     }
 
     function deselectCurrentColor() {
@@ -2285,6 +2382,49 @@
                 '<div class="legend-swatch" style="background:' + color.hex + '"></div>' +
                 '<span>' + color.id + '</span>';
             legend.appendChild(div);
+        });
+    }
+
+
+    function addRecentColor(colorIdx) {
+        if (colorIdx < 0 || colorIdx >= PALETTE.length) return;
+        // 移除已存在的相同颜色
+        S.recentColors = S.recentColors.filter(function (ci) { return ci !== colorIdx; });
+        // 添加到最前面
+        S.recentColors.unshift(colorIdx);
+        // 最多保留5个
+        if (S.recentColors.length > 5) S.recentColors.length = 5;
+        renderRecentColors();
+        // 持久化
+        try { localStorage.setItem('catpeas_recent_colors', JSON.stringify(S.recentColors)); } catch (e) {}
+    }
+
+    function renderRecentColors() {
+        var container = $('recentColors');
+        if (!container) return;
+        if (S.recentColors.length === 0) {
+            container.innerHTML = '<span class="recent-empty">暂无使用记录</span>';
+            return;
+        }
+        container.innerHTML = '';
+        S.recentColors.forEach(function (ci) {
+            if (ci < 0 || ci >= PALETTE.length) return;
+            var color = PALETTE[ci];
+            var div = document.createElement('div');
+            div.className = 'recent-color-item' + (ci === S.currentColorIdx ? ' active' : '');
+            div.style.background = color.hex;
+            div.title = color.id + ' ' + color.name;
+            div.dataset.idx = ci;
+            var lum = luminance(color.hex);
+            var span = document.createElement('span');
+            span.className = 'recent-color-id';
+            span.textContent = color.id;
+            span.style.color = lum > 0.55 ? 'rgba(50,40,45,0.6)' : 'rgba(255,255,255,0.8)';
+            div.appendChild(span);
+            div.addEventListener('click', function () {
+                selectColor(ci);
+            });
+            container.appendChild(div);
         });
     }
 
@@ -2640,7 +2780,11 @@
                         S.layers[S.activeLayer].grid[r][c] = newCI;
                     changed = true;
                 }
-        if (changed) { pushHistory(); render(); }
+        if (changed) {
+            pushHistory();
+            render();
+            if (!S.noColor && S.currentColorIdx >= 0) addRecentColor(S.currentColorIdx);
+        }
     }
 
 
@@ -2703,6 +2847,7 @@
 
         pushHistory('填充');
         render();
+        if (!S.noColor && S.currentColorIdx >= 0) addRecentColor(S.currentColorIdx);
     }
 
 
@@ -3389,12 +3534,14 @@
             $('projectGrid').classList.remove('list-view');
             $('projectViewGrid').classList.add('active');
             $('projectViewList').classList.remove('active');
+            try { localStorage.setItem('catpeas_project_view', 'grid'); } catch (e) {}
         });
 
         $('projectViewList').addEventListener('click', function () {
             $('projectGrid').classList.add('list-view');
             $('projectViewList').classList.add('active');
             $('projectViewGrid').classList.remove('active');
+            try { localStorage.setItem('catpeas_project_view', 'list'); } catch (e) {}
         });
 
         // 删除选中
@@ -3980,7 +4127,7 @@
     // Mouse drawing
     function onMouseDown(e) {
         if (e.button !== 0) return;
-        if (S.assistMode) { handleAssistMark(e); return; }
+        if (S.assistMode && S.tool !== 'hand') { handleAssistMark(e); return; }
         e.preventDefault();
         if (S.tool === 'hand') return;
         var cell = cellFromMouse(e);
@@ -4106,6 +4253,9 @@
                 pushHistory();
                 updateUsage();
                 updateLegend();
+                if (S.tool === 'pen' && !S.noColor && S.currentColorIdx >= 0) {
+                    addRecentColor(S.currentColorIdx);
+                }
             }, 50);
         }
     }
@@ -4115,7 +4265,7 @@
         if (e.touches.length !== 1) return;
         if (_pinchActive) return;
         if (_pinchJustEnded) return;
-        if (S.assistMode) { handleAssistMarkTouch(e); return; }
+        if (S.assistMode && S.tool !== 'hand') { handleAssistMarkTouch(e); return; }
         e.preventDefault();
 
         if (S.tool === 'hand') {
@@ -4237,6 +4387,9 @@
                 pushHistory();
                 updateUsage();
                 updateLegend();
+                if (S.tool === 'pen' && !S.noColor && S.currentColorIdx >= 0) {
+                    addRecentColor(S.currentColorIdx);
+                }
             }, 50);
         }
     }
@@ -6949,6 +7102,19 @@
         loadProjectCategories().then(function () {
             _selectedProjectIds.clear();
             updateProjectPageFilters();
+            // 恢复上次的视图模式
+            try {
+                var savedView = localStorage.getItem('catpeas_project_view');
+                if (savedView === 'list') {
+                    $('projectGrid').classList.add('list-view');
+                    $('projectViewList').classList.add('active');
+                    $('projectViewGrid').classList.remove('active');
+                } else {
+                    $('projectGrid').classList.remove('list-view');
+                    $('projectViewGrid').classList.add('active');
+                    $('projectViewList').classList.remove('active');
+                }
+            } catch (e) {}
             $('projectPage').classList.add('active');
             // 确保页面显示后再加载卡片
             setTimeout(function () {

@@ -737,9 +737,28 @@
                     </div>
                 </section>
 
+                <!-- 历史用色 -->
+                <section class="panel-section" id="recentColorsSection">
+                    <h3 class="section-title">
+                        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M4 12a8 8 0 0114-5.3V3M18 6.7V3h-3.3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 8a6 6 0 11-10 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+                        最近用色
+                    </h3>
+                    <div class="recent-colors" id="recentColors">
+                        <span class="recent-empty">暂无使用记录</span>
+                    </div>
+                </section>
+
                 <!-- 色板 -->
                 <section class="panel-section">
                     <h3 class="section-title">Mard 拼豆色板</h3>
+                    <div class="palette-search-wrap" id="paletteSearchWrap">
+                        <svg viewBox="0 0 16 16" width="12" height="12" style="color:var(--text-muted);flex-shrink:0;"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M10 10l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <input type="text" class="palette-search-input" id="paletteSearchInput" placeholder="搜索色号或名称..." maxlength="20">
+                        <button class="palette-search-clear" id="paletteSearchClear" style="display:none;" title="清除搜索">
+                            <svg viewBox="0 0 12 12" width="10" height="10"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <div class="palette-search-results" id="paletteSearchResults" style="display:none;"></div>
                     <div class="palette-grid" id="paletteGrid"></div>
                 </section>
 
@@ -970,6 +989,7 @@
                     <span class="toggle-slider"></span>
                     <span>显示已拼对勾标记</span>
                 </label>
+                <p class="size-note" style="margin-top:6px;">提示：切换到抓手工具(H)可平移画布，双指捏合可缩放。点击标尺数字可标记整行/列。</p>
             <!-- 进度 -->
             <div class="assist-progress">
                 <div class="assist-progress-bar-wrap">
