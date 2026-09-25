@@ -3577,6 +3577,103 @@
             exportAllProjects();
         });
 
+        // 项目库页面导入
+        $('projectImportAll2').addEventListener('click', function () {
+            $('projectImportFileInput').click();
+        });
+        $('projectImportFileInput').addEventListener('change', function (e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+                try {
+                    var data = JSON.parse(ev.target.result);
+                    // 兼容两种格式：项目库备份 和 单个项目
+                    if (data.format === 'catpeas_project_library' && data.projects) {
+                        // 项目库备份格式
+                        cdConfirm('检测到项目库备份文件，共 ' + data.projects.length + ' 个项目。\n\n导入方式：\n【确定】追加导入（保留现有项目）\n【取消】放弃导入', {
+                            title: '导入项目库',
+                            okText: '追加导入'
+                        }).then(function (ok) {
+                            if (!ok) return;
+                            var imported = 0;
+                            var skipped = 0;
+                            var promises = [];
+                            // 导入分类
+                            if (data.categories) {
+                                data.categories.forEach(function (cat) {
+                                    if (cat.id !== 'default' && !_projectCategories.some(function (c) { return c.id === cat.id; })) {
+                                        _projectCategories.push(cat);
+                                        promises.push(dbPut(STORE_CATEGORIES, cat));
+                                    }
+                                });
+                            }
+                            // 导入项目
+                            data.projects.forEach(function (proj) {
+                                // 重新生成缩略图
+                                if (proj.grid && proj.gridW && proj.gridH) {
+                                    try {
+                                        proj.thumbnail = generateThumbnail(proj.grid, proj.gridW, proj.gridH, proj.paletteSnapshot);
+                                    } catch (e) {}
+                                }
+                                promises.push(dbPut(STORE_PROJECTS, proj));
+                                imported++;
+                            });
+                            Promise.all(promises).then(function () {
+                                updateProjectCategoryUI();
+                                triggerProjectRefresh();
+                                showToast('成功导入 ' + imported + ' 个项目', 'success');
+                            }).catch(function (err) {
+                                showToast('导入出错：' + err.message, 'error');
+                            });
+                        });
+                    } else if (data.format === 'catpeas_project' && data.grid) {
+                        // 单个项目 JSON 格式
+                        var name = data.name || '导入项目';
+                        cdConfirm('检测到单个项目文件「' + name + '」（' + data.gridW + '×' + data.gridH + '）。\n\n要将它保存到项目库吗？', {
+                            title: '导入项目',
+                            okText: '保存到项目库'
+                        }).then(function (ok) {
+                            if (!ok) return;
+                            var gridData = data.grid.map(function (row) { return Array.from(row); });
+                            var thumbnail = generateThumbnail(gridData, data.gridW, data.gridH, null);
+                            var total = 0;
+                            for (var r = 0; r < data.gridH; r++) {
+                                for (var c = 0; c < data.gridW; c++) {
+                                    if (gridData[r][c] !== null) total++;
+                                }
+                            }
+                            var projectData = {
+                                id: generateProjectId(),
+                                name: name,
+                                category: 'default',
+                                gridW: data.gridW,
+                                gridH: data.gridH,
+                                grid: gridData,
+                                thumbnail: thumbnail,
+                                totalBeads: total,
+                                createdAt: Date.now(),
+                                updatedAt: Date.now(),
+                                paletteSnapshot: data.palette || [],
+                                progressStatus: 'not_started',
+                                progressPercent: 0
+                            };
+                            dbPut(STORE_PROJECTS, projectData).then(function () {
+                                triggerProjectRefresh();
+                                showToast('已导入项目「' + name + '」', 'success');
+                            });
+                        });
+                    } else {
+                        cdAlert('文件格式不正确。\n\n支持的格式：\n· Cat Peas 项目库备份文件（.json）\n· Cat Peas 单个项目文件（.json）', { type: 'error', title: '导入失败' });
+                    }
+                } catch (err) {
+                    cdAlert('导入失败：' + err.message, { type: 'error', title: '导入失败' });
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
         // 导出当前项目为 JSON
         $('exportProjectJSON').addEventListener('click', function () {
             exportProjectJSON();
