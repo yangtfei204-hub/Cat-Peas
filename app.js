@@ -200,6 +200,7 @@
         currentColorIdx: 0,
         grid: [],
         showGrid: true,
+        showGrid10: false,
         showRuler: true,
         showNumbers: true,
         showBead: false,
@@ -1292,18 +1293,36 @@
         if (S.showGrid) {
             ctx.lineCap = 'butt';
             for (let r = 0; r <= S.gridH; r++) {
-                const major = r % 5 === 0;
-                ctx.strokeStyle = major ? 'rgba(141,123,170,0.45)' : 'rgba(200,190,200,0.3)';
-                ctx.lineWidth = major ? 1.2 : 0.5;
+                const major10 = S.showGrid10 && r % 10 === 0;
+                const major5 = r % 5 === 0;
+                if (major10) {
+                    ctx.strokeStyle = 'rgba(120,100,150,0.7)';
+                    ctx.lineWidth = 2;
+                } else if (major5) {
+                    ctx.strokeStyle = S.showGrid10 ? 'rgba(141,123,170,0.25)' : 'rgba(141,123,170,0.45)';
+                    ctx.lineWidth = S.showGrid10 ? 0.8 : 1.2;
+                } else {
+                    ctx.strokeStyle = 'rgba(200,190,200,0.3)';
+                    ctx.lineWidth = 0.5;
+                }
                 ctx.beginPath();
                 ctx.moveTo(0, r * cs);
                 ctx.lineTo(w, r * cs);
                 ctx.stroke();
             }
             for (let c = 0; c <= S.gridW; c++) {
-                const major = c % 5 === 0;
-                ctx.strokeStyle = major ? 'rgba(141,123,170,0.45)' : 'rgba(200,190,200,0.3)';
-                ctx.lineWidth = major ? 1.2 : 0.5;
+                const major10 = S.showGrid10 && c % 10 === 0;
+                const major5 = c % 5 === 0;
+                if (major10) {
+                    ctx.strokeStyle = 'rgba(120,100,150,0.7)';
+                    ctx.lineWidth = 2;
+                } else if (major5) {
+                    ctx.strokeStyle = S.showGrid10 ? 'rgba(141,123,170,0.25)' : 'rgba(141,123,170,0.45)';
+                    ctx.lineWidth = S.showGrid10 ? 0.8 : 1.2;
+                } else {
+                    ctx.strokeStyle = 'rgba(200,190,200,0.3)';
+                    ctx.lineWidth = 0.5;
+                }
                 ctx.beginPath();
                 ctx.moveTo(c * cs, 0);
                 ctx.lineTo(c * cs, h);
@@ -3131,6 +3150,10 @@
         $('toggleRuler').addEventListener('change', e => { S.showRuler = e.target.checked; renderRulers(); fitToView(); });
         $('toggleNumbers').addEventListener('change', e => { S.showNumbers = e.target.checked; renderMain(); });
         $('toggleBead').addEventListener('change', e => { S.showBead = e.target.checked; renderMain(); });
+        $('toggleGrid10').addEventListener('change', function (e) {
+            S.showGrid10 = e.target.checked;
+            renderMain();
+        });
         $('toggleSplitLine').addEventListener('change', function (e) {
             S.showSplitLine = e.target.checked;
             renderMain();
@@ -8614,6 +8637,7 @@
             'toggleRuler': function (v) { S.showRuler = v; renderRulers(); fitToView(); },
             'toggleNumbers': function (v) { S.showNumbers = v; renderMain(); },
             'toggleBead': function (v) { S.showBead = v; renderMain(); },
+            'toggleGrid10': function (v) { S.showGrid10 = v; renderMain(); },
             'toggleSplitLine': function (v) { S.showSplitLine = v; renderMain(); },
             'toggleCenterLine': function (v) { S.showCenterLine = v; renderMain(); }
         };

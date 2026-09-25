@@ -1020,6 +1020,7 @@ body {
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
+    z-index: 12;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
